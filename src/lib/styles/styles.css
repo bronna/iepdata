@@ -1,0 +1,46 @@
+html, body {
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+h1 {
+    font-size: 3.7rem;
+	font-weight: 800;
+	font-family: var(--font-headers);
+	line-height: 4.4rem;
+    letter-spacing: 0.03rem;
+	text-align: center;
+    padding-top: 2rem;
+}
+
+@media (max-width: 768px) {
+	h1 {
+        max-width: 96%;
+		font-size: 2rem;
+        line-height: 2.5rem;
+	}
+}
+
+p {
+    font-size: 1.2rem;
+    line-height: 1.7rem;
+    margin: 0.6rem 0;
+}
+
+a { 
+    color: var(--color-dark-gray);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+hr {
+    margin-top: 3rem;
+    border: 1px solid var(--color-dark-gray);
+    height: 0px;
+    box-shadow: none;
+}
