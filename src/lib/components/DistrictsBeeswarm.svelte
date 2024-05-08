@@ -1,6 +1,11 @@
 <script>
     import { selectedDistricts, hideSmallDistricts } from '$lib/stores/stores.js'
-    import * as d3 from 'd3'
+    import { scaleSequential, scaleLinear, scaleSqrt } from 'd3-scale'
+    import { axisBottom } from 'd3-axis'
+    import { forceSimulation, forceX, forceY, forceCollide } from 'd3-force'
+    import { extent } from 'd3-array'
+    import { select } from 'd3-selection'
+    import { interpolateSpectral } from 'd3-scale-chromatic'
     import tippyJs from 'tippy.js'
     import 'tippy.js/dist/tippy.css'
 
@@ -9,58 +14,77 @@
     let stateData = data.filter(d => d.properties.GEOID === '999999')[0]
     let minWeightedInclusion = stateData.properties.minWeightedInclusion
     let maxWeightedInclusion = stateData.properties.maxWeightedInclusion
-    //console.log(minWeightedInclusion, maxWeightedInclusion)
 
     // Filter out data rows without a "weighted_inclusion" value
     const filteredData = data.filter(d => d.properties.weighted_inclusion !== null && d.properties.weighted_inclusion !== undefined)
 
     // Color scale
-    const colorScale = d3.scaleSequential(d3.interpolateSpectral)
+    const colorScale = scaleSequential(interpolateSpectral)
       .domain([minWeightedInclusion, maxWeightedInclusion])
 
-    // Initial values for viz size
-    const width = 1200
-    const height = 400
-    const padding = 40
+    // Initial values for chart size
+    let width = 1200
+    let height = 400
+    const margin = { top: 0, right: 20, bottom: 20, left: 20 }
+    $: innerWidth = width - margin.left - margin.right
+    let innerHeight = height - margin.top - margin.bottom
   
-    const xScale = d3.scaleLinear()
+    $: xScale = scaleLinear()
       .domain([minWeightedInclusion, maxWeightedInclusion])
-      .range([padding, width - padding])
+      .range([0, innerWidth])
   
-    const rScale = d3.scaleLinear()
-      .domain(d3.extent(filteredData, d => Math.sqrt(d.properties['Total Student Count'] || 0)))
-      .range([3, 50])
+    $: rScale = scaleSqrt()
+      .domain(extent(filteredData, d => d.properties['Total Student Count']))
+      .range(width < 568 ? [2, 20] : [3, 50])
 
-    const decileScale = d3.scaleLinear()
-      .domain([0, 10])
-      .range([padding, width - padding])
-
-    const xAxisScale = d3.axisBottom(xScale)
-      //.ticks(5)
-      .tickSizeOuter(0)
-      .tickSizeInner(-300)
-      .tickPadding(10)
-      .tickFormat(d => `${d}`)
-    function renderXAxis(node) {
-      d3.select(node).call(xAxisScale)
-    }
+    // const xAxisScale = axisBottom(xScale)
+    //   //.ticks(5)
+    //   .tickSizeOuter(0)
+    //   .tickSizeInner(-300)
+    //   .tickPadding(10)
+    //   .tickFormat(d => `${d}`)
+    // function renderXAxis(node) {
+    //   select(node).call(xAxisScale)
+    // }
 
     // Force simulation
-    const simulation = d3.forceSimulation(filteredData)
-      .force('x', d3.forceX(d => xScale(d.properties.weighted_inclusion)).strength(2))
-      .force('y', d3.forceY(height / 2))
-      .force('collide', d3.forceCollide(d => rScale(Math.sqrt(d.properties['Total Student Count']) || 8) + 2))
-      .stop()
-    for (let i = 0; i < 300; ++i) simulation.tick()
+    let bubblePadding = 2
+    const simulation = forceSimulation(filteredData)
+    $: {
+      simulation
+        .force('x',
+          forceX()
+            .x(d => xScale(d.properties.weighted_inclusion))
+            .strength(0.8)
+        )
+        .force('y',
+          forceY()
+            .y(height / 2)
+            .strength(0.2)
+        )
+        .force('collide',
+          forceCollide()
+            .radius(d => rScale(d.properties['Total Student Count']) + bubblePadding)
+        )
+        .alpha(0.6) // [0, 1] rate at which simulation finishes, decrease if you want more "movement"
+        .alphaDecay(0.06) // [0, 1] rate at which alpha approaches 0
+        .restart() // restart the simulation
+    }
+
+    let nodes = []
+    simulation.on("tick", () => {
+      nodes = simulation.nodes()
+    })
 
     // set up tooltip using tippy.js library
-    function tippy(element, districtData) {
+    function tippy(element, nodeData) {
+      console.log(nodeData)
       // initialize the tooltip
       const tooltipInstance = tippyJs(element, {
-        content: `<strong>${districtData["Institution Name"]}</strong><br>
-                  inclusion score<br>
-                  <strong>${districtData["Total Student Count"]}</strong> students with IEPs<br>
-                  <a style="color:white;" href="/${districtData["GEOID"]}"><strong>More info >></strong></a>`,
+        content: `<strong>${nodeData["Institution Name"]}</strong><br>
+          inclusion score<br>
+          <strong>${nodeData["Total Student Count"]}</strong> students with IEPs<br>
+          <a style="color:white;" href="/${nodeData.GEOID}"><strong>More info >></strong></a>`,
         allowHTML: true,
         interactive: true,
         appendTo: document.body
@@ -80,25 +104,26 @@
 </script>
 
 
-<div id="bubble-chart">
-    <svg viewBox="0 0 {width} {height}">
-        <g class="x-axis" transform="translate(0, {height - padding})">
+<div class="chart-container" bind:clientWidth={width}>
+    <svg width={width} height={height}>
+      <g class="inner-chart" transform="translate({margin.left}, {margin.top})">
+        <!-- <g class="x-axis" transform="translate(0, {height - margin.bottom})">
           <g use:renderXAxis></g>
-        </g>
-        <g transform="translate(0, {padding})">
+        </g> -->
+        <g>
           <text 
-            x={50}
+            x={margin.left + 30}
             y={60} 
             text-anchor="start"
             font-size="14px"
             font-weight="600"
             fill="black"
           >
-          &#8592; Less inclusive
+            &#8592; Less inclusive
           </text>
   
           <text 
-            x={width - 50}
+            x={width - margin.right - 30}
             y={60} 
             text-anchor="end"
             font-size="14px"
@@ -109,30 +134,31 @@
           </text>
         </g>
   
-        {#each filteredData as district (district.properties.GEOID)}
-          <g transform="translate({district.x},{district.y})">
+        {#each nodes as node}
             <circle
-              use:tippy={district.properties}
-              r={rScale(Math.sqrt(district.properties['Total Student Count'] || 0))}
-              fill={colorScale(district.properties.weighted_inclusion)}
-              opacity={(!district.properties.largeDistrict && $hideSmallDistricts) ? 0.15 : 0.9}
+              use:tippy={node.properties}
+              cx={node.x}
+              cy={node.y}
+              r={rScale(node.properties['Total Student Count'])}
+              fill={colorScale(node.properties.weighted_inclusion)}
+              opacity={(!node.properties.largeDistrict && $hideSmallDistricts) ? 0.15 : 0.9}
               stroke="black"
               stroke-width="1"
               on:click={() => selectedDistricts.update(selected => {
-                if (selected.includes(district.properties.GEOID)) {
-                  return selected.filter(d => d !== district.properties.GEOID)
+                if (selected.includes(node.properties.GEOID)) {
+                  return selected.filter(d => d !== node.properties.GEOID)
                 } else {
-                  return [...selected, district.properties.GEOID]
+                  return [...selected, node.properties.GEOID]
                 }
               })}
             />
-          </g>
         {/each}
   
-        {#each filteredData as district (district.properties.GEOID)}
-          {#if $selectedDistricts.includes(district.properties.GEOID)}
-            <g transform="translate({district.x},{district.y})">
+        {#each nodes as node}
+          {#if $selectedDistricts.includes(node.properties.GEOID)}
               <text
+                x={node.x}
+                y={node.y}
                 dy=".3em"
                 text-anchor="middle"
                 fill="black"
@@ -140,44 +166,37 @@
                 stroke-width="3"
                 style="font-size: 14px; font-weight:400;"
               >
-                {district.properties.NAME}
+                {node.properties["Institution Name"]}
               </text>
               <text
+                x={node.x}
+                y={node.y}
                 dy=".3em"
                 text-anchor="middle"
                 fill="black"
                 style="font-size: 14px; font-weight:400;"
               >
-                {district.properties.NAME}
+                {node.properties["Institution Name"]}
               </text>
-            </g>
           {/if}
         {/each}
   
         <g class="legend" transform="translate(80, 320)">
-          <circle r={rScale(Math.sqrt(6000))} fill="none" stroke="black" stroke-width="1" />
+          <circle r={rScale(6000)} fill="none" stroke="black" stroke-width="1" />
           <text x="50" y="-30" style="font-size: 12px;">6,000 students</text>
         
-          <circle r={rScale(Math.sqrt(3000))} cy={rScale(Math.sqrt(6000)) - rScale(Math.sqrt(3000))} fill="none" stroke="black" stroke-width="1" />
+          <circle r={rScale(3000)} cy={rScale(6000) - rScale(3000)} fill="none" stroke="black" stroke-width="1" />
           <text x="50" y="0" style="font-size: 12px;">3,000 students</text>
         
-          <circle r={rScale(Math.sqrt(1000))} cy={rScale(Math.sqrt(6000)) - rScale(Math.sqrt(1000))} fill="none" stroke="black" stroke-width="1" />
+          <circle r={rScale(1000)} cy={rScale(6000) - rScale(1000)} fill="none" stroke="black" stroke-width="1" />
           <text x="50" y={30} style="font-size: 12px;">1,000 students</text>
         </g>
+      </g>
     </svg>
 </div>
 
 
 <style>
-    #bubble-chart {
-        width: 100vw;
-    }
-
-    svg {
-        width: 100%;
-        height: 100%;
-    }
-
     circle:hover {
       opacity: 0.75;
     }

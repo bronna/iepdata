@@ -107,7 +107,7 @@ export const getData = () => {
         })
     })
 
-    // Calculate min and max weighted inclusion
+    // Calculate min and max weighted inclusion for large districts
     let minWeightedInclusion = Math.min(
         ...data
             .filter(district => district.properties["Total Student Count"] > 500 && district.properties.weighted_inclusion)
@@ -119,6 +119,18 @@ export const getData = () => {
             .map(district => district.properties.weighted_inclusion)
     )
     let range = maxWeightedInclusion - minWeightedInclusion
+
+    // Calculate min and max weighted inclusion for all districts
+    let minWeightedInclusionAll = Math.min(
+        ...data
+            .filter(district => district.properties.weighted_inclusion)
+            .map(district => district.properties.weighted_inclusion)
+    )
+    let maxWeightedInclusionAll = Math.max(
+        ...data
+            .filter(district => district.properties.weighted_inclusion)
+            .map(district => district.properties.weighted_inclusion)
+    )
 
     // Calculate deciles
     const decileThresholds = Array.from({ length: 10 }, (_, i) => minWeightedInclusion + (range * (i + 1) * 0.1))
@@ -157,7 +169,8 @@ export const getData = () => {
             "IEP Dropout 18-19": sumIEPDropout / totalStudents * 100,
             "minWeightedInclusion": minWeightedInclusion,
             "maxWeightedInclusion": maxWeightedInclusion,
-            "range": range,
+            "minWeightedInclusionAll": minWeightedInclusionAll,
+            "maxWeightedInclusionAll": maxWeightedInclusionAll,
         },
         geometry: null
     }
