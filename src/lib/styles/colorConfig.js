@@ -1,4 +1,4 @@
-const colors = {
+export const colors = {
     inclusiveDark: '#328F83',
     inclusive: 'rgba(70, 181, 166, 1.0)',
     semiInclusive: 'rgba(248, 170, 22, 1.0)',
@@ -11,5 +11,3 @@ const colors = {
     lightLightGray: '#E8E5E4',
     background: '#ffffff',
 }
-  
-export { colors }

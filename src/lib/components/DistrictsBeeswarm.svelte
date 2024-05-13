@@ -1,13 +1,15 @@
 <script>
     import { selectedDistricts, hideSmallDistricts } from '$lib/stores/stores.js'
+
     import { scaleSequential, scaleLinear, scaleSqrt } from 'd3-scale'
-    import { axisBottom } from 'd3-axis'
     import { forceSimulation, forceX, forceY, forceCollide } from 'd3-force'
     import { extent } from 'd3-array'
-    import { select } from 'd3-selection'
     import { interpolateSpectral } from 'd3-scale-chromatic'
     import tippyJs from 'tippy.js'
     import 'tippy.js/dist/tippy.css'
+
+    import SVGChart from './SVGChart.svelte'
+    import Axis from './Axis.svelte'
 
     export let data
 
@@ -15,37 +17,34 @@
     let minWeightedInclusion = stateData.properties.minWeightedInclusion
     let maxWeightedInclusion = stateData.properties.maxWeightedInclusion
 
-    // Filter out data rows without a "weighted_inclusion" value
+    // Filter out data rows with no "weighted_inclusion" value
     const filteredData = data.filter(d => d.properties.weighted_inclusion !== null && d.properties.weighted_inclusion !== undefined)
 
     // Color scale
     const colorScale = scaleSequential(interpolateSpectral)
       .domain([minWeightedInclusion, maxWeightedInclusion])
 
-    // Initial values for chart size
-    let width = 1200
-    let height = 400
-    const margin = { top: 0, right: 20, bottom: 20, left: 20 }
-    $: innerWidth = width - margin.left - margin.right
-    let innerHeight = height - margin.top - margin.bottom
+    // Chart dimensions & initial values
+    let width = 100
+    let height = 100
+    let dimensions = {}
+    const margin = { top: 0, right: 200, bottom: 20, left: 200 }
+
+    $: dimensions = { 
+      width, 
+      height, 
+      margin,
+      innerWidth: width - margin.left - margin.right,
+      innerHeight: height - margin.top - margin.bottom
+    }
   
     $: xScale = scaleLinear()
       .domain([minWeightedInclusion, maxWeightedInclusion])
-      .range([0, innerWidth])
+      .range([0, dimensions.innerWidth])
   
     $: rScale = scaleSqrt()
       .domain(extent(filteredData, d => d.properties['Total Student Count']))
       .range(width < 568 ? [2, 20] : [3, 50])
-
-    // const xAxisScale = axisBottom(xScale)
-    //   //.ticks(5)
-    //   .tickSizeOuter(0)
-    //   .tickSizeInner(-300)
-    //   .tickPadding(10)
-    //   .tickFormat(d => `${d}`)
-    // function renderXAxis(node) {
-    //   select(node).call(xAxisScale)
-    // }
 
     // Force simulation
     let bubblePadding = 2
@@ -76,15 +75,20 @@
       nodes = simulation.nodes()
     })
 
-    // set up tooltip using tippy.js library
-    function tippy(element, nodeData) {
-      console.log(nodeData)
+    // Tooltip using tippy.js library
+    function tooltipContent(nodeData) {
+      return `
+        <span style="font-family:'Source Sans 3', sans-serif;"><strong>${nodeData["Institution Name"]}</strong><br>
+        Inclusion score: <strong>${nodeData.weighted_inclusion.toFixed(2)}</strong><br>
+        <strong>${nodeData["Total Student Count"]}</strong> students with IEPs<br>
+        <a class="tooltip-link" href="/${nodeData.GEOID}"><strong>More info >></strong></a></span>
+      `
+    }
+
+    function tippy(element, nodeContent) {
       // initialize the tooltip
       const tooltipInstance = tippyJs(element, {
-        content: `<strong>${nodeData["Institution Name"]}</strong><br>
-          inclusion score<br>
-          <strong>${nodeData["Total Student Count"]}</strong> students with IEPs<br>
-          <a style="color:white;" href="/${nodeData.GEOID}"><strong>More info >></strong></a>`,
+        content: nodeContent,
         allowHTML: true,
         interactive: true,
         appendTo: document.body
@@ -104,39 +108,15 @@
 </script>
 
 
-<div class="chart-container" bind:clientWidth={width}>
-    <svg width={width} height={height}>
-      <g class="inner-chart" transform="translate({margin.left}, {margin.top})">
-        <!-- <g class="x-axis" transform="translate(0, {height - margin.bottom})">
-          <g use:renderXAxis></g>
-        </g> -->
-        <g>
-          <text 
-            x={margin.left + 30}
-            y={60} 
-            text-anchor="start"
-            font-size="14px"
-            font-weight="600"
-            fill="black"
-          >
-            &#8592; Less inclusive
-          </text>
-  
-          <text 
-            x={width - margin.right - 30}
-            y={60} 
-            text-anchor="end"
-            font-size="14px"
-            font-weight="600"
-            fill="black"
-          >
-            More inclusive &#8594;
-          </text>
-        </g>
+<div class="districts-beeswarm" bind:clientWidth={width} bind:clientHeight={height}>
+    <SVGChart dimensions={dimensions}>
+        <Axis scale={xScale} longTick label={"inclusion score"} />
   
         {#each nodes as node}
+            <!-- svelte-ignore a11y-click-events-have-key-events -->
+            <!-- svelte-ignore a11y-no-static-element-interactions -->
             <circle
-              use:tippy={node.properties}
+              use:tippy={tooltipContent(node.properties)}
               cx={node.x}
               cy={node.y}
               r={rScale(node.properties['Total Student Count'])}
@@ -144,6 +124,7 @@
               opacity={(!node.properties.largeDistrict && $hideSmallDistricts) ? 0.15 : 0.9}
               stroke="black"
               stroke-width="1"
+              tabIndex="0"
               on:click={() => selectedDistricts.update(selected => {
                 if (selected.includes(node.properties.GEOID)) {
                   return selected.filter(d => d !== node.properties.GEOID)
@@ -180,8 +161,31 @@
               </text>
           {/if}
         {/each}
+
+        <g class="chart-labels">
+          <text 
+            x={0}
+            y={60} 
+            text-anchor="start"
+            font-size="14px"
+            font-weight="600"
+            fill="black"
+          >
+            &#8592; Less inclusive
+          </text>
+          <text 
+            x={width - margin.right - 240}
+            y={60} 
+            text-anchor="end"
+            font-size="14px"
+            font-weight="600"
+            fill="black"
+          >
+            More inclusive &#8594;
+          </text>
+        </g>
   
-        <g class="legend" transform="translate(80, 320)">
+        <g class="legend" transform="translate(740, 320)">
           <circle r={rScale(6000)} fill="none" stroke="black" stroke-width="1" />
           <text x="50" y="-30" style="font-size: 12px;">6,000 students</text>
         
@@ -191,12 +195,18 @@
           <circle r={rScale(1000)} cy={rScale(6000) - rScale(1000)} fill="none" stroke="black" stroke-width="1" />
           <text x="50" y={30} style="font-size: 12px;">1,000 students</text>
         </g>
-      </g>
-    </svg>
+    </SVGChart>
 </div>
 
 
 <style>
+    .districts-beeswarm {
+      height: 400px;
+      min-width: 500px;
+      width: calc(100% + 1em);
+      margin-bottom: 3rem;
+    }
+
     circle:hover {
       opacity: 0.75;
     }
@@ -207,13 +217,5 @@
 
     .tooltip-link {
       color: white;
-    }
-
-    .domain {
-      display: none;
-    }
-
-    .tick line {
-      stroke: var(--light-gray);
     }
 </style>

@@ -2,11 +2,12 @@
     import { selectedDistricts, hideSmallDistricts } from "$lib/stores/stores.js"
     import { goto } from '$app/navigation'
     import { writable, derived } from "svelte/store"
+    import { arrowUp, arrowDown } from "$lib/utils/arrows.js"
 
     export let data
 
     const sortKey = writable('null')
-    const sortOrder = writable('null')
+    const sortOrder = writable(1)
 
     function sortBy(key) {
         sortKey.set(key)
@@ -16,7 +17,7 @@
     const sortedDistrictsData = derived(
         [sortKey, sortOrder],
         ([$sortKey, $sortOrder]) => {
-            if ($sortKey === 'null') return data
+            if (!$sortKey) return data
             return [...data].sort((a, b) => {
                 const aValue = a.properties[$sortKey]
                 const bValue = b.properties[$sortKey]
@@ -24,15 +25,6 @@
             })
         }
     )
-
-    const arrowUp = `
-        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-up">
-            <polyline points="18 15 12 9 6 15"></polyline>
-        </svg>`
-    const arrowDown = `
-        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-down">
-            <polyline points="6 9 12 15 18 9"></polyline>
-        </svg>`
 
     function navigateToDistrict(districtGEOID) {
         goto(`/${districtGEOID}`)
