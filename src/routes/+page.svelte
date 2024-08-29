@@ -32,7 +32,7 @@
     </div>
 
     <h1 class="headline">
-        Explore inclusion data for school districts near you
+        Find inclusion data for school districts in your state
     </h1>
 
     <h3 class="byline text-width">
@@ -81,7 +81,10 @@
                 <div class="text-foreground"><strong>{$selectedDistrictData[0].properties["Institution Name"]}</strong>'s inclusion score is <strong>{$selectedDistrictData[0].properties.quartile}</strong> out of <strong>4</strong></div>
             </section>
             <section>
-                <div class="text-foreground">Each circle in this graphic represents a school district in the state. The farther right the circle is, the higher its inclusion score.</div>
+                <div class="text-foreground">Each of these circles represents a school district in the state. The farther right the circle is, the higher its inclusion score.</div>
+            </section>
+            <section>
+                <div class="text-foreground">You can click or hover on a circle to see which district it represents.</div>
             </section>
             <section>
                 <div class="text-foreground">Scaling the circles shows how many students with <strong>IEP</strong>s the district has.</div>
@@ -188,7 +191,7 @@
         display: inline;
         padding: 0.2rem 0.7rem;
         color: var(--colorWhite);
-        background-color: var(--colorDarkGray);
+        background-color: var(--colorText);
         font-size: 1.2rem;
         box-shadow: var(--shadow);
         max-width: 90%;

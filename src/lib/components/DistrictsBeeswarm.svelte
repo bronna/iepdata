@@ -85,7 +85,7 @@
   $: visibleLabels = derived(
     [selectedDistrict, selectedDistrictData],
     ([$selectedDistrict, $selectedDistrictData]) => {
-      if (index < 6) {
+      if (index < 7) {
         return nodes.filter(node => highlightedDistricts.includes(node.properties.GEOID))
       } else if ($selectedDistrict && $selectedDistrict.length > 0) {
         return nodes.filter(node => $selectedDistrict.includes(node.properties.GEOID))
@@ -130,7 +130,7 @@
 
     return {
       update(newContent) {
-        if (index > 0) {
+        if (index > 2) {
           if (tooltipInstance) {
             tooltipInstance.setContent(newContent)
           } else {
@@ -161,17 +161,17 @@
   let highlightedDistricts = []
   $: {
     if ($selectedDistrict && $selectedDistrict.length > 0) {
-      if (index < 4) {
+      if (index < 5) {
         highlightedDistricts = $selectedDistrict
-      } else if (index === 4) {
-        highlightedDistricts = [$selectedDistrict, ...largestDistricts]
       } else if (index === 5) {
+        highlightedDistricts = [$selectedDistrict, ...largestDistricts]
+      } else if (index === 6) {
         highlightedDistricts = [$selectedDistrict, ...neighborDistrictIds]
       } else {
         highlightedDistricts = filteredData.map(d => d.properties.GEOID)
       }
     } else {
-      highlightedDistricts = index < 6 ? [] : filteredData.map(d => d.properties.GEOID)
+      highlightedDistricts = index < 7 ? [] : filteredData.map(d => d.properties.GEOID)
     }
   }
 
@@ -187,7 +187,7 @@
 
   let tweenedRadii = tweened(new Array(filteredData.length).fill(defaultRadius), { duration: fadeDuration })
   $: {
-    if (index >= 2) {
+    if (index >= 3) {
       useScaledRadius = true
       tweenedRadii.set(filteredData.map(d => rScale(d.properties['Total Student Count'])))
     } else {
@@ -290,7 +290,7 @@
           </g>
         {/if}
   
-        {#if index > 1}
+        {#if index > 2}
           <g class="legend" transform="translate({dimensions.width - legendWidth}, {dimensions.height - legendHeight})" transition:fade="{{ duration: fadeDuration}}">
             <!-- 6000 students -->
             <circle r={rScale(6000)} fill="none" stroke={colors.colorText} stroke-width="1" />
