@@ -1,21 +1,14 @@
 <script>
-    import { setContext } from 'svelte'
-    import { writable } from 'svelte/store'
-
     export let dimensions = {}
-
-    let currentDimensions = writable(dimensions)
-    $: {
-        currentDimensions.set(dimensions)
-    }
-
-    setContext("svg-chart", {
-        dimensions: currentDimensions
-    })
+    export let originCenter = false
 </script>
 
 <svg class="svg-chart" width={dimensions.width} height={dimensions.height}>
-    <g transform={`translate(${dimensions.margin.left}, ${dimensions.margin.top})`}>
+    <g transform={
+        originCenter === false ? 
+            `translate(${dimensions.margin.left}, ${dimensions.margin.top})` : 
+            `translate(${dimensions.width / 2}, ${dimensions.height / 2})`}
+    >
         <slot />
     </g>
 </svg>

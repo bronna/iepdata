@@ -1,11 +1,9 @@
 <script>
-    import { selectedDistricts, hideSmallDistricts } from '$lib/stores/stores.js'
+    import { data, selectedDistrict, hideSmallDistricts } from '$lib/stores/stores.js'
     import Svelecte from 'svelecte'
 
-    export let data
-
     // create array of objects with id and name value for each item in the data array
-	let districtNames = data.map((district) => {
+	let districtNames = $data.map((district) => {
 		return { value: district.properties.GEOID, label: district.properties["Institution Name"] }
 	})
 
@@ -14,7 +12,7 @@
 	}
 
     function clearSelectedDistricts() {
-		selectedDistricts.set([])
+		selectedDistrict.set()
 		minSize = 0;
 		maxSize = 9000
 		values = [minSize, maxSize]
@@ -29,28 +27,28 @@
     <div class="search-container text-width">
         <Svelecte 
             options={districtNames} 
-            bind:value={$selectedDistricts} 
-            multiple={true} 
+            bind:value={$selectedDistrict} 
+            multiple={false} 
             placeholder={"find a school district"}
             closeAfterSelect={true}
         />
     </div>
 </div>
 
-<div class="filters">
-    <!-- Hide/show small districts -->
-    <div class="hide-small-button">
-        <button on:click={toggleHideSmallDistricts} class="action-button" id="hide-button">
-            {$hideSmallDistricts ? 'show small districts' : 'hide small districts'}
-        </button>
-        <p class="asterisk">* small districts don't have as accurate of an inclusion score</p>
-    </div>
+{#if $selectedDistrict}
+    <!-- <div class="filters">
+        <div class="hide-small-button">
+            <button on:click={toggleHideSmallDistricts} class="action-button" id="hide-button">
+                {$hideSmallDistricts ? 'show small districts' : 'hide small districts'}
+            </button>
+            <p class="asterisk">* small districts don't have as accurate of an inclusion score</p>
+        </div>
 
-    <!-- Select none -->
-    <button on:click={clearSelectedDistricts} class="action-button" id="select-none-button">
-        clear selected
-    </button>
-</div>
+        <button on:click={clearSelectedDistricts} class="action-button" id="select-none-button">
+            clear selected
+        </button>
+    </div> -->
+{/if}
 
 
 <style>
@@ -59,8 +57,8 @@
     }
 
     .search-description {
-        color: var(--color-text);
-        font-size: 1.8rem;
+        color: var(--colorText);
+        font-size: 1.4rem;
         letter-spacing: 0.01rem;
         font-weight: 700;
         font-family: 'Bitter', serif;
@@ -108,9 +106,9 @@
         /* margin: 0; */
         border-radius: 20px;
         cursor: pointer;
-        color: var(--color-text);
+        color: var(--colorText);
         transition: background-color 0.3s, border-color 0.3s;
-        border: 1.5px solid var(--color-text);
+        border: 1.5px solid var(--colorText);
         background-color: white;
         font-size: 0.9rem;
         white-space: nowrap;
@@ -138,7 +136,7 @@
 
 	.asterisk {
         font-size: 0.9rem;
-        color: var(--dark-gray);
+        color: var(--colorDarkGray);
         margin-top: 1.8rem;
         line-height: 1.2rem;
         margin-left: 1rem;

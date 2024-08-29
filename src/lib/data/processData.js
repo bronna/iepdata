@@ -1,5 +1,5 @@
 import * as topojson from "topojson-client"
-import OregonData from "./oregon_data.json"
+import OregonData from "./oregon_data_23.json"
 
 let largeDistrictCutoff = 500
 
@@ -20,7 +20,7 @@ function weightedInclusion(district) {
 }
 
 export const getData = () => {
-    const objectName = "OR_SDs_merged"
+    const objectName = "OR_SDs_merged_23"
     const geojsonData = topojson.feature(OregonData, OregonData.objects[objectName])
     let data = geojsonData.features
 
@@ -83,11 +83,11 @@ export const getData = () => {
 
         // Tallying up alerts for each district
         let alertsCount = 0
-        alertColumns.forEach(column => {
-            if (district.properties[column] === "Yes") {
-                alertsCount++
-            }
-        })
+        // alertColumns.forEach(column => {
+        //     if (district.properties[column] === "Yes") {
+        //         alertsCount++
+        //     }
+        // })
         district.properties.nAlerts = alertsCount
 
         // indicate if large or small district
@@ -132,25 +132,32 @@ export const getData = () => {
             .map(district => district.properties.weighted_inclusion)
     )
 
-    // Calculate deciles
-    const decileThresholds = Array.from({ length: 10 }, (_, i) => minWeightedInclusion + (range * (i + 1) * 0.1))
+    // Calculate quartiles
+    const quartileThresholds = Array.from({ length: 4 }, (_, i) => minWeightedInclusion + (range * (i + 1) * 0.25))
     data.forEach(district => {
         if (!district.properties.weighted_inclusion) {
-            district.properties.decile = null
+            district.properties.quartile = null
         } else {
-            for (let i = 0; i < 9; i++) {
-                if (district.properties.weighted_inclusion < decileThresholds[i]) {
-                    district.properties.decile = i + 1
+            for (let i = 0; i < 3; i++) {
+                if (district.properties.weighted_inclusion < quartileThresholds[i]) {
+                    district.properties.quartile = i + 1
                     break
                 }
             }
         }
 
-        // Assign a value of 10 for the top decile (if not already assigned)
-        if (district.properties.weighted_inclusion && !district.properties.decile) {
-            district.properties.decile = 10
+        // Assign a value of 4 for the top quartile (if not already assigned)
+        if (district.properties.weighted_inclusion && !district.properties.quartile) {
+            district.properties.quartile = 4
         }
     })
+
+    // Find the 3 largest districts by "Total Student Count"
+    const largestDistricts = data
+        .filter(district => district.properties["Total Student Count"])
+        .sort((a, b) => b.properties["Total Student Count"] - a.properties["Total Student Count"])
+        .slice(0, 5)
+        .map(district => district.properties.GEOID)
 
     // Statewide data
     let summaryFeature = {
@@ -171,6 +178,8 @@ export const getData = () => {
             "maxWeightedInclusion": maxWeightedInclusion,
             "minWeightedInclusionAll": minWeightedInclusionAll,
             "maxWeightedInclusionAll": maxWeightedInclusionAll,
+            "largestDistricts": largestDistricts,
+            "quartileThresholds": quartileThresholds,
         },
         geometry: null
     }

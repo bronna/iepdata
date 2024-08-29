@@ -6,17 +6,22 @@
     import Footer from '$lib/components/Footer.svelte'
 
     let cssColors = `
-        --color-inclusive-dark: ${colors.inclusiveDark};
-        --color-inclusive: ${colors.inclusive};
-        --color-semi-inclusive: ${colors.semiInclusive};
-        --color-non-inclusive: ${colors.nonInclusive};
-        --color-separate: ${colors.separate};
-        --color-text: ${colors.text};
-        --color-dark-gray: ${colors.darkGray};
-        --color-medium-gray: ${colors.mediumGray};
-        --color-light-gray: ${colors.lightGray};
-        --color-light-light-gray: ${colors.lightLightGray};
-        --color-background: ${colors.background};
+        --colorInclusiveDark: ${colors.colorInclusiveDark};
+        --colorInclusiveGray: ${colors.colorInclusiveGray};
+        --colorInclusive: ${colors.colorInclusive};
+        --colorSemiInclusive: ${colors.colorSemiInclusive};
+        --colorNonInclusive: ${colors.colorNonInclusive};
+        --colorSeparate: ${colors.colorSeparate};
+        --colorText: ${colors.colorText};
+        --colorDarkGray: ${colors.colorDarkGray};
+        --colorMediumGray: ${colors.colorMediumGray};
+        --colorLightGray: ${colors.colorLightGray};
+        --colorLightLightGray: ${colors.colorLightLightGray};
+        --colorWhite: ${colors.colorWhite};
+        --colorBackground: ${colors.colorBackground};
+        --colorBackgroundWhite: ${colors.colorBackgroundWhite};
+        --colorBackgroundLightGray: ${colors.colorBackgroundLightGray};
+        --colorBackgroundLightOrange: ${colors.colorBackgroundLightOrange};
     `
 </script>
 
@@ -36,6 +41,7 @@
         --font-headers: 'Bitter', serif;
         --column-width: 42rem;
         --column-margin-top: 4rem;
+        --shadow: 1px 2px 6px rgba(0, 0, 0, 0.15);
     }
     
     :global(*) {
@@ -51,9 +57,26 @@
     }
 
     :global(.text-width) {
-        max-width: 48rem;
+        max-width: 44rem;
         width: 100%;
-        margin: 0 auto;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    :global(.header) {
+        color: var(--colorText);
+        font-size: 1.3rem;
+        letter-spacing: 0.01rem;
+        font-weight: 700;
+        font-family: 'Bitter', serif;
+        margin-right: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    :global(.asterisk ){
+        font-size: 0.9rem;
+        color: var(--colorDarkGray);
+        line-height: 1.2rem;
     }
 
     @media (max-width: 768px) {
@@ -65,7 +88,6 @@
     .app {
         width: 100%;
         min-height: 100vh;
-        background-color: var(--color-background);
         font-family: var(--font-body);
         color: var(--color-text);
     }
@@ -74,7 +96,7 @@
         flex: 1;
         display: flex;
         flex-direction: column;
-        padding-top: 1rem;
         margin: 0 auto;
+        background-color: var(--colorBackgroundLightGray);
     }
 </style>

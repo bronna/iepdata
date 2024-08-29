@@ -1,221 +1,376 @@
 <script>
-    import { selectedDistricts, hideSmallDistricts } from '$lib/stores/stores.js'
+  import { tweened } from 'svelte/motion'
+  import { fade } from 'svelte/transition'
+  import { derived } from 'svelte/store'
 
-    import { scaleSequential, scaleLinear, scaleSqrt } from 'd3-scale'
-    import { forceSimulation, forceX, forceY, forceCollide } from 'd3-force'
-    import { extent } from 'd3-array'
-    import { interpolateSpectral } from 'd3-scale-chromatic'
-    import tippyJs from 'tippy.js'
-    import 'tippy.js/dist/tippy.css'
+  import { data, selectedDistrict, selectedDistrictData, stateData } from '$lib/stores/stores.js'
 
-    import SVGChart from './SVGChart.svelte'
-    import Axis from './Axis.svelte'
+  import { scaleLinear, scaleSqrt, scaleOrdinal } from 'd3-scale'
+  import { forceSimulation, forceX, forceY, forceCollide } from 'd3-force'
+  import { extent } from 'd3-array'
+  import { interpolateRgb } from 'd3-interpolate'
+  import tippyJs from 'tippy.js'
+  import 'tippy.js/dist/tippy.css'
+  import { colors } from '$lib/styles/colorConfig'
 
-    export let data
+  import SVGChart from './SVGChart.svelte'
 
-    let stateData = data.filter(d => d.properties.GEOID === '999999')[0]
-    let minWeightedInclusion = stateData.properties.minWeightedInclusion
-    let maxWeightedInclusion = stateData.properties.maxWeightedInclusion
+  export let index = 0
 
-    // Filter out data rows with no "weighted_inclusion" value
-    const filteredData = data.filter(d => d.properties.weighted_inclusion !== null && d.properties.weighted_inclusion !== undefined)
+  let fadeDuration = 300
 
-    // Color scale
-    const colorScale = scaleSequential(interpolateSpectral)
-      .domain([minWeightedInclusion, maxWeightedInclusion])
+  // Filter out data rows with no "weighted_inclusion" value
+  const filteredData = $data.filter(d => d.properties.weighted_inclusion !== null && d.properties.weighted_inclusion !== undefined)
 
-    // Chart dimensions & initial values
-    let width = 100
-    let height = 100
-    let dimensions = {}
-    const margin = { top: 0, right: 200, bottom: 20, left: 200 }
+  // Chart dimensions & initial values
+  let defaultRadius = 10
+  $: defaultRadius = width <= 768 ? 5 : 10
 
-    $: dimensions = { 
-      width, 
-      height, 
-      margin,
-      innerWidth: width - margin.left - margin.right,
-      innerHeight: height - margin.top - margin.bottom
+  let width
+  let height
+  $: dimensions = { 
+    width, 
+    height, 
+    margin: width <= 768 ? { top: 0, right: 20, bottom: 20, left: 20 } : { top: 0, right: 30, bottom: 20, left: 30 },
+  }
+
+  $: xScale = scaleLinear()
+    .domain(extent(filteredData, d => d.properties.weighted_inclusion))
+    .range([0, dimensions.width - dimensions.margin.right - dimensions.margin.left])
+
+  $: rScale = scaleSqrt()
+    .domain(extent(filteredData, d => d.properties['Total Student Count']))
+    .range(width < 768 ? [2, 20] : [3, 50])
+
+  let colorScale = scaleOrdinal()
+    .domain([1, 2, 3, 4])
+    .range([colors.colorSeparate, colors.colorNonInclusive, colors.colorSemiInclusive, colors.colorInclusive])
+
+  // Force simulation
+  let bubblePadding = 2
+  let useScaledRadius = false
+
+  let simulation = forceSimulation(filteredData)
+
+  $: {
+    simulation
+      .force('x',
+        forceX()
+          .x(d => xScale(d.properties.weighted_inclusion))
+          .strength(1.5)
+      )
+      .force('y',
+        forceY()
+          .y(height / 2)
+          .strength(0.1)
+      )
+      .force('collide',
+        forceCollide()
+          .radius(d => useScaledRadius ? rScale(d.properties['Total Student Count']) + bubblePadding : defaultRadius + bubblePadding)
+          .strength(0.8)
+      )
+      .alpha(0.5) // [0, 1] rate at which simulation finishes, decrease if you want more "movement"
+      .alphaMin(0.01) // point at which simulation stops as alpha goes 1 -> 0
+      .alphaDecay(0.05) // [0, 1] rate at which alpha approaches 0
+      .velocityDecay(0.4) // [0, 1] rate at which nodes lose velocity
+      .restart()
+  }
+
+  let nodes = []
+  simulation.on('tick', () => {
+    nodes = simulation.nodes()
+  })
+
+  // Create a derived store for labels
+  $: visibleLabels = derived(
+    [selectedDistrict, selectedDistrictData],
+    ([$selectedDistrict, $selectedDistrictData]) => {
+      if (index < 6) {
+        return nodes.filter(node => highlightedDistricts.includes(node.properties.GEOID))
+      } else if ($selectedDistrict && $selectedDistrict.length > 0) {
+        return nodes.filter(node => $selectedDistrict.includes(node.properties.GEOID))
+      }
+      return []
     }
-  
-    $: xScale = scaleLinear()
-      .domain([minWeightedInclusion, maxWeightedInclusion])
-      .range([0, dimensions.innerWidth])
-  
-    $: rScale = scaleSqrt()
-      .domain(extent(filteredData, d => d.properties['Total Student Count']))
-      .range(width < 568 ? [2, 20] : [3, 50])
+  )
 
-    // Force simulation
-    let bubblePadding = 2
-    const simulation = forceSimulation(filteredData)
-    $: {
-      simulation
-        .force('x',
-          forceX()
-            .x(d => xScale(d.properties.weighted_inclusion))
-            .strength(0.8)
-        )
-        .force('y',
-          forceY()
-            .y(height / 2)
-            .strength(0.2)
-        )
-        .force('collide',
-          forceCollide()
-            .radius(d => rScale(d.properties['Total Student Count']) + bubblePadding)
-        )
-        .alpha(0.6) // [0, 1] rate at which simulation finishes, decrease if you want more "movement"
-        .alphaDecay(0.06) // [0, 1] rate at which alpha approaches 0
-        .restart() // restart the simulation
-    }
+  $: legendWidth = rScale(6000) + 140
+  $: legendHeight = rScale(6000) + 1
 
-    let nodes = []
-    simulation.on("tick", () => {
-      nodes = simulation.nodes()
-    })
+  // Tooltip using tippy.js library
+  function tooltipContent(nodeData) {
+    return `
+      <span style="font-family:'Source Sans 3', sans-serif;"><strong>${nodeData["Institution Name"]}</strong><br>
+      Inclusion score: <strong>${nodeData.quartile}</strong> out of 4 ${nodeData["Total Student Count"] < 500 ? '<strong>*</strong>' : ''}<br>
+      <strong>${nodeData["Total Student Count"]}</strong> students with IEPs<br>
+      <a class="tooltip-link" href="/${nodeData.GEOID}"><strong>More info >></strong></a></span>
+    `
+  }
 
-    // Tooltip using tippy.js library
-    function tooltipContent(nodeData) {
-      return `
-        <span style="font-family:'Source Sans 3', sans-serif;"><strong>${nodeData["Institution Name"]}</strong><br>
-        Inclusion score: <strong>${nodeData.weighted_inclusion.toFixed(2)}</strong><br>
-        <strong>${nodeData["Total Student Count"]}</strong> students with IEPs<br>
-        <a class="tooltip-link" href="/${nodeData.GEOID}"><strong>More info >></strong></a></span>
-      `
-    }
+  function tippy(element, nodeContent) {
+    let tooltipInstance = null
 
-    function tippy(element, nodeContent) {
-      // initialize the tooltip
-      const tooltipInstance = tippyJs(element, {
+    function initialize() {
+      tooltipInstance = tippyJs(element, {
         content: nodeContent,
         allowHTML: true,
         interactive: true,
-        appendTo: document.body
+        appendTo: document.body,
       })
+    }
 
-      return {
-          update(newContent) {
-            // do something when action data changes
-            tooltipInstance.setContent(newContent)
-          },
-
-          destroy() {
-            tooltipInstance.destroy()
-          }
+    function destroy() {
+      if (tooltipInstance) {
+        tooltipInstance.destroy()
+        tooltipInstance = null
       }
     }
+
+    initialize()
+
+    return {
+      update(newContent) {
+        if (index > 0) {
+          if (tooltipInstance) {
+            tooltipInstance.setContent(newContent)
+          } else {
+            initialize()
+          }
+        } else {
+          destroy()
+        }
+      },
+
+      destroy() {
+        destroy()
+      },
+    }
+  }
+
+  let largestDistricts = $stateData[0].properties.largestDistricts
+
+  let neighborDistrictIds = []
+  $: {
+    if ($selectedDistrict && $selectedDistrict.length > 0 && $selectedDistrictData && $selectedDistrictData.length > 0) {
+        neighborDistrictIds = $selectedDistrictData[0].properties.neighbors
+    } else {
+        neighborDistrictIds = []
+    }
+}
+
+  let highlightedDistricts = []
+  $: {
+    if ($selectedDistrict && $selectedDistrict.length > 0) {
+      if (index < 4) {
+        highlightedDistricts = $selectedDistrict
+      } else if (index === 4) {
+        highlightedDistricts = [$selectedDistrict, ...largestDistricts]
+      } else if (index === 5) {
+        highlightedDistricts = [$selectedDistrict, ...neighborDistrictIds]
+      } else {
+        highlightedDistricts = filteredData.map(d => d.properties.GEOID)
+      }
+    } else {
+      highlightedDistricts = index < 6 ? [] : filteredData.map(d => d.properties.GEOID)
+    }
+  }
+
+  // Tweened values for transitions
+  let tweenedOpacity = tweened(0, { duration: fadeDuration })
+  $: {
+    if (index > 0) {
+      tweenedOpacity.set(0.85)
+    } else {
+      tweenedOpacity.set(0)
+    }
+  }
+
+  let tweenedRadii = tweened(new Array(filteredData.length).fill(defaultRadius), { duration: fadeDuration })
+  $: {
+    if (index >= 2) {
+      useScaledRadius = true
+      tweenedRadii.set(filteredData.map(d => rScale(d.properties['Total Student Count'])))
+    } else {
+      useScaledRadius = false
+      tweenedRadii.set(new Array(filteredData.length).fill(defaultRadius))
+    }
+  }
+
+  function interpolateColor(a, b) {
+    const interpolate = interpolateRgb(a, b)
+    return t => interpolate(t)
+  }
+
+  let tweenedColors = tweened(
+    filteredData.map(() => colors.colorLightGray),
+    {
+      duration: fadeDuration,
+      interpolate: (a, b) => {
+        return t => a.map((color, i) => interpolateColor(color, b[i])(t))
+      }
+    }
+  )
+  $: {
+    tweenedColors.set(
+      filteredData.map(d => {
+        if (index === 0) {
+          return colorScale(d.properties.quartile)
+        } else {
+          return highlightedDistricts.includes(d.properties.GEOID)
+            ? colorScale(d.properties.quartile)
+            : colors.colorLightGray
+        }
+      })
+    )
+  }
 </script>
 
 
 <div class="districts-beeswarm" bind:clientWidth={width} bind:clientHeight={height}>
     <SVGChart dimensions={dimensions}>
-        <Axis scale={xScale} longTick label={"inclusion score"} />
-  
-        {#each nodes as node}
+        {#each nodes as node, i}
             <!-- svelte-ignore a11y-click-events-have-key-events -->
             <!-- svelte-ignore a11y-no-static-element-interactions -->
             <circle
-              use:tippy={tooltipContent(node.properties)}
               cx={node.x}
               cy={node.y}
-              r={rScale(node.properties['Total Student Count'])}
-              fill={colorScale(node.properties.weighted_inclusion)}
-              opacity={(!node.properties.largeDistrict && $hideSmallDistricts) ? 0.15 : 0.9}
-              stroke="black"
-              stroke-width="1"
-              tabIndex="0"
-              on:click={() => selectedDistricts.update(selected => {
-                if (selected.includes(node.properties.GEOID)) {
-                  return selected.filter(d => d !== node.properties.GEOID)
-                } else {
-                  return [...selected, node.properties.GEOID]
-                }
-              })}
+              r={$tweenedRadii[i]}
+              fill={$tweenedColors[i]}
+              use:tippy={tooltipContent(node.properties)}
             />
         {/each}
-  
-        {#each nodes as node}
-          {#if $selectedDistricts.includes(node.properties.GEOID)}
-              <text
-                x={node.x}
-                y={node.y}
-                dy=".3em"
-                text-anchor="middle"
-                fill="black"
-                stroke="white"
-                stroke-width="3"
-                style="font-size: 14px; font-weight:400;"
-              >
-                {node.properties["Institution Name"]}
-              </text>
-              <text
-                x={node.x}
-                y={node.y}
-                dy=".3em"
-                text-anchor="middle"
-                fill="black"
-                style="font-size: 14px; font-weight:400;"
-              >
-                {node.properties["Institution Name"]}
-              </text>
-          {/if}
-        {/each}
 
-        <g class="chart-labels">
-          <text 
-            x={0}
-            y={60} 
-            text-anchor="start"
-            font-size="14px"
-            font-weight="600"
-            fill="black"
-          >
-            &#8592; Less inclusive
-          </text>
-          <text 
-            x={width - margin.right - 240}
-            y={60} 
-            text-anchor="end"
-            font-size="14px"
-            font-weight="600"
-            fill="black"
-          >
-            More inclusive &#8594;
-          </text>
-        </g>
+        {#each $visibleLabels as node}
+            <text
+              x={node.x}
+              y={node.y}
+              dy=".3em"
+              text-anchor="middle"
+              fill="white"
+              stroke="white"
+              stroke-width="5"
+              style="font-size: 14px; font-weight:400;"
+            >
+              {node.properties["Institution Name"]}
+            </text>
+            <text
+              x={node.x}
+              y={node.y}
+              dy=".3em"
+              text-anchor="middle"
+              fill="black"
+              style="font-size: 14px; font-weight:400;"
+            >
+              {node.properties["Institution Name"]}
+            </text>
+        {/each}
   
-        <g class="legend" transform="translate(740, 320)">
-          <circle r={rScale(6000)} fill="none" stroke="black" stroke-width="1" />
-          <text x="50" y="-30" style="font-size: 12px;">6,000 students</text>
-        
-          <circle r={rScale(3000)} cy={rScale(6000) - rScale(3000)} fill="none" stroke="black" stroke-width="1" />
-          <text x="50" y="0" style="font-size: 12px;">3,000 students</text>
-        
-          <circle r={rScale(1000)} cy={rScale(6000) - rScale(1000)} fill="none" stroke="black" stroke-width="1" />
-          <text x="50" y={30} style="font-size: 12px;">1,000 students</text>
-        </g>
+        {#if index > 0}
+          <g class="chart-labels" transition:fade="{{ duration: fadeDuration }}">
+            <text 
+              x={0}
+              y={60} 
+              text-anchor="start"
+              font-size="14px"
+              font-weight="600"
+              fill={colors.colorText}
+            >
+              &#8592; Less inclusive
+            </text>
+            <text 
+              x={dimensions.width - dimensions.margin.right - dimensions.margin.left}
+              y={60} 
+              text-anchor="end"
+              font-size="14px"
+              font-weight="600"
+              fill={colors.colorText}
+            >
+              More inclusive &#8594;
+            </text>
+          </g>
+        {/if}
+  
+        {#if index > 1}
+          <g class="legend" transform="translate({dimensions.width - legendWidth}, {dimensions.height - legendHeight})" transition:fade="{{ duration: fadeDuration}}">
+            <!-- 6000 students -->
+            <circle r={rScale(6000)} fill="none" stroke={colors.colorText} stroke-width="1" />
+            <line 
+              x1="0" x2={rScale(6000) + 5}
+              y1={-rScale(6000)} y2={-rScale(6000)}
+              stroke={colors.colorText} 
+              stroke-width="1" 
+              stroke-dasharray="2,2" 
+            />
+            <text 
+              x={rScale(6000) + 10} 
+              y={-rScale(6000)} 
+              style="font-size: 12px; fill:{colors.colorText}" 
+              dominant-baseline="middle"
+            >
+              6,000 students
+            </text>
+          
+            <!-- 3000 students -->
+            <circle r={rScale(3000)} cy={rScale(6000) - rScale(3000)} fill="none" stroke={colors.colorText} stroke-width="1" />
+            <line 
+              x1="0" x2={rScale(6000) + 5}
+              y1={rScale(6000) - (rScale(3000) * 2)} y2={rScale(6000) - (rScale(3000) * 2)}
+              stroke={colors.colorText} 
+              stroke-width="1" 
+              stroke-dasharray="2,2" 
+            />
+            <text 
+              x={rScale(6000) + 10} 
+              y={rScale(6000) - (rScale(3000) * 2)} 
+              style="font-size: 12px; fill:{colors.colorText}" 
+              dominant-baseline="middle"
+            >
+              3,000
+            </text>
+          
+            <!-- 1000 students -->
+            <circle r={rScale(1000)} cy={rScale(6000) - rScale(1000)} fill="none" stroke={colors.colorText} stroke-width="1" />
+            <line 
+              x1="0" x2={rScale(6000) + 5}
+              y1={rScale(6000) - (rScale(1000) * 2)} y2={rScale(6000) - (rScale(1000) * 2)}
+              stroke={colors.colorText} 
+              stroke-width="1" 
+              stroke-dasharray="2,2" 
+            />
+            <text 
+              x={rScale(6000) + 10} 
+              y={rScale(6000) - (rScale(1000) * 2)} 
+              style="font-size: 12px; fill:{colors.colorText}" 
+              dominant-baseline="middle"
+            >
+              1,000
+            </text>
+          </g>
+        {/if}
     </SVGChart>
+    {#if $selectedDistrict && index < 1}
+      <div transition:fade="{{ duration: fadeDuration }}">
+        <p class="keep-scrolling">Keep scrolling</p>
+      </div>
+    {/if}
 </div>
 
 
 <style>
     .districts-beeswarm {
       height: 400px;
-      min-width: 500px;
-      width: calc(100% + 1em);
+      width: 100%;
       margin-bottom: 3rem;
-    }
-
-    circle:hover {
-      opacity: 0.75;
     }
 
     text {
       pointer-events: none;
     }
 
-    .tooltip-link {
-      color: white;
+    .keep-scrolling {
+      opacity: 0.5;
+      font-size: 0.8rem;
+      text-align: center;
+      margin-top: 1rem;
     }
 </style>

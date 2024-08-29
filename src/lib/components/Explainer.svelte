@@ -24,14 +24,6 @@
 <style>
     aside {
         margin: 0 auto;
-        border-radius: 5px;
-        border: 2px solid var(--dark-gray);
-    }
-
-    @media (max-width: 768px) {
-        aside {
-            border: none;
-        }
     }
 
     aside .inner-content {
@@ -49,7 +41,7 @@
         width: 60px;
         min-width: 30px;
         height: 60px;
-        transform: translateY(-4px);
+        transform: translateY(-18px);
     }
 
     .inner-content svg {
