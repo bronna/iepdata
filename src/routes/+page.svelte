@@ -78,16 +78,16 @@
         </section>
         {#if isDistrictSelected}
             <section>
-                <div class="text-foreground"><strong>{$selectedDistrictData[0].properties["Institution Name"]}</strong>'s inclusion score is <strong>{$selectedDistrictData[0].properties.quartile}</strong> out of <strong>4</strong></div>
-            </section>
-            <section>
                 <div class="text-foreground">Each of these circles represents a school district in the state. The farther right the circle is, the higher its inclusion score.</div>
             </section>
             <section>
-                <div class="text-foreground">You can click or hover on a circle to see which district it represents.</div>
+                <div class="text-foreground"><strong>{$selectedDistrictData[0].properties["Institution Name"]}</strong>'s inclusion score is <strong>{$selectedDistrictData[0].properties.quartile}</strong> out of <strong>4</strong></div>
             </section>
             <section>
-                <div class="text-foreground">Scaling the circles shows how many students with <strong>IEP</strong>s the district has.</div>
+                <div class="text-foreground">(You can click or hover on the other circles to see which districts they represent)</div>
+            </section>
+            <section>
+                <div class="text-foreground">Scaling the circles shows how many students with <strong>IEP</strong>s the districts have.</div>
             </section>
             <section>
                 <div class="text-foreground">(An <strong>IEP</strong> is an <strong> I</strong>ndividualized <strong> E</strong>ducation <strong> P</strong>lan -- a document that every student with a disability has. It outlines what supports and services the student will receive at school)</div>

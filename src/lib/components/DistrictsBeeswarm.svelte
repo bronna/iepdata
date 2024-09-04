@@ -2,6 +2,7 @@
   import { tweened } from 'svelte/motion'
   import { fade } from 'svelte/transition'
   import { derived } from 'svelte/store'
+  import { quartileRanges } from '$lib/stores/quartileRanges.js'
 
   import { data, selectedDistrict, selectedDistrictData, stateData } from '$lib/stores/stores.js'
 
@@ -22,6 +23,8 @@
   // Filter out data rows with no "weighted_inclusion" value
   const filteredData = $data.filter(d => d.properties.weighted_inclusion !== null && d.properties.weighted_inclusion !== undefined)
 
+  $: console.log($quartileRanges)
+  
   // Chart dimensions & initial values
   let defaultRadius = 10
   $: defaultRadius = width <= 768 ? 5 : 10
@@ -192,7 +195,9 @@
       tweenedRadii.set(filteredData.map(d => rScale(d.properties['Total Student Count'])))
     } else {
       useScaledRadius = false
-      tweenedRadii.set(new Array(filteredData.length).fill(defaultRadius))
+      tweenedRadii.set(filteredData.map(d => 
+        $selectedDistrict && $selectedDistrict.includes(d.properties.GEOID) ? 16 : defaultRadius
+      ))
     }
   }
 
@@ -236,9 +241,37 @@
               cy={node.y}
               r={$tweenedRadii[i]}
               fill={$tweenedColors[i]}
+              stroke={$selectedDistrict && $selectedDistrict.includes(node.properties.GEOID) ? colors.colorText : 'none'}
+              stroke-width={$selectedDistrict && $selectedDistrict.includes(node.properties.GEOID) ? 2 : 0}
               use:tippy={tooltipContent(node.properties)}
             />
         {/each}
+
+        <!-- colored rectangles to show quartiles in 2nd slide -->
+        {#if index === 1}
+          <g transition:fade="{{ duration: fadeDuration }}">
+            {#each $quartileRanges as range, i}
+                <rect 
+                  x={xScale(range.min)}
+                  y={-dimensions.margin.top}
+                  width={xScale(range.max) - xScale(range.min)}
+                  height={dimensions.height}
+                  fill={colorScale(range.quartile)}
+                  fill-opacity="0.5"
+                />
+                <text 
+                  x={xScale((range.min + range.max) / 2)}
+                  y={dimensions.margin.top + dimensions.height - 30}
+                  text-anchor="middle"
+                  fill={colors.colorBackgroundWhite}
+                  style="font-size: 4rem; font-weight:600;"
+                  opacity="0.6"
+                >
+                  {i + 1}
+                </text>
+            {/each}
+          </g>
+        {/if}
 
         {#each $visibleLabels as node}
             <text
@@ -290,6 +323,7 @@
           </g>
         {/if}
   
+        <!-- legend-->
         {#if index > 2}
           <g class="legend" transform="translate({dimensions.width - legendWidth}, {dimensions.height - legendHeight})" transition:fade="{{ duration: fadeDuration}}">
             <!-- 6000 students -->
