@@ -68,8 +68,16 @@
                 y1={Math.sin(indicatorAngle) * (innerRadius - 5)} 
                 x2={Math.cos(indicatorAngle) * (outerRadius + 5)}
                     y2={Math.sin(indicatorAngle) * (outerRadius + 5)}
+                stroke={colors.colorWhite} 
+                stroke-width="5" 
+            />
+            <line 
+                x1={Math.cos(indicatorAngle) * (innerRadius - 5)} 
+                y1={Math.sin(indicatorAngle) * (innerRadius - 5)} 
+                x2={Math.cos(indicatorAngle) * (outerRadius + 5)}
+                    y2={Math.sin(indicatorAngle) * (outerRadius + 5)}
                 stroke={colors.colorDarkGray} 
-                stroke-width="4" 
+                stroke-width="3" 
             />
             <text
                 x=-38

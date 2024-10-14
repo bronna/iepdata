@@ -11,8 +11,10 @@
     import Sources from "$lib/components/Sources.svelte"
 
     $: districtID = $page.params.districtID
-    $: districtData = $data.filter(d => d.properties.GEOID === districtID)[0].properties
-    $: stateData = $data.filter(d => d.properties.GEOID === '999999')[0].properties
+    // $: districtData = $data.filter(d => d.properties.GEOID === districtID)[0].properties
+    // $: stateData = $data.filter(d => d.properties.GEOID === '999999')[0].properties
+    $: districtData = $data?.filter(d => d?.properties?.GEOID === districtID)[0]?.properties ?? {}
+    $: stateData = $data?.filter(d => d?.properties?.GEOID === '999999')[0]?.properties ?? {}
 
     $: console.log(districtData)
 
@@ -79,14 +81,16 @@
 
     <div class="text-width metric">
         <h3 class="header">Inclusion Breakdown</h3>
-        <DonutChart
-            data={inclusionCategories}
-            chartColors = {[colors.colorInclusive, colors.colorSemiInclusive, colors.colorNonInclusive, colors.colorSeparate]}
-            centerText={districtData["Total Student Count"].toLocaleString()}
-            centerText2="students"
-            centerText3="with IEPs"
-        />
-        <InclusionLegend data={inclusionCategories} />
+        <div class="inclusion-breakdown">
+            <DonutChart
+                data={inclusionCategories}
+                chartColors = {[colors.colorInclusive, colors.colorSemiInclusive, colors.colorNonInclusive, colors.colorSeparate]}
+                centerText={districtData["Total Student Count"].toLocaleString()}
+                centerText2="students"
+                centerText3="with IEPs"
+            />
+            <InclusionLegend data={inclusionCategories} />
+        </div>
     </div>
 
     <!-- <div class="text-width metric">
@@ -156,6 +160,18 @@
         display: flex;
         flex-direction: row;
         gap: 2rem;
+    }
+
+    .inclusion-breakdown {
+        display: flex;
+        flex-direction: row;
+        gap: 2rem;
+    }
+
+    @media (max-width: 600px) {
+        .inclusion-breakdown {
+            flex-wrap: wrap;
+        }
     }
 
     .inclusion-score {
