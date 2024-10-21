@@ -78,7 +78,7 @@
     if (simulatedData.length > 0 && $animationProgress > 0) {
       simulatedData = simulatedData.map((d, i) => ({
         ...d,
-        opacity: Math.max(0, Math.min(0.8, ($animationProgress * simulatedData.length - i + 5) / 5))
+        opacity: Math.max(0, Math.min(0.4, ($animationProgress * simulatedData.length - i + 5) / 5))
       }))
     }
   }

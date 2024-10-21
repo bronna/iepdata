@@ -18,7 +18,7 @@
 </script>
 
 <header>
-  <Logo color={colors.colorInclusive} textColor={colors.colorWhite} />
+  <Logo color={colors.colorInclusiveGray} textColor={colors.colorBackgroundWhite} />
 
   <button
     on:click={() => menuOpen = !menuOpen}
@@ -45,13 +45,13 @@
     justify-content: space-between;
     align-items: center;
     padding: 2rem 2rem;
-    background-color: var(--colorBackgroundLightGray);
+    background-color: var(--colorBackgroundWhite);
     position: relative;
   }
 
   @media (max-width: 768px) {
     header {
-      padding: 2rem 1rem;
+      padding: 1rem 1rem;
     }
   }
 

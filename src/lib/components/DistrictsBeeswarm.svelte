@@ -14,7 +14,7 @@
   import 'tippy.js/dist/tippy.css'
   import { colors } from '$lib/styles/colorConfig'
 
-  import SVGChart from './SVGChart.svelte'
+  import SVGChart from '$lib/components/SVGChart.svelte'
 
   export let index = 0
 
@@ -196,7 +196,7 @@
     } else {
       useScaledRadius = false
       tweenedRadii.set(filteredData.map(d => 
-        $selectedDistrict && $selectedDistrict.includes(d.properties.GEOID) ? 16 : defaultRadius
+        $selectedDistrict && $selectedDistrict.includes(d.properties.GEOID) ? 12 : defaultRadius
       ))
     }
   }

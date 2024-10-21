@@ -97,6 +97,6 @@
         display: flex;
         flex-direction: column;
         margin: 0 auto;
-        background-color: var(--colorBackgroundLightGray);
+        background-color: var(--colorBackgroundWhite);
     }
 </style>

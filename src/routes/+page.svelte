@@ -6,6 +6,8 @@
 <script>
     import { data, selectedDistrict, selectedDistrictData } from "$lib/stores/stores.js"
     import Beeswarm from "$lib/components/Beeswarm.svelte"
+    import Divider from "$lib/components/Divider.svelte"
+    import { Search } from 'lucide-svelte'
     import Scroller from "$lib/components/Scroller.svelte"
     import StateMap from "$lib/components/StateMap.svelte"
     import SelectDistricts from "$lib/components/SelectDistricts.svelte"
@@ -31,8 +33,8 @@
         <Beeswarm />
     </div>
 
-    <h1 class="headline">
-        Find inclusion data for school districts in your state
+    <h1 class="headline text-width">
+        Find inclusion data for school districts in Oregon
     </h1>
 
     <h3 class="byline text-width">
@@ -55,6 +57,10 @@
     </p>
 </div>
 
+<Divider>
+    <Search />
+</Divider>
+
 <Scroller 
     top={top} 
     threshold={threshold} 
@@ -66,11 +72,11 @@
     <div slot="background" class="background">
         <SelectDistricts />
 
-        {#if isDistrictSelected}
+        <!-- {#if isDistrictSelected} -->
             <DistrictsBeeswarm index={index} />
-        {:else}
+        <!-- {:else}
             <p>Please select a district to view the data.</p>
-        {/if}
+        {/if} -->
     </div>
 
     <div slot="foreground">
@@ -118,6 +124,7 @@
 
 <style>
     .intro {
+        margin-top: -4rem;
         margin-bottom: 2rem;
         position: relative;
     }
@@ -131,29 +138,14 @@
     }
 
     .headline {
-        width: 100%;
-        max-width: 48rem;
-        margin: 18rem auto 3rem auto;
         text-align: left;
         color: var(--colorInclusiveGray);
-        background: var(--colorBackgroundWhite);
         position: relative;
         z-index: 2;
-        
-        /* Add padding */
-        padding: 1rem 2rem;
-        
-        /* Offset the padding with negative margin */
-        margin-top: calc(18rem - 1rem);
-        margin-bottom: calc(3rem - 1rem);
-        margin-left: 0rem;
-        
-        /* Ensure the element takes up full width plus padding */
-        box-sizing: border-box;
-        width: calc(100% + 4rem);
-
-        /* Add subtle shadow */
-        box-shadow: var(--shadow);
+        margin-top: 14rem;
+        margin-bottom: 2.5rem;
+        background: linear-gradient(to bottom, transparent 0%, var(--colorBackgroundWhite) 30%);
+        padding: 3rem 0 0rem 0;
     }
 
     @media (max-width: 768px) {
@@ -178,7 +170,6 @@
     .background {
         background-color: var(--colorBackgroundWhite);
         padding-bottom: 2rem;
-        box-shadow: var(--shadow);
     }
 
     section {
@@ -189,17 +180,19 @@
 
     .text-foreground {
         display: inline;
-        padding: 0.2rem 0.7rem;
+        padding: 0.75rem 1rem;
         color: var(--colorWhite);
-        background-color: var(--colorText);
-        font-size: 1.2rem;
+        background-color: var(--colorInclusiveGray);
+        border-radius: 0.25rem;
+        font-size: 1.3rem;
+        text-align: center;
         box-shadow: var(--shadow);
         max-width: 90%;
     }
 
     .table {
         background-color: var(--colorBackgroundWhite);
-        box-shadow: var(--shadow);
         z-index: 5;
     }
 </style>
+

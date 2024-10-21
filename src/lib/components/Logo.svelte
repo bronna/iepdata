@@ -12,7 +12,7 @@
                 y="43" 
                 font-family="Bitter" 
                 font-size="17" 
-                font-weight="800"
+                font-weight="700"
                 fill={textColor} 
                 text-anchor="middle"
                 letter-spacing="0.04rem"
@@ -36,7 +36,7 @@
 
 <style>
     .logo {
-        height: 80px; /* Adjust this value if needed */
+        height: 60px; /* Adjust this value if needed */
     }
 
     .logo a {
@@ -45,7 +45,7 @@
         font-size: 1.5rem;
         line-height: 1.2rem;
         display: inline-block;
-        transform: scale(0.8);
+        transform: scale(0.7);
         transform-origin: top left;
     }
 

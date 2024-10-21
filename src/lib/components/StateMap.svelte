@@ -1,5 +1,5 @@
 <script>
-  import { onMount } from 'svelte'
+  import { onMount, afterUpdate } from 'svelte'
   import { writable } from 'svelte/store'
   import { geoBounds, geoTransverseMercator, geoPath, scaleOrdinal } from 'd3'
   import { data } from '$lib/stores/stores.js'
@@ -24,6 +24,7 @@
   // resize the map when the window resizes
   function updateProjection() {
     const ref = document.querySelector('#map')
+    if (!ref) return
     const widthStateBounds = maxLng - minLng
     const heightStateBounds = maxLat - minLat
     const aspectRatio = widthStateBounds / heightStateBounds
@@ -41,16 +42,18 @@
   // Find the bounds encompassing all districts in the state
   let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity;
 
-  $data.forEach(feature => {
-    if(feature.geometry) {
-      const [[featureMinLng, featureMinLat], [featureMaxLng, featureMaxLat]] = geoBounds(feature);
+  $: {
+    $data.forEach(feature => {
+      if(feature.geometry) {
+        const [[featureMinLng, featureMinLat], [featureMaxLng, featureMaxLat]] = geoBounds(feature)
 
-      if (featureMinLng < minLng) minLng = featureMinLng;
-      if (featureMinLat < minLat) minLat = featureMinLat;
-      if (featureMaxLng > maxLng) maxLng = featureMaxLng;
-      if (featureMaxLat > maxLat) maxLat = featureMaxLat;
-    }
-  });
+        if (featureMinLng < minLng) minLng = featureMinLng
+        if (featureMinLat < minLat) minLat = featureMinLat
+        if (featureMaxLng > maxLng) maxLng = featureMaxLng
+        if (featureMaxLat > maxLat) maxLat = featureMaxLat
+      }
+    })
+  }
 
   let currentTransform = writable({ x: 0, y: 0, k: 1 })
   let svgElement
@@ -64,18 +67,21 @@
     updateProjection()
     window.addEventListener('resize', updateProjection)
   })
+
+  afterUpdate(() => {
+    updateProjection()
+  })
 </script>
 
 <div id="map">
   <svg bind:this={svgElement} width={dims.width} height={dims.height}>
     <g bind:this={gElement}>
-      {#if districtPathGenerator}
-          <g style={{ clipPath: "url(#districts)" }}>
+      {#if districtPathGenerator && dims.width > 0 && dims.height > 0}
+          <g>
               {#each $data as district}
                   {#if district.properties.GEOID !== "999999"}
                       <path
                           class="districtShape"
-                          key={district.properties.GEOID}
                           d={districtPathGenerator(district)}
                           fill={colors.colorLightGray}
                           fill-rule="evenodd"
