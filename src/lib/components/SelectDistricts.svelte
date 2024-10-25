@@ -21,7 +21,7 @@
 
 <div class="search text-width">
     <h2 class="search-description text-width">
-        Find a school district
+        Select a district
     </h2>
 
     <div class="search-container text-width">

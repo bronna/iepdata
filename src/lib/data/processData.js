@@ -19,6 +19,53 @@ function weightedInclusion(district) {
     )
 }
 
+// Calculate ranks and percent more inclusive
+function calculateRanks(data) {
+    // Filter out districts without weighted_inclusion and sort by weighted_inclusion in descending order
+    const districtsWithValues = data.filter(district => 
+        district.properties.weighted_inclusion !== null && 
+        district.properties.GEOID !== "999999"  // Exclude summary feature
+    );
+    
+    const sortedDistricts = [...districtsWithValues]
+        .sort((a, b) => b.properties.weighted_inclusion - a.properties.weighted_inclusion);
+
+    const totalDistricts = sortedDistricts.length;
+    let currentRank = 1;
+    let currentValue = null;
+    let skipCount = 0;
+
+    sortedDistricts.forEach((district, index) => {
+        if (district.properties.weighted_inclusion !== currentValue) {
+            // New value encountered, assign new rank (accounting for any skipped positions)
+            currentRank = index + 1;
+            currentValue = district.properties.weighted_inclusion;
+            skipCount = 0;
+        } else {
+            // Same value as previous, keep same rank and increment skip counter
+            skipCount++;
+        }
+        
+        // Find the original district in data and assign the rank and percent more inclusive
+        const originalDistrict = data.find(d => d.properties.GEOID === district.properties.GEOID);
+        if (originalDistrict) {
+            originalDistrict.properties.rank = currentRank;
+            // Calculate percent of districts this district has a higher weighted_inclusion than
+            // Subtract 1 from rank to handle case where district is highest ranked (should be 100%)
+            originalDistrict.properties.percent_more_inclusive = 
+                Math.round(((totalDistricts - (currentRank - 1)) / totalDistricts) * 100);
+        }
+    });
+
+    // Assign null values to districts without weighted_inclusion and the summary feature
+    data.forEach(district => {
+        if (district.properties.weighted_inclusion === null || district.properties.GEOID === "999999") {
+            district.properties.rank = null;
+            district.properties.percent_more_inclusive = null;
+        }
+    });
+}
+
 export const getData = () => {
     const objectName = "OR_SDs_merged_23"
     const geojsonData = topojson.feature(OregonData, OregonData.objects[objectName])
@@ -107,6 +154,9 @@ export const getData = () => {
         })
     })
 
+    // Calculate ranks and percent more inclusive for all districts
+    calculateRanks(data);
+
     // Calculate min and max weighted inclusion for large districts
     let minWeightedInclusion = Math.min(
         ...data
@@ -161,7 +211,6 @@ export const getData = () => {
 
     // Statewide data
     let summaryFeature = {
-        //id: 0,
         type: "Feature",
         properties: {
             "Institution Name": "Oregon",
@@ -180,6 +229,8 @@ export const getData = () => {
             "maxWeightedInclusionAll": maxWeightedInclusionAll,
             "largestDistricts": largestDistricts,
             "quartileThresholds": quartileThresholds,
+            "rank": null,
+            "percent_more_inclusive": null
         },
         geometry: null
     }

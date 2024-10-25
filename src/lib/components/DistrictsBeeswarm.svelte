@@ -3,27 +3,21 @@
   import { fade } from 'svelte/transition'
   import { derived } from 'svelte/store'
   import { quartileRanges } from '$lib/stores/quartileRanges.js'
-
   import { data, selectedDistrict, selectedDistrictData, stateData } from '$lib/stores/stores.js'
-
   import { scaleLinear, scaleSqrt, scaleOrdinal } from 'd3-scale'
   import { forceSimulation, forceX, forceY, forceCollide } from 'd3-force'
   import { extent } from 'd3-array'
   import { interpolateRgb } from 'd3-interpolate'
-  import tippyJs from 'tippy.js'
+  import tippy from 'tippy.js'
   import 'tippy.js/dist/tippy.css'
   import { colors } from '$lib/styles/colorConfig'
-
   import SVGChart from '$lib/components/SVGChart.svelte'
 
   export let index = 0
-
   let fadeDuration = 300
 
   // Filter out data rows with no "weighted_inclusion" value
   const filteredData = $data.filter(d => d.properties.weighted_inclusion !== null && d.properties.weighted_inclusion !== undefined)
-
-  $: console.log($quartileRanges)
   
   // Chart dimensions & initial values
   let defaultRadius = 10
@@ -72,10 +66,10 @@
           .radius(d => useScaledRadius ? rScale(d.properties['Total Student Count']) + bubblePadding : defaultRadius + bubblePadding)
           .strength(0.8)
       )
-      .alpha(0.5) // [0, 1] rate at which simulation finishes, decrease if you want more "movement"
-      .alphaMin(0.01) // point at which simulation stops as alpha goes 1 -> 0
-      .alphaDecay(0.05) // [0, 1] rate at which alpha approaches 0
-      .velocityDecay(0.4) // [0, 1] rate at which nodes lose velocity
+      .alpha(0.5)
+      .alphaMin(0.01)
+      .alphaDecay(0.05)
+      .velocityDecay(0.4)
       .restart()
   }
 
@@ -84,11 +78,10 @@
     nodes = simulation.nodes()
   })
 
-  // Create a derived store for labels
   $: visibleLabels = derived(
     [selectedDistrict, selectedDistrictData],
     ([$selectedDistrict, $selectedDistrictData]) => {
-      if (index < 7) {
+      if (index < 6) {
         return nodes.filter(node => highlightedDistricts.includes(node.properties.GEOID))
       } else if ($selectedDistrict && $selectedDistrict.length > 0) {
         return nodes.filter(node => $selectedDistrict.includes(node.properties.GEOID))
@@ -100,53 +93,69 @@
   $: legendWidth = rScale(6000) + 140
   $: legendHeight = rScale(6000) + 1
 
-  // Tooltip using tippy.js library
+  // Get selected district's x position
+  let selectedDistrictX = 0
+  $: {
+    console.log('Selected District:', $selectedDistrict)
+    console.log('Nodes length:', nodes.length)
+    
+    if ($selectedDistrict && $selectedDistrict.length > 0) {
+      const selectedGEOID = String($selectedDistrict) // Convert to string to ensure proper comparison
+      console.log('Looking for GEOID:', selectedGEOID)
+      
+      const selectedNode = nodes.find(node => {
+        console.log('Checking node GEOID:', node.properties.GEOID)
+        return String(node.properties.GEOID) === selectedGEOID
+      })
+      
+      console.log('Found node:', selectedNode)
+      
+      if (selectedNode) {
+        selectedDistrictX = selectedNode.x + dimensions.margin.left
+        console.log('Selected district x position:', selectedDistrictX)
+      } else {
+        selectedDistrictX = 0
+        console.log('No matching node found, defaulting to 0')
+      }
+    } else {
+      selectedDistrictX = 0
+      console.log('No selected district, defaulting to 0')
+    }
+  }
+
+  // handle overlay visibility
+  $: showOverlay = index === 3 && $selectedDistrict && $selectedDistrict.length > 0
+  $: console.log('Show overlay:', showOverlay, 'Index:', index)
+
+  // Improved tooltip implementation
   function tooltipContent(nodeData) {
     return `
       <span style="font-family:'Source Sans 3', sans-serif;"><strong>${nodeData["Institution Name"]}</strong><br>
       Inclusion score: <strong>${nodeData.quartile}</strong> out of 4 ${nodeData["Total Student Count"] < 500 ? '<strong>*</strong>' : ''}<br>
       <strong>${nodeData["Total Student Count"]}</strong> students with IEPs<br>
-      <a class="tooltip-link" href="/${nodeData.GEOID}"><strong>More info >></strong></a></span>
+      <a class="tooltip-link" href="/${nodeData.GEOID}"><strong>Learn more ></strong></a></span>
     `
   }
 
-  function tippy(element, nodeContent) {
-    let tooltipInstance = null
-
-    function initialize() {
-      tooltipInstance = tippyJs(element, {
-        content: nodeContent,
-        allowHTML: true,
-        interactive: true,
-        appendTo: document.body,
-      })
-    }
-
-    function destroy() {
-      if (tooltipInstance) {
-        tooltipInstance.destroy()
-        tooltipInstance = null
-      }
-    }
-
-    initialize()
+  function tooltipAction(element, nodeContent) {
+    const tooltip = tippy(element, {
+      content: nodeContent,
+      allowHTML: true,
+      interactive: true,
+      appendTo: document.body,
+      animation: 'fade',
+      delay: [100, 0],
+      placement: 'top',
+      theme: 'custom'
+    })
 
     return {
       update(newContent) {
-        if (index > 2) {
-          if (tooltipInstance) {
-            tooltipInstance.setContent(newContent)
-          } else {
-            initialize()
-          }
-        } else {
-          destroy()
-        }
+        tooltip.setContent(newContent)
       },
-
       destroy() {
-        destroy()
-      },
+        tooltip.destroy()
+      }
     }
   }
 
@@ -159,16 +168,16 @@
     } else {
         neighborDistrictIds = []
     }
-}
+  }
 
   let highlightedDistricts = []
   $: {
     if ($selectedDistrict && $selectedDistrict.length > 0) {
-      if (index < 5) {
+      if (index < 4) {
         highlightedDistricts = $selectedDistrict
-      } else if (index === 5) {
+      } else if (index === 4) {
         highlightedDistricts = [$selectedDistrict, ...largestDistricts]
-      } else if (index === 6) {
+      } else if (index === 5) {
         highlightedDistricts = [$selectedDistrict, ...neighborDistrictIds]
       } else {
         highlightedDistricts = filteredData.map(d => d.properties.GEOID)
@@ -190,7 +199,7 @@
 
   let tweenedRadii = tweened(new Array(filteredData.length).fill(defaultRadius), { duration: fadeDuration })
   $: {
-    if (index >= 3) {
+    if (index >= 2) {
       useScaledRadius = true
       tweenedRadii.set(filteredData.map(d => rScale(d.properties['Total Student Count'])))
     } else {
@@ -230,48 +239,56 @@
   }
 </script>
 
-
 <div class="districts-beeswarm" bind:clientWidth={width} bind:clientHeight={height}>
     <SVGChart dimensions={dimensions}>
-        {#each nodes as node, i}
-            <!-- svelte-ignore a11y-click-events-have-key-events -->
-            <!-- svelte-ignore a11y-no-static-element-interactions -->
-            <circle
-              cx={node.x}
-              cy={node.y}
-              r={$tweenedRadii[i]}
-              fill={$tweenedColors[i]}
-              stroke={$selectedDistrict && $selectedDistrict.includes(node.properties.GEOID) ? colors.colorText : 'none'}
-              stroke-width={$selectedDistrict && $selectedDistrict.includes(node.properties.GEOID) ? 2 : 0}
-              use:tippy={tooltipContent(node.properties)}
-            />
-        {/each}
+      {#if showOverlay}
+        <rect
+          x={-dimensions.margin.left}
+          y={0}
+          width={selectedDistrictX}
+          height={height}
+          fill={colors.colorText}
+          opacity={0.1}
+          transition:fade={{duration: fadeDuration}}
+        />
+      {/if}
 
-        <!-- colored rectangles to show quartiles in 2nd slide -->
-        {#if index === 1}
-          <g transition:fade="{{ duration: fadeDuration }}">
-            {#each $quartileRanges as range, i}
-                <rect 
-                  x={xScale(range.min)}
-                  y={-dimensions.margin.top}
-                  width={xScale(range.max) - xScale(range.min)}
-                  height={dimensions.height}
-                  fill={colorScale(range.quartile)}
-                  fill-opacity="0.5"
-                />
-                <text 
-                  x={xScale((range.min + range.max) / 2)}
-                  y={dimensions.margin.top + dimensions.height - 30}
-                  text-anchor="middle"
-                  fill={colors.colorBackgroundWhite}
-                  style="font-size: 4rem; font-weight:600;"
-                  opacity="0.6"
-                >
-                  {i + 1}
-                </text>
-            {/each}
-          </g>
-        {/if}
+      {#each nodes as node, i}
+          {#if !($selectedDistrict && $selectedDistrict.includes(node.properties.GEOID))}
+              <circle
+                  cx={node.x}
+                  cy={node.y}
+                  r={$tweenedRadii[i]}
+                  fill={$tweenedColors[i]}
+                  use:tooltipAction={tooltipContent(node.properties)}
+                  style="cursor: pointer;"
+              />
+          {/if}
+      {/each}
+      
+      {#each nodes as node, i}
+          {#if $selectedDistrict && $selectedDistrict.includes(node.properties.GEOID)}
+              <circle
+                  cx={node.x}
+                  cy={node.y}
+                  r={$tweenedRadii[i] + 6}
+                  fill="none"
+                  stroke={colors.colorDarkGray}
+                  stroke-width={12}
+                  stroke-opacity={0.5}
+              />
+              <circle
+                  cx={node.x}
+                  cy={node.y}
+                  r={$tweenedRadii[i]}
+                  fill={$tweenedColors[i]}
+                  stroke={colors.colorWhite}
+                  stroke-width={1}
+                  use:tooltipAction={tooltipContent(node.properties)}
+                  style="cursor: pointer;"
+              />
+          {/if}
+      {/each}
 
         {#each $visibleLabels as node}
             <text
@@ -298,35 +315,31 @@
             </text>
         {/each}
   
-        {#if index > 0}
-          <g class="chart-labels" transition:fade="{{ duration: fadeDuration }}">
-            <text 
-              x={0}
-              y={60} 
-              text-anchor="start"
-              font-size="14px"
-              font-weight="600"
-              fill={colors.colorText}
-            >
-              &#8592; Less inclusive
-            </text>
-            <text 
-              x={dimensions.width - dimensions.margin.right - dimensions.margin.left}
-              y={60} 
-              text-anchor="end"
-              font-size="14px"
-              font-weight="600"
-              fill={colors.colorText}
-            >
-              More inclusive &#8594;
-            </text>
-          </g>
-        {/if}
+        <g class="chart-labels" transition:fade="{{ duration: fadeDuration }}">
+          <text 
+            x={50}
+            y={60} 
+            text-anchor="start"
+            font-size="14px"
+            font-weight="600"
+            fill={colors.colorText}
+          >
+            &#8592; Less inclusive
+          </text>
+          <text 
+            x={dimensions.width - dimensions.margin.right - dimensions.margin.left - 50}
+            y={60} 
+            text-anchor="end"
+            font-size="14px"
+            font-weight="600"
+            fill={colors.colorText}
+          >
+            More inclusive &#8594;
+          </text>
+        </g>
   
-        <!-- legend-->
-        {#if index > 2}
+        {#if index > 1}
           <g class="legend" transform="translate({dimensions.width - legendWidth}, {dimensions.height - legendHeight})" transition:fade="{{ duration: fadeDuration}}">
-            <!-- 6000 students -->
             <circle r={rScale(6000)} fill="none" stroke={colors.colorText} stroke-width="1" />
             <line 
               x1="0" x2={rScale(6000) + 5}
@@ -344,7 +357,6 @@
               6,000 students
             </text>
           
-            <!-- 3000 students -->
             <circle r={rScale(3000)} cy={rScale(6000) - rScale(3000)} fill="none" stroke={colors.colorText} stroke-width="1" />
             <line 
               x1="0" x2={rScale(6000) + 5}
@@ -362,7 +374,6 @@
               3,000
             </text>
           
-            <!-- 1000 students -->
             <circle r={rScale(1000)} cy={rScale(6000) - rScale(1000)} fill="none" stroke={colors.colorText} stroke-width="1" />
             <line 
               x1="0" x2={rScale(6000) + 5}
@@ -389,7 +400,6 @@
     {/if}
 </div>
 
-
 <style>
     .districts-beeswarm {
       height: 400px;
@@ -406,5 +416,28 @@
       font-size: 0.8rem;
       text-align: center;
       margin-top: 1rem;
+    }
+
+    :global(.tippy-box) {
+      background-color: white;
+      color: black;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      font-size: 14px;
+      padding: 8px;
+    }
+
+    :global(.tippy-arrow) {
+      color: white;
+    }
+
+    :global(.tooltip-link) {
+      color: #0066cc;
+      text-decoration: none;
+    }
+
+    :global(.tooltip-link:hover) {
+      text-decoration: underline;
     }
 </style>

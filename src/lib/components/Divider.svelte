@@ -28,6 +28,7 @@
   
   <style>
     .divider {
+      padding-top: 1rem;
       display: flex;
       align-items: center;
       width: var(--width);
