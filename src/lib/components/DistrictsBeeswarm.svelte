@@ -241,18 +241,6 @@
 
 <div class="districts-beeswarm" bind:clientWidth={width} bind:clientHeight={height}>
     <SVGChart dimensions={dimensions}>
-      {#if showOverlay}
-        <rect
-          x={-dimensions.margin.left}
-          y={0}
-          width={selectedDistrictX}
-          height={height}
-          fill={colors.colorText}
-          opacity={0.1}
-          transition:fade={{duration: fadeDuration}}
-        />
-      {/if}
-
       {#each nodes as node, i}
           {#if !($selectedDistrict && $selectedDistrict.includes(node.properties.GEOID))}
               <circle
@@ -337,6 +325,84 @@
             More inclusive &#8594;
           </text>
         </g>
+
+        {#if showOverlay}
+          <rect
+            x={-dimensions.margin.left}
+            y={0}
+            width={selectedDistrictX}
+            height={height}
+            fill={colors.colorText}
+            opacity={0.1}
+            transition:fade={{duration: fadeDuration}}
+          />
+
+          <!-- Dashed line at right side of box -->
+          <line
+            x1={selectedDistrictX - dimensions.margin.left}
+            x2={selectedDistrictX - dimensions.margin.left}
+            y1={0}
+            y2={height}
+            stroke={colors.colorMediumGray}
+            stroke-width={3}
+            stroke-dasharray="3,6"
+            transition:fade={{duration: fadeDuration}}
+          />
+
+          <!-- arrow originating at dashed line and pointing left -->
+          <line
+            x1={selectedDistrictX - dimensions.margin.left - 6}
+            x2={selectedDistrictX - dimensions.margin.left - 60}
+            y1={height - 20}
+            y2={height - 20}
+            stroke={colors.colorMediumGray}
+            stroke-width={3}
+            transition:fade={{duration: fadeDuration}}
+          />
+          <line
+            x1={selectedDistrictX - dimensions.margin.left - 44}
+            x2={selectedDistrictX - dimensions.margin.left - 60}
+            y1={height - 15}
+            y2={height - 20}
+            stroke={colors.colorMediumGray}
+            stroke-width={3}
+            transition:fade={{duration: fadeDuration}}
+          />
+          <line
+            x1={selectedDistrictX - dimensions.margin.left - 44}
+            x2={selectedDistrictX - dimensions.margin.left - 60}
+            y1={height - 25}
+            y2={height - 20}
+            stroke={colors.colorMediumGray}
+            stroke-width={3}
+            transition:fade={{duration: fadeDuration}}
+          />
+          <!-- text showing % of districts -->
+          <text
+            x={selectedDistrictX - dimensions.margin.left - 70}
+            y={height - 14}
+            text-anchor="end"
+            font-size="24px"
+            font-weight="700"
+            stroke={colors.colorWhite}
+            stroke-width="5"
+            fill={colors.colorWhite}
+            transition:fade={{duration: fadeDuration}}
+          >
+            {$selectedDistrictData[0].properties.percent_more_inclusive.toFixed(0)}% of districts
+          </text>
+          <text
+            x={selectedDistrictX - dimensions.margin.left - 70}
+            y={height - 14}
+            text-anchor="end"
+            font-size="24px"
+            font-weight="700"
+            fill={colors.colorMediumGray}
+            transition:fade={{duration: fadeDuration}}
+          >
+            {$selectedDistrictData[0].properties.percent_more_inclusive.toFixed(0)}% of districts
+          </text>
+        {/if}
   
         {#if index > 1}
           <g class="legend" transform="translate({dimensions.width - legendWidth}, {dimensions.height - legendHeight})" transition:fade="{{ duration: fadeDuration}}">
