@@ -2,12 +2,14 @@
     import { data } from "$lib/stores/stores.js"
     import { page } from '$app/stores'
     import { colors } from "$lib/styles/colorConfig"
+    import { Pencil } from 'lucide-svelte'
     import InclusionRing from '$lib/components/InclusionRing.svelte'
     import StateMap from "$lib/components/StateMap.svelte"
     import DonutChart from '$lib/components/DonutChart.svelte'
     import CardCarousel from '$lib/components/CardCarousel.svelte'
     import InclusionLegend from '$lib/components/InclusionLegend.svelte'
     import AlertsCards from '$lib/components/AlertsCards.svelte'
+    import Divider from "$lib/components/Divider.svelte"
     import Sources from "$lib/components/Sources.svelte"
 
     $: districtID = $page.params.districtID
@@ -93,7 +95,7 @@
         </div>
     </div>
 
-    <!-- <div class="text-width metric">
+    <div class="text-width metric">
         <h3 class="header">Alerts</h3>
         <p class="asterisk">*discipline rates lower than usual due to remote learning</p>
         {#if districtData["Total Student Count"] && alerts}
@@ -101,7 +103,7 @@
         {:else}
             <p>No data available</p>
         {/if}
-    </div> -->
+    </div>
 
     <div class="text-width metric">
         <h3 class="header">4-Year Graduation Rate for Students with IEPs</h3>
@@ -135,13 +137,16 @@
     
 {/if}
 
+<Divider>
+    <Pencil />
+</Divider>
+
 <Sources />
 
 
 <style>
     .district-info {
         background-color: var(--colorBackgroundWhite);
-        box-shadow: var(--shadow);
         padding-top: 1rem;
     }
 

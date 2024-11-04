@@ -7,7 +7,7 @@
     import { data, selectedDistrict, selectedDistrictData } from "$lib/stores/stores.js"
     import Beeswarm from "$lib/components/Beeswarm.svelte"
     import Divider from "$lib/components/Divider.svelte"
-    import { Search } from 'lucide-svelte'
+    import { Search, Pencil, TableProperties } from 'lucide-svelte'
     import Scroller from "$lib/components/Scroller.svelte"
     import StateMap from "$lib/components/StateMap.svelte"
     import SelectDistricts from "$lib/components/SelectDistricts.svelte"
@@ -26,6 +26,11 @@
 
     let isDistrictSelected = false
     $: isDistrictSelected = $selectedDistrict && $selectedDistrict.length > 0
+    $: {
+        if ($selectedDistrict) {
+            index = 0;
+        }
+    }
 </script>
 
 
@@ -58,85 +63,97 @@
     </p>
 </div>
 
-<Scroller 
-    top={top} 
-    threshold={threshold} 
-    bottom={bottom} 
-    bind:index 
-    bind:offset 
-    bind:progress
->
-    <div slot="background" class="background">
+<div class="content-wrapper">
+    <Scroller 
+        top={top} 
+        threshold={threshold} 
+        bottom={bottom} 
+        bind:index 
+        bind:offset 
+        bind:progress
+    >
+        <div slot="background" class="background">
+            <Divider>
+                <Search />
+            </Divider>
+
+            <SelectDistricts />
+
+            <DistrictsBeeswarm index={index} />
+        </div>
+
+        <div slot="foreground">
+            <section>
+            </section>
+            {#if isDistrictSelected}
+                <section>
+                    <div class="text-foreground">These circles represent all of the school districts in <strong>Oregon</strong>. Districts farther to the <strong>right</strong> are <strong><em>more inclusive</em></strong>. Districts farther to the <strong>left</strong> are <strong><em>less inclusive</em></strong>.</div>
+                </section>
+                <section>
+                    <div class="text-foreground"><strong>{$selectedDistrictData[0].properties["Institution Name"]}</strong> is selected. Let's learn more about its inclusion of students with disabilities</div>
+                </section>
+                <section>
+                    <div class="text-foreground">
+                        {$selectedDistrictData[0].properties["Institution Name"]} has <strong>{$selectedDistrictData[0].properties["Total Student Count"].toLocaleString()} students</strong> with IEPs
+                        <br>
+                        <br>
+                        <em>(An IEP is a document that outlines what supports a disabled student will receive at school. It's personalized to each student)</em>
+                    </div>
+                </section>
+                <section>
+                    <div class="text-foreground">
+                        Based on how much of their day those students spend in regular classrooms, <strong>{$selectedDistrictData[0].properties["Institution Name"]}</strong> has an <strong>inclusion score</strong> of <strong>{$selectedDistrictData[0].properties.quartile} out of 4</strong> and is more inclusive than <strong>{$selectedDistrictData[0].properties.percent_more_inclusive}% of districts</strong> in Oregon.
+                        <br>
+                        <br>
+                        <SimpleAccordion title="How do we calculate the inclusion score?">
+                            The inclusion score is based on the percent of children with disabilites who are:
+                            <ul>
+                                <li>- in regular classrooms for most of the day</li>
+                                <li>- part of the day</li>
+                                <li>- a little bit of the day</li>
+                                <li>- completely out of a regular classroom environment</li>
+                            </ul>
+                        </SimpleAccordion>
+                    </div>
+                </section>
+                <section>
+                    <div class="text-foreground">This is how inclusive {$selectedDistrictData[0].properties["Institution Name"]} is compared to the <strong>largest districts</strong> in the state</div>
+                </section>
+                <section>
+                    <div class="text-foreground">And to the <strong>districts it touches</strong></div>
+                </section>
+                <section>
+                    <div class="text-foreground">
+                        There's a lot more to explore in {$selectedDistrictData[0].properties["Institution Name"]}'s IEP data, including <strong>graduation rates</strong> and <strong>racial representation</strong>. You can find that information by clicking on 'learn more' in the district's <strong>tooltip</strong>, or in the <strong>table below</strong>
+                        <br>
+                        <br>
+                        To <strong>start over</strong> select a new district
+                    </div>
+                </section>
+            {:else}
+                <section>
+                    <div class="text-foreground">Please select a district to view detailed information.</div>
+                </section>
+            {/if}
+        </div>
+    </Scroller>
+
+    <div class="post-scroll-content">
         <Divider>
-            <Search />
+            <TableProperties />
         </Divider>
-
-        <SelectDistricts />
-
-        <DistrictsBeeswarm index={index} />
+    
+        <div class="table">
+            <TableOfDistricts data={$data} />
+        </div>
+    
+        <Divider>
+            <Pencil />
+        </Divider>
+    
+        <Sources />
     </div>
-
-    <div slot="foreground">
-        <section>
-        </section>
-        {#if isDistrictSelected}
-            <section>
-                <div class="text-foreground">These circles represent all of the school districts in <strong>Oregon</strong>. Districts farther to the <strong>right</strong> are <strong><em>more inclusive</em></strong>. Districts farther to the <strong>left</strong> are <strong><em>less inclusive</em></strong>.</div>
-            </section>
-            <section>
-                <div class="text-foreground"><strong>{$selectedDistrictData[0].properties["Institution Name"]}</strong> is selected. Let's learn more about its inclusion of students with disabilities</div>
-            </section>
-            <section>
-                <div class="text-foreground">
-                    {$selectedDistrictData[0].properties["Institution Name"]} has <strong>{$selectedDistrictData[0].properties["Total Student Count"].toLocaleString()} students</strong> with IEPs
-                    <br>
-                    <br>
-                    <em>(An IEP is a document that outlines what supports a disabled student will receive at school. It's personalized to each student)</em>
-                </div>
-            </section>
-            <section>
-                <div class="text-foreground">
-                    Based on how much of their day those students spend in regular classrooms, <strong>{$selectedDistrictData[0].properties["Institution Name"]}</strong> has an <strong>inclusion score</strong> of <strong>{$selectedDistrictData[0].properties.quartile} out of 4</strong> and is more inclusive than <strong>{$selectedDistrictData[0].properties.percent_more_inclusive}% of districts</strong> in Oregon.
-                    <br>
-                    <br>
-                    <SimpleAccordion title="How do we calculate the inclusion score?">
-                        The inclusion score is based on the percent of children:
-                        <ul>
-                            <li>- in regular classrooms for most of the day</li>
-                            <li>- part of the day</li>
-                            <li>- a little bit of the day</li>
-                            <li>- who are completely out of a regular classroom environment</li>
-                        </ul>
-                    </SimpleAccordion>
-                </div>
-            </section>
-            <section>
-                <div class="text-foreground">This is how inclusive {$selectedDistrictData[0].properties["Institution Name"]} is compared to the <strong>largest districts</strong> in the state</div>
-            </section>
-            <section>
-                <div class="text-foreground">And to the <strong>districts it touches</strong></div>
-            </section>
-            <section>
-                <div class="text-foreground">
-                    There's a lot more to explore in {$selectedDistrictData[0].properties["Institution Name"]}'s IEP data, including <strong>graduation rates</strong> and <strong>racial representation</strong>. You can find that information by clicking on 'learn more' in the district's <strong>tooltip</strong>, or in the <strong>table below</strong>
-                    <br>
-                    <br>
-                    To <strong>start over</strong> select a new district
-                </div>
-            </section>
-        {:else}
-            <section>
-                <div class="text-foreground">Please select a district to view detailed information.</div>
-            </section>
-        {/if}
-    </div>
-</Scroller>
-
-<div class="table">
-    <TableOfDistricts data={$data} />
 </div>
-
-<Sources />
 
 
 <style>
@@ -187,6 +204,18 @@
     .background {
         background-color: var(--colorBackgroundWhite);
         padding-bottom: 2rem;
+    }
+
+    .content-wrapper {
+        position: relative;
+        z-index: 1;
+    }
+
+    .post-scroll-content {
+        position: relative;
+        z-index: 2;
+        background-color: var(--colorBackgroundWhite);
+        margin-top: 2rem;
     }
 
     section {

@@ -6,7 +6,7 @@
   import { colors } from "$lib/styles/colorConfig"
 
   export let districtData = {}
-  $: console.log($data, districtData)
+  //$: console.log($data, districtData)
 
   const featureCollection = {
     type: "FeatureCollection",

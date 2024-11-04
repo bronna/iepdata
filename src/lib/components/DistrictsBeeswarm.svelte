@@ -96,36 +96,25 @@
   // Get selected district's x position
   let selectedDistrictX = 0
   $: {
-    console.log('Selected District:', $selectedDistrict)
-    console.log('Nodes length:', nodes.length)
-    
     if ($selectedDistrict && $selectedDistrict.length > 0) {
       const selectedGEOID = String($selectedDistrict) // Convert to string to ensure proper comparison
-      console.log('Looking for GEOID:', selectedGEOID)
       
       const selectedNode = nodes.find(node => {
-        console.log('Checking node GEOID:', node.properties.GEOID)
         return String(node.properties.GEOID) === selectedGEOID
       })
       
-      console.log('Found node:', selectedNode)
-      
       if (selectedNode) {
         selectedDistrictX = selectedNode.x + dimensions.margin.left
-        console.log('Selected district x position:', selectedDistrictX)
       } else {
         selectedDistrictX = 0
-        console.log('No matching node found, defaulting to 0')
       }
     } else {
       selectedDistrictX = 0
-      console.log('No selected district, defaulting to 0')
     }
   }
 
   // handle overlay visibility
   $: showOverlay = index === 3 && $selectedDistrict && $selectedDistrict.length > 0
-  $: console.log('Show overlay:', showOverlay, 'Index:', index)
 
   // Improved tooltip implementation
   function tooltipContent(nodeData) {
@@ -470,7 +459,7 @@
     .districts-beeswarm {
       height: 400px;
       width: 100%;
-      margin-bottom: 3rem;
+      margin-bottom: 0rem;
     }
 
     text {

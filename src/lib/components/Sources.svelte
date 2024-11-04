@@ -1,10 +1,8 @@
 <div class="sources-container">
-    <hr class="divider" />
-
     <div class="data-source text-width">
         <p><strong>* Inclusion scores are less accurate for districts with less than 500 students with IEPs.</strong></p>
 
-        <p><strong>Inclusion scores</strong> are based on reported rates of how much time students with disabilities spend in regular classrooms, compared to other districts in the state.</p>
+        <!-- <p><strong>Inclusion scores</strong> are based on reported rates of how much time students with disabilities spend in regular classrooms, compared to other districts in the state.</p> -->
 
         <!-- <p><strong>Small districts</strong> have less than 500 students with IEPs. <strong>Large districts</strong> have 500 or more.</p> -->
 
@@ -16,18 +14,6 @@
 
 
 <style>
-    .sources-container {
-        box-shadow: var(--shadow);
-        padding-bottom: 1.5rem;
-    }
-
-    .divider {
-        width: 200px;
-        margin-left: auto;
-        margin-right: auto;
-        margin-bottom: 2rem;
-    }
-
     p {
         font-size: 1rem;
         line-height: 1.4rem;
