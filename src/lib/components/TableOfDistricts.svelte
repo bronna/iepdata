@@ -69,7 +69,7 @@
     }
 </script>
 
-<table class="">
+<table class="district-table">
     <thead>
         <tr>
             <th on:click={() => sortBy("Institution Name")} class:sorted={$sortKey === "Institution Name"}>

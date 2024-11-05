@@ -97,7 +97,7 @@
 
     <div class="text-width metric">
         <h3 class="header">Alerts</h3>
-        <p class="asterisk">*discipline rates lower than usual due to remote learning</p>
+        <!-- <p class="asterisk">*discipline rates lower than usual due to remote learning</p> -->
         {#if districtData["Total Student Count"] && alerts}
             <AlertsCards alertsData={alerts} />
         {:else}

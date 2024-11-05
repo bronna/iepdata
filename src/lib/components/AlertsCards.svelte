@@ -69,13 +69,13 @@
             {/if}
 
             {#if alert.name === "Suspension/Expulsion"}
-                <p class="alert-description">{alert.value === "No" ? "No reports of disproportionate discipline of students with IEPs*" : "This district reported disproportionate discipline of students with IEPs"}</p>
+                <p class="alert-description">{alert.value === "Yes" ? "This district reported disproportionate discipline of students with IEPs" : "No reports of disproportionate discipline of students with IEPs" }</p>
             {:else if alert.name === "Suspension/Expulsion by race"}
-                <p class="alert-description">{alert.value === "No" ? "No reports of disproportionate discipline of students in certain racial groups with IEPs*" : "This district reported disproportionate discipline of students in certain racial groups with IEPs"}</p>
+                <p class="alert-description">{alert.value === "Yes" ? "This district reported disproportionate discipline of students in certain racial groups with IEPs" : "No reports of disproportionate discipline of students in certain racial groups with IEPs" }</p>
             {:else if alert.name === "Disproportionate representation"}
-                <p class="alert-description">{alert.value === "No" ? "No reports of disproportionate identification of students in certain racial groups as having a disability" : "This district reported disproportionate identification of students in certain racial groups as having a disability"}</p>
+                <p class="alert-description">{alert.value === "Yes" ? "This district reported disproportionate identification of students in certain racial groups as having a disability" : "No reports of disproportionate identification of students in certain racial groups as having a disability" }</p>
             {:else if alert.name === "Disproportionate representation by disability"}
-                <p class="alert-description">{alert.value === "No" ? "No reports of disproportionate identification of students in certain racial groups as having a certain disability" : "This district reported disproportionate identification of students in certain racial groups as having a specific disability"}</p>
+                <p class="alert-description">{alert.value === "Yes" ? "This district reported disproportionate identification of students in certain racial groups as having a specific disability" : "No reports of disproportionate identification of students in certain racial groups as having a certain disability" }</p>
             {/if}
         </div>
     {/each}

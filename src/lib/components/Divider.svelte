@@ -2,7 +2,7 @@
     import { colors } from "$lib/styles/colorConfig"
   
     export let color = colors.colorText
-    export let width = "65%"
+    export let width = "97%"
     export let iconSize = 24
     export let iconStrokeWidth = 2.5
   </script>

@@ -342,8 +342,8 @@
           <line
             x1={selectedDistrictX - dimensions.margin.left - 6}
             x2={selectedDistrictX - dimensions.margin.left - 60}
-            y1={height - 20}
-            y2={height - 20}
+            y1={22}
+            y2={22}
             stroke={colors.colorMediumGray}
             stroke-width={3}
             transition:fade={{duration: fadeDuration}}
@@ -351,8 +351,8 @@
           <line
             x1={selectedDistrictX - dimensions.margin.left - 44}
             x2={selectedDistrictX - dimensions.margin.left - 60}
-            y1={height - 15}
-            y2={height - 20}
+            y1={17}
+            y2={22}
             stroke={colors.colorMediumGray}
             stroke-width={3}
             transition:fade={{duration: fadeDuration}}
@@ -360,8 +360,8 @@
           <line
             x1={selectedDistrictX - dimensions.margin.left - 44}
             x2={selectedDistrictX - dimensions.margin.left - 60}
-            y1={height - 25}
-            y2={height - 20}
+            y1={27}
+            y2={22}
             stroke={colors.colorMediumGray}
             stroke-width={3}
             transition:fade={{duration: fadeDuration}}
@@ -369,7 +369,7 @@
           <!-- text showing % of districts -->
           <text
             x={selectedDistrictX - dimensions.margin.left - 70}
-            y={height - 14}
+            y={30}
             text-anchor="end"
             font-size="24px"
             font-weight="700"
@@ -382,7 +382,7 @@
           </text>
           <text
             x={selectedDistrictX - dimensions.margin.left - 70}
-            y={height - 14}
+            y={30}
             text-anchor="end"
             font-size="24px"
             font-weight="700"
