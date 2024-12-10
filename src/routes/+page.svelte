@@ -40,7 +40,7 @@
     </div>
 
     <h1 class="headline text-width">
-        Find inclusion rates for school districts in Oregon
+        Find inclusion rates for students with disabilites in Oregon
     </h1>
 
     <h3 class="byline text-width">
@@ -201,14 +201,14 @@
         overflow-y: hidden !important;
     }
 
-    .background {
-        background-color: var(--colorBackgroundWhite);
-        padding-bottom: 2rem;
-    }
-
     .content-wrapper {
         position: relative;
         z-index: 1;
+    }
+
+    .background {
+        background-color: var(--colorBackgroundWhite);
+        padding-bottom: 2rem;
     }
 
     .post-scroll-content {

@@ -4,6 +4,7 @@
 
     import Header from '$lib/components/Header.svelte'
     import Footer from '$lib/components/Footer.svelte'
+    import FeedbackComponent from '$lib/components/FeedbackComponent.svelte'
 
     let cssColors = `
         --colorInclusiveDark: ${colors.colorInclusiveDark};
@@ -28,9 +29,13 @@
 
 <div class="app" style="{cssColors}">
     <Header />
+
     <main>
         <slot />
     </main>
+
+    <FeedbackComponent />
+
     <Footer />
 </div>
 
