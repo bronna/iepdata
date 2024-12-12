@@ -116,9 +116,6 @@
                 <div class="settings-header">
                     <div class="settings-title">
                         % STUDENTS WITH IEPs IN A SETTING THAT IS:
-                        <!-- <span class="sort-arrow">
-                            {@html $sortKey === "nAlerts" ? ($sortOrder === 1 ? arrowUp : arrowDown) : arrowDown}
-                        </span> -->
                     </div>
                     <div class="settings-categories">
                         <span>INCLUSIVE</span>
@@ -137,10 +134,11 @@
                 tabindex="0" 
                 role="button"
             >
-                <td class="district-name">
+                <!-- Desktop View -->
+                <td class="district-name hide-mobile">
                     <span class="underline-on-hover">{district.properties["Institution Name"]}</span>
                 </td>
-                <td class="district-metric">
+                <td class="district-metric hide-mobile">
                     <div class="inclusion-ring-container">
                         <div class="metric-content">
                             <InclusionRing data={district.properties} />
@@ -150,7 +148,7 @@
                         {/if}
                     </div>
                 </td>
-                <td>
+                <td class="hide-mobile">
                     {#if district.properties["Total Student Count"]}
                         <span class="underline-on-hover">{district.properties["Total Student Count"].toLocaleString()}</span>
                     {:else}
@@ -183,9 +181,54 @@
                         <span class="no-data">-</span>
                     {/if}
                 </td>
-                <td class="arrow-cell">
+                <td class="arrow-cell hide-mobile">
                     <span class="more underline-on-hover">more ></span>
                 </td>
+
+                <!-- Mobile View -->
+                <div class="mobile-district-column show-mobile">
+                    <span class="district-name">{district.properties["Institution Name"]}</span>
+                    <div class="district-stats">
+                        {#if district.properties["Total Student Count"] && district.properties["Students with Disabilities"]}
+                            <span class="stat-emphasis">{district.properties["Total Student Count"].toLocaleString()}</span>, or <span class="stat-emphasis">{district.properties["Students with Disabilities"].toLocaleString()}%</span>,
+                            of students have an IEP
+                        {:else}
+                            <span class="no-data">No data available</span>
+                        {/if}
+                    </div>
+                </div>
+
+                <div class="mobile-inclusion-column show-mobile">
+                    <div class="inclusion-score">
+                        <InclusionRing data={district.properties} /> 
+                        {#if district.properties["Total Student Count"] < 500 && district.properties.weighted_inclusion}
+                            <span class="uncertainty">*</span>
+                        {/if}
+                        <span class="score-proportion"> / 4</span>
+                    </div>
+                    {#if district.properties["LRE Students >80%"]}
+                        <span class="settings-label">educational settings</span>
+                        <div class="settings-values">
+                            <span class="setting-info">{district.properties["LRE Students >80%"].toFixed(1)}% inclusive</span>
+                            <span class="setting-info">{district.properties["LRE Students >40% <80%"].toFixed(1)}% semi-incl</span>
+                            <span class="setting-info">{district.properties["LRE Students <40%"].toFixed(1)}% non-incl</span>
+                            <span class="setting-info">{district.properties["LRE Students Separate Settings"].toFixed(1)}% separate</span>
+                        </div>
+                    {:else}
+                        <span class="no-data">No settings data available</span>
+                    {/if}
+                </div>
+
+                <div class="mobile-alerts-row show-mobile">
+                    <div class="mobile-alerts">
+                        {#if district.properties["nAlerts"] > 0}
+                            <span>! {district.properties["nAlerts"]} alerts</span>
+                        {:else}
+                            <span>No alerts</span>
+                        {/if}
+                    </div>
+                    <span class="mobile-more">more ></span>
+                </div>
             </tr>
         {/each}
     </tbody>
@@ -324,7 +367,8 @@
     }
 
     .uncertainty {
-        margin-left: 4px;
+        margin-left: -3px;
+        margin-right: -7px;
         align-self: flex-start;
         font-size: 1.6rem;
         color: var(--colorText);
@@ -451,6 +495,11 @@
         font-style: italic;
     }
 
+    /* Mobile/Desktop Visibility */
+    .show-mobile {
+        display: none;
+    }
+
     /* Show More Button */
     .show-more-container {
         text-align: center;
@@ -478,84 +527,123 @@
 
     /* Mobile Styles */
     @media (max-width: 768px) {
-        /* Hide original table headers */
+        table {
+            width: 100%;
+            margin: 1rem 0;
+        }
+
+        .hide-mobile {
+            display: none !important;
+        }
+
+        .show-mobile {
+            display: block;
+        }
+
         thead {
             display: none;
         }
 
-        /* Make each row a flex container */
         tbody tr {
-            display: flex;
-            flex-wrap: wrap;
-            padding: 1rem 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto auto;
+            gap: 1rem;
+            padding: 1.5rem 1rem;
             border-bottom: 1px solid var(--colorLightGray);
         }
 
-        /* Adjust all cells for mobile layout */
-        tbody td {
-            padding: 0.25rem;
+        /* Left Column - District Info */
+        .mobile-district-column {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
         }
 
-        /* District name cell - full width top */
-        td.district-name {
-            width: 60%;
-            order: 1;
+        .mobile-district-column .district-name {
+            font-size: 1.2rem;
+            font-weight: 800;
+            line-height: 1.3;
+            margin-bottom: 0.5rem;
         }
 
-        /* Inclusion score - top right */
-        td.district-metric {
-            width: 40%;
-            order: 2;
-            text-align: right;
+        .mobile-district-column .district-stats {
+            font-size: 1rem;
+            line-height: 1.4;
+            color: var(--colorText);
         }
 
-        /* Stats (IEP numbers) - bottom left */
-        td:nth-child(3),
-        td:nth-child(4) {
-            width: 50%;
-            order: 3;
-            font-size: 0.9rem;
-            padding-top: 1rem;
+        .mobile-district-column .district-stats .stat-emphasis {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--colorText);
         }
 
-        /* Settings column - bottom right */
-        td.settings-data {
-            width: 50%;
-            order: 4;
-            padding-top: 1rem;
-        }
-
-        /* Adjust settings values for mobile */
-        .settings-values {
+        /* Right Column - Inclusion Info */
+        .mobile-inclusion-column {
+            display: flex;
             flex-direction: column;
             align-items: flex-end;
+            gap: 0.5rem;
         }
 
-        .settings-values span {
-            text-align: right;
-            padding: 0.1rem 0;
+        .mobile-inclusion-column .inclusion-score {
+            display: flex;
+            align-items: end;
+            gap: 0.5rem;
+            margin-bottom: 0.8rem;
         }
 
-        /* Alerts and More - bottom */
-        td:nth-child(5),
-        td.arrow-cell {
-            width: 50%;
-            order: 5;
-            padding-top: 0.5rem;
+        .mobile-inclusion-column .inclusion-score .score-proportion {
+            font-size: 1.2rem;
         }
 
-        td.arrow-cell {
-            text-align: right;
-        }
-
-        /* Add "SETTINGS" label */
-        .settings-data::before {
-            content: 'SETTINGS';
-            display: block;
-            font-size: 0.7rem;
+        .mobile-inclusion-column .settings-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            font-weight: 700;
             color: var(--colorMediumGray);
-            text-align: right;
-            margin-bottom: 0.25rem;
+            margin-bottom: 0rem;
+        }
+
+        .mobile-inclusion-column .settings-values {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0.2rem;
+            font-size: 1rem;
+        }
+
+        .mobile-inclusion-column .settings-values .setting-info {
+            font-weight: 700;
+        }
+
+        .mobile-inclusion-column .settings-values span {
+            white-space: nowrap;
+        }
+
+        /* Bottom Row - Alerts and More */
+        .mobile-alerts-row {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .mobile-alerts {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--colorDarkGray);
+            font-size: 1rem;
+        }
+
+        .mobile-more {
+            color: var(--colorText);
+            font-weight: 700;
         }
     }
+
 </style>
