@@ -164,7 +164,7 @@
                 </td>
                 <td class="hide-mobile">
                     {#if district.properties["nAlerts"]}
-                        <span class="underline-on-hover">{district.properties["nAlerts"]}</span>
+                        <span class="underline-on-hover" style="font-weight: 900; font-size: 1.4rem; color: rgb(222, 84, 102);">{'!'.repeat(district.properties["nAlerts"])}</span>
                     {:else}
                         <span class="no-data">-</span>
                     {/if}
@@ -221,10 +221,10 @@
 
                 <div class="mobile-alerts-row show-mobile">
                     <div class="mobile-alerts">
-                        {#if district.properties["nAlerts"] > 0}
-                            <span>! {district.properties["nAlerts"]} alerts</span>
+                        {#if district.properties["nAlerts"]}
+                            <span class="underline-on-hover" style="font-weight: 900; font-size: 1rem; color: rgb(222, 84, 102);">Alerts: {'!'.repeat(district.properties["nAlerts"])}</span>
                         {:else}
-                            <span>No alerts</span>
+                            <span class="no-data">-</span>
                         {/if}
                     </div>
                     <span class="mobile-more">more ></span>

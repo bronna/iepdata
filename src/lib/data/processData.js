@@ -130,11 +130,11 @@ export const getData = () => {
 
         // Tallying up alerts for each district
         let alertsCount = 0
-        // alertColumns.forEach(column => {
-        //     if (district.properties[column] === "Yes") {
-        //         alertsCount++
-        //     }
-        // })
+        alertColumns.forEach(column => {
+            if (district.properties[column] === "Yes") {
+                alertsCount++
+            }
+        })
         district.properties.nAlerts = alertsCount
 
         // indicate if large or small district
