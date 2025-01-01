@@ -40,7 +40,7 @@
     </div>
 
     <h1 class="headline text-width">
-        Find rates of inclusion, discipline, graduation, and more for disabled students in Oregon
+        Find rates of inclusion, discipline, graduation and more for disabled students in Oregon
     </h1>
 
     <h3 class="byline text-width">
