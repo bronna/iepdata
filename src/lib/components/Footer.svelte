@@ -16,10 +16,10 @@
     </div>
     <div class="footer-column">
       <span class="label">
-        created by <a href="https://bronna.github.io/" target="_blank">Brianna Wilson</a>
+        created by Brianna Wilson
       </span> 
-      <span class="label" id="email">
-        inclusiondata@protonmail.com
+      <span class="label" id="copyright">
+        &copy; 2025
       </span>
     </div>
   </div>

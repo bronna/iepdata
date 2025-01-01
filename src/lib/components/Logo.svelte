@@ -5,7 +5,7 @@
 
 <div class="logo">
     <a href="/">
-        <svg width="166" height="100" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 166 100">
+        <!-- <svg width="166" height="100" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 166 100">
             <circle cx="50" cy="50" r="45" fill={color} />
             <text 
                 x="51" 
@@ -30,7 +30,8 @@
                 alignment-baseline="alphabetic">
                     Data
             </text>
-        </svg>
+        </svg> -->
+        Disability +<br>Education<br><span class="subtitle">Data</span>
     </a>
 </div>
 
@@ -42,11 +43,16 @@
     .logo a {
         text-decoration: none;
         font-weight: 800;
-        font-size: 1.5rem;
-        line-height: 1.2rem;
+        font-size: 1.8rem;
+        line-height: 1.8rem;
         display: inline-block;
         transform: scale(0.7);
         transform-origin: top left;
+        color: var(--colorInclusiveDark);
+    }
+
+    .logo a .subtitle {
+        font-weight: 300;
     }
 
     svg {

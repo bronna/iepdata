@@ -87,7 +87,7 @@
             <DonutChart
                 data={inclusionCategories}
                 chartColors = {[colors.colorInclusive, colors.colorSemiInclusive, colors.colorNonInclusive, colors.colorSeparate]}
-                centerText={+districtData["Total Student Count"].toLocaleString()}
+                centerText={districtData["Total Student Count"] ? districtData["Total Student Count"].toLocaleString() : "-"}
                 centerText2="students"
                 centerText3="with IEPs"
             />

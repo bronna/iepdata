@@ -40,7 +40,7 @@
     </div>
 
     <h1 class="headline text-width">
-        Find inclusion rates for students with disabilites in Oregon
+        Find rates of inclusion, discipline, graduation, and more for disabled students in Oregon
     </h1>
 
     <h3 class="byline text-width">
@@ -50,16 +50,13 @@
     <StateMap />
 
     <p class="text-width">
-        When a family with a child with disabilities moves, they're often surprised to find that their child’s services change. Sometimes drastically. Services they depended on before can vanish. Services they didn’t know about can appear. Both are distressing in their own ways, and largely out of their control.
+        For families of students with disabilities, a common concern is that they don't know what supports their child would receive in different areas. Moving from one place to another, for example, can mean that services will change drastically, even though the child’s disability hasn’t changed. These changes can have a huge impact on the well being and development of a child.
     </p>
     <p class="text-width">
-        Many of these services take place at school. By law, all children with disabilities are entitled to learn in the “least restrictive environment,” meaning they have the right to be included in typical settings as much as possible, with the accommodations they would need to do so. This doesn’t get applied consistently between schools, districts, and states, however. The reality that many families have found is that a disabled student cannot expect to receive similar levels and types of services on one side of a line versus another.
+        Usually, there isn’t much transparency behind the process of how disabled children are evaluated by agencies and districts, and even less transparency around how those evaluations lead to decisions about services. However, there is aggregate data reported to state and federal governments that helps give a view into how different areas support students differently.
     </p>
     <p class="text-width">
-        Data, however, gives us one perspective into these disparities. Every year districts report on if their students with disabilities are in typical or separate settings, how often they are disciplined, if certain racial groups are disproportionately represented in certain disability groups, what their graduation rates are, and more.
-    </p>
-    <p class="text-width">
-        This site makes that data accessible and clear for families, educators, and policymakers to use. Keep scrolling to explore.
+        Below, you can explore this data.
     </p>
 </div>
 
@@ -105,14 +102,14 @@
                         Based on how much of their day those students spend in regular classrooms, <strong>{$selectedDistrictData[0].properties["Institution Name"]}</strong> has an <strong>inclusion score</strong> of <strong>{$selectedDistrictData[0].properties.quartile} out of 4</strong> and is more inclusive than <strong>{$selectedDistrictData[0].properties.percent_more_inclusive}% of districts</strong> in Oregon.
                         <br>
                         <br>
-                        <SimpleAccordion title="How do we calculate the inclusion score?">
-                            The inclusion score is based on the percent of children with disabilites who are:
+                        <SimpleAccordion title="How is the inclusion score calculated?">
+                            The inclusion score is based on the percent of children with disabilites who are in a regular classroom for:
                             <ul>
-                                <li>- in regular classrooms for most of the day</li>
-                                <li>- part of the day</li>
-                                <li>- a little bit of the day</li>
-                                <li>- completely out of a regular classroom environment</li>
+                                <li>- more than 80% of the day</li>
+                                <li>- more than 40% and less than 80% of the day</li>
+                                <li>- less than 40% of the day</li>
                             </ul>
+                            Or, in a completely separate environment, like a hospital or detention facility.
                         </SimpleAccordion>
                     </div>
                 </section>
@@ -173,13 +170,15 @@
 
     .headline {
         text-align: left;
-        color: var(--colorDarkGray);
+        color: var(--colorInclusiveDark);
         position: relative;
         z-index: 2;
         margin-top: 14rem;
         margin-bottom: 2.5rem;
         background: linear-gradient(to bottom, transparent 0%, var(--colorBackgroundWhite) 30%);
         padding: 3rem 0 0rem 0;
+        font-size: 2.4rem;
+        line-height: 3rem;
     }
 
     @media (max-width: 768px) {
