@@ -19,7 +19,7 @@
         created by Brianna Wilson
       </span> 
       <span class="label" id="copyright">
-        &copy; 2025
+        &copy; 2025 All rights reserved
       </span>
     </div>
   </div>
