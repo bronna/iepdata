@@ -71,7 +71,7 @@
             {#if alert.name === "Suspension/Expulsion"}
                 <p class="alert-description">{alert.value === "Yes" ? "This district reported disproportionate discipline of students with IEPs" : "No reports of disproportionate discipline of students with IEPs" }</p>
             {:else if alert.name === "Suspension/Expulsion by race"}
-                <p class="alert-description">{alert.value === "Yes" ? "This district reported disproportionate discipline of students in certain racial groups with IEPs" : "No reports of disproportionate discipline of students in certain racial groups with IEPs" }</p>
+                <p class="alert-description">{alert.value === "Yes" ? "This district reported disproportionate discipline of students with IEPs in certain racial groups" : "No reports of disproportionate discipline of students with IEPs in certain racial groups" }</p>
             {:else if alert.name === "Disproportionate representation"}
                 <p class="alert-description">{alert.value === "Yes" ? "This district reported disproportionate identification of students in certain racial groups as having a disability" : "No reports of disproportionate identification of students in certain racial groups as having a disability" }</p>
             {:else if alert.name === "Disproportionate representation by disability"}

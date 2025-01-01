@@ -50,10 +50,10 @@
     <StateMap />
 
     <p class="text-width">
-        For families of students with disabilities, a common concern is that they don't know what supports their child would receive in different areas. Moving from one place to another, for example, can mean that services will change drastically, even though the child’s disability hasn’t changed. These changes can have a huge impact on the well being and development of a child.
+        A common concern for families of students with disabilities is not knowing what supports their child will receive in different areas. Moving from one place to another, for example, can mean a drastic change in services, even though the child’s disability hasn’t changed. These changes can have a huge impact on the well being and development of a child.
     </p>
     <p class="text-width">
-        Usually, there isn’t much transparency behind the process of how disabled children are evaluated by agencies and districts, and even less transparency around how those evaluations lead to decisions about services. However, there is aggregate data reported to state and federal governments that helps give a view into how different areas support students differently.
+        Usually, there isn’t much transparency behind the process of how disabled children are evaluated by agencies and districts, and even less transparency around how those evaluations lead to decisions about services. However, there is aggregate data reported to state and federal governments that helps give a view into how different areas support their students.
     </p>
     <p class="text-width">
         Below, you can explore this data.
