@@ -161,7 +161,7 @@ You can preview the production build with `npm run preview`.
             {#if alert.value === "Yes"}
                 <div class="svg-container">
                     <!-- exclamation mark -->
-                    <svg width="20px" height="90px" viewBox="0 0 20 90" xmlns="http://www.w3.org/2000/svg" style="transform: scale(0.5);">
+                    <svg width="20px" height="90px" viewBox="0 0 20 90" xmlns="http://www.w3.org/2000/svg" style="transform: scale(0.75);">
                         <line 
                             x1="10" y1="20" 
                             x2="10" y2="60" 
@@ -2661,7 +2661,7 @@ You can preview the production build with `npm run preview`.
         class="setting-amount" 
         style:color={colors[identifier]}
     >
-        {(value).toFixed(1)}%
+        {value != null ? value.toFixed(1) : '-'}%
     </strong>
     {index === 0 ? 'of students with IEPs are in an' : 'are in a'}
     <strong 
@@ -2952,6 +2952,200 @@ You can preview the production build with `npm run preview`.
         border-radius: 4px;
         min-width: 200px;
         box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+    }
+</style>
+```
+
+# src/lib/components/Scatterplot.svelte
+
+```svelte
+<script>
+    import { scaleLinear, scaleSqrt, scaleOrdinal } from 'd3-scale'
+    import { extent } from 'd3-array'
+    import { colors } from '$lib/styles/colorConfig'
+    import { data } from '$lib/stores/stores.js'
+    import SVGChart from './SVGChart.svelte'
+
+    export let width = 800
+    export let height = 400
+
+    let dimensions = {
+        width,
+        height,
+        margin: { top: 40, right: 40, bottom: 60, left: 60 },
+        innerWidth: 0,
+        innerHeight: 0
+    }
+
+    $: {
+        dimensions.innerWidth = width - dimensions.margin.left - dimensions.margin.right
+        dimensions.innerHeight = height - dimensions.margin.top - dimensions.margin.bottom
+    }
+
+    // Filter out districts with missing data
+    $: filteredData = $data.filter(d => 
+        d.properties['Total Student Count'] && 
+        d.properties.weighted_inclusion &&
+        d.properties.GEOID !== '999999'
+    )
+
+    // Create scales
+    $: xScale = scaleLinear()
+        .domain([0, extent(filteredData, d => d.properties['Total Student Count'])[1]])
+        .range([0, dimensions.innerWidth])
+        .nice()
+
+    $: yScale = scaleLinear()
+        .domain(extent(filteredData, d => d.properties.weighted_inclusion))
+        .range([dimensions.innerHeight, 0])
+        .nice()
+
+    // Create radius scale (using sqrt scale for accurate circle area representation)
+    $: rScale = scaleSqrt()
+        .domain(extent(filteredData, d => d.properties['Total Student Count']))
+        .range(width < 768 ? [2, 20] : [3, 50])
+
+    // Create color scale for quartiles
+    const colorScale = scaleOrdinal()
+        .domain([1, 2, 3, 4])
+        .range([
+            colors.colorSeparate,
+            colors.colorNonInclusive, 
+            colors.colorSemiInclusive, 
+            colors.colorInclusive
+        ])
+
+    // Format numbers with commas
+    const formatNumber = num => num.toLocaleString()
+</script>
+
+<div class="scatterplot" bind:clientWidth={width} bind:clientHeight={height}>
+    <SVGChart {dimensions}>
+        <!-- X-axis -->
+        <g class="x-axis">
+            <!-- X-axis line -->
+            <line 
+                x1={0}
+                y1={dimensions.innerHeight}
+                x2={dimensions.innerWidth}
+                y2={dimensions.innerHeight}
+                stroke={colors.colorLightGray}
+                stroke-width="1"
+            />
+            
+            <!-- X-axis ticks and labels -->
+            {#each xScale.ticks(5) as tick}
+                <g transform="translate({xScale(tick)}, {dimensions.innerHeight})">
+                    <line 
+                        y2="6" 
+                        stroke={colors.colorLightGray}
+                        stroke-width="1"
+                    />
+                    <text 
+                        y="20" 
+                        text-anchor="middle"
+                        fill={colors.colorText}
+                        font-size="12px"
+                    >
+                        {formatNumber(tick)}
+                    </text>
+                </g>
+            {/each}
+
+            <!-- X-axis label -->
+            <text
+                x={dimensions.innerWidth / 2}
+                y={dimensions.innerHeight + 45}
+                text-anchor="middle"
+                fill={colors.colorText}
+                font-size="14px"
+                font-weight="600"
+            >
+                Number of Students with IEPs
+            </text>
+        </g>
+
+        <!-- Y-axis -->
+        <g class="y-axis">
+            <!-- Y-axis line -->
+            <line 
+                x1={0}
+                y1={0}
+                x2={0}
+                y2={dimensions.innerHeight}
+                stroke={colors.colorLightGray}
+                stroke-width="1"
+            />
+            
+            <!-- Y-axis ticks and labels -->
+            {#each yScale.ticks(5) as tick}
+                <g transform="translate(0, {yScale(tick)})">
+                    <line 
+                        x2="-6" 
+                        stroke={colors.colorLightGray}
+                        stroke-width="1"
+                    />
+                    <text 
+                        x="-12" 
+                        dy="0.32em" 
+                        text-anchor="end"
+                        fill={colors.colorText}
+                        font-size="12px"
+                    >
+                        {tick.toFixed(1)}
+                    </text>
+                </g>
+            {/each}
+
+            <!-- Y-axis label -->
+            <text
+                transform="rotate(-90)"
+                x={-dimensions.innerHeight / 2}
+                y={-45}
+                text-anchor="middle"
+                fill={colors.colorText}
+                font-size="14px"
+                font-weight="600"
+            >
+                Inclusion Score
+            </text>
+        </g>
+
+        <!-- Plot points -->
+        {#each filteredData as district}
+            <circle
+                cx={xScale(district.properties['Total Student Count'])}
+                cy={yScale(district.properties.weighted_inclusion)}
+                r={rScale(district.properties['Total Student Count'])}
+                fill={colorScale(district.properties.quartile)}
+                opacity="0.8"
+                stroke={colors.colorBackgroundWhite}
+                stroke-width="1"
+            >
+                <title>
+                    {district.properties['Institution Name']}
+                    Students with IEPs: {formatNumber(district.properties['Total Student Count'])}
+                    Inclusion Score: {district.properties.weighted_inclusion.toFixed(1)}
+                    Quartile: {district.properties.quartile} of 4
+                </title>
+            </circle>
+        {/each}
+    </SVGChart>
+</div>
+
+<style>
+    .scatterplot {
+        width: 100%;
+        height: 400px;
+    }
+
+    circle {
+        transition: opacity 0.2s;
+    }
+
+    circle:hover {
+        opacity: 1;
+        cursor: pointer;
     }
 </style>
 ```
@@ -3621,10 +3815,14 @@ You can preview the production build with `npm run preview`.
     import { writable, derived } from "svelte/store"
     import { arrowUp, arrowDown } from "$lib/utils/arrows.js"
     import InclusionRing from "$lib/components/InclusionRing.svelte"
+    import { Search } from 'lucide-svelte'
 
     export let data
 
     let width
+    const searchTermStore = writable('')
+    let searchInputValue = ''
+
     $: dimensions = { 
         width,
         margin: width <= 768 ? { top: 0, right: 20, bottom: 20, left: 20 } : { top: 0, right: 30, bottom: 20, left: 30 },
@@ -3640,10 +3838,10 @@ You can preview the production build with `npm run preview`.
         sortOrder.update(n => -n)
     }
 
-    const sortedDistrictsData = derived(
-        [sortKey, sortOrder],
-        ([$sortKey, $sortOrder]) => {
-            if (!$sortKey) return data
+    const filteredAndSortedData = derived(
+        [sortKey, sortOrder, searchTermStore],
+        ([$sortKey, $sortOrder, $searchTerm]) => {
+            if (!data) return []
 
             let filteredData = data.filter(item => 
                 item.properties["Institution Name"] != null && 
@@ -3651,6 +3849,14 @@ You can preview the production build with `npm run preview`.
                 item.properties["Institution Name"].trim() !== "" &&
                 item.properties["GEOID"] !== '999999'
             )
+
+            // Apply search filter
+            if ($searchTerm) {
+                const searchLower = $searchTerm.toLowerCase()
+                filteredData = filteredData.filter(item => 
+                    item.properties["Institution Name"].toLowerCase().includes(searchLower)
+                )
+            }
 
             return filteredData.sort((a, b) => {
                 let aValue = a.properties[$sortKey]
@@ -3680,12 +3886,42 @@ You can preview the production build with `npm run preview`.
     function toggleShowMore() {
         showAllRows.update(value => !value)
         if($showAllRows) {
-            visibleRows.set($sortedDistrictsData.length)
+            visibleRows.set($filteredAndSortedData.length)
         } else {
             visibleRows.set(9)
         }
     }
+
+    // Update search term store when input changes
+    $: {
+        searchTermStore.set(searchInputValue)
+    }
+
+    // Clear search function
+    function clearSearch() {
+        searchInputValue = ''
+        searchTermStore.set('')
+    }
 </script>
+
+
+<!-- Search bar above table -->
+<div class="search-container">
+    <div class="search-input-container">
+        <div class="search-icon-wrapper">
+            <Search size={20} color="var(--colorMediumGray)" />
+        </div>
+        <input
+            type="text"
+            bind:value={searchInputValue}
+            placeholder="Search for a district..."
+            class="search-input"
+        />
+        {#if searchInputValue}
+            <button class="clear-button" on:click={clearSearch}>✕</button>
+        {/if}
+    </div>
+</div>
 
 <table class="district-table">
     <thead>
@@ -3746,7 +3982,7 @@ You can preview the production build with `npm run preview`.
         </tr>
     </thead>
     <tbody>
-        {#each $sortedDistrictsData.slice(0, $visibleRows) as district (district.properties.GEOID)}
+        {#each $filteredAndSortedData.slice(0, $visibleRows) as district (district.properties.GEOID)}
             <tr 
                 on:click={() => navigateToDistrict(district.properties.GEOID)} 
                 tabindex="0" 
@@ -3852,7 +4088,7 @@ You can preview the production build with `npm run preview`.
     </tbody>
 </table>
 
-{#if $sortedDistrictsData.length > 10}
+{#if $filteredAndSortedData.length > 10}
     <div class="show-more-container">
         <button on:click={toggleShowMore} class="show-more-button">
             {$showAllRows ? "show less" : "show more"}
@@ -3861,6 +4097,69 @@ You can preview the production build with `npm run preview`.
 {/if}
 
 <style>
+    /* search bar styles */
+    .search-container {
+        margin: 1rem auto;
+        max-width: 90%;
+        width: 100%;
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .search-input-container {
+        width: 300px;
+    }
+
+    @media (max-width: 768px) {
+        .search-input-container {
+            width: 100%;
+        }
+    }
+
+    .search-input-container {
+        position: relative;
+        display: flex;
+        align-items: center;
+        max-width: 100%;
+    }
+
+    .search-icon-wrapper {
+        position: absolute;
+        left: 1rem;
+        display: flex;
+        align-items: center;
+        pointer-events: none;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 0.8rem 2.5rem;
+        font-size: 1rem;
+        border: 2px solid var(--colorLightGray);
+        border-radius: 8px;
+        transition: border-color 0.3s ease;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: var(--colorInclusive);
+    }
+
+    .clear-button {
+        position: absolute;
+        right: 1rem;
+        background: none;
+        border: none;
+        color: var(--colorMediumGray);
+        cursor: pointer;
+        font-size: 1.2rem;
+        padding: 0.25rem;
+    }
+
+    .clear-button:hover {
+        color: var(--colorText);
+    }
+
     /* Base Table Styles */
     table {
         border-collapse: collapse;
@@ -5336,12 +5635,14 @@ export const prerender = true
 
 ```svelte
 <script>
+    import Scatterplot from '$lib/components/Scatterplot.svelte'
     import BubbleMap from '$lib/components/BubbleMap.svelte'
 </script>
 
-<h2 class="text-width">Coming soon</h2>
+
 
 <div class="text-width map-container" style="--map-width: {500}px; --map-height: {500}px;">
+    <Scatterplot />
     <BubbleMap />
 </div>
 
