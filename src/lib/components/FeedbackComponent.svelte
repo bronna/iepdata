@@ -51,7 +51,7 @@
       on:click={() => isOpen = true}
     >
       <MessageSquare class="feedback__trigger-icon" />
-      Give Feedback
+      Feedback
     </button>
   
     {#if isOpen}
