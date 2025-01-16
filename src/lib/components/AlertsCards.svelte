@@ -11,7 +11,7 @@
             {#if alert.value === "Yes"}
                 <div class="svg-container">
                     <!-- exclamation mark -->
-                    <svg width="20px" height="90px" viewBox="0 0 20 90" xmlns="http://www.w3.org/2000/svg" style="transform: scale(0.5);">
+                    <svg width="20px" height="90px" viewBox="0 0 20 90" xmlns="http://www.w3.org/2000/svg" style="transform: scale(0.75);">
                         <line 
                             x1="10" y1="20" 
                             x2="10" y2="60" 

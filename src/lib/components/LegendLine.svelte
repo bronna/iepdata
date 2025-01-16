@@ -15,7 +15,7 @@
         class="setting-amount" 
         style:color={colors[identifier]}
     >
-        {(value).toFixed(1)}%
+        {value != null ? value.toFixed(1) : '-'}%
     </strong>
     {index === 0 ? 'of students with IEPs are in an' : 'are in a'}
     <strong 

@@ -3,10 +3,14 @@
     import { writable, derived } from "svelte/store"
     import { arrowUp, arrowDown } from "$lib/utils/arrows.js"
     import InclusionRing from "$lib/components/InclusionRing.svelte"
+    import { Search } from 'lucide-svelte'
 
     export let data
 
     let width
+    const searchTermStore = writable('')
+    let searchInputValue = ''
+
     $: dimensions = { 
         width,
         margin: width <= 768 ? { top: 0, right: 20, bottom: 20, left: 20 } : { top: 0, right: 30, bottom: 20, left: 30 },
@@ -22,10 +26,10 @@
         sortOrder.update(n => -n)
     }
 
-    const sortedDistrictsData = derived(
-        [sortKey, sortOrder],
-        ([$sortKey, $sortOrder]) => {
-            if (!$sortKey) return data
+    const filteredAndSortedData = derived(
+        [sortKey, sortOrder, searchTermStore],
+        ([$sortKey, $sortOrder, $searchTerm]) => {
+            if (!data) return []
 
             let filteredData = data.filter(item => 
                 item.properties["Institution Name"] != null && 
@@ -33,6 +37,14 @@
                 item.properties["Institution Name"].trim() !== "" &&
                 item.properties["GEOID"] !== '999999'
             )
+
+            // Apply search filter
+            if ($searchTerm) {
+                const searchLower = $searchTerm.toLowerCase()
+                filteredData = filteredData.filter(item => 
+                    item.properties["Institution Name"].toLowerCase().includes(searchLower)
+                )
+            }
 
             return filteredData.sort((a, b) => {
                 let aValue = a.properties[$sortKey]
@@ -62,12 +74,42 @@
     function toggleShowMore() {
         showAllRows.update(value => !value)
         if($showAllRows) {
-            visibleRows.set($sortedDistrictsData.length)
+            visibleRows.set($filteredAndSortedData.length)
         } else {
             visibleRows.set(9)
         }
     }
+
+    // Update search term store when input changes
+    $: {
+        searchTermStore.set(searchInputValue)
+    }
+
+    // Clear search function
+    function clearSearch() {
+        searchInputValue = ''
+        searchTermStore.set('')
+    }
 </script>
+
+
+<!-- Search bar above table -->
+<div class="search-container">
+    <div class="search-input-container">
+        <div class="search-icon-wrapper">
+            <Search size={20} color="var(--colorMediumGray)" />
+        </div>
+        <input
+            type="text"
+            bind:value={searchInputValue}
+            placeholder="Search for a district..."
+            class="search-input"
+        />
+        {#if searchInputValue}
+            <button class="clear-button" on:click={clearSearch}>✕</button>
+        {/if}
+    </div>
+</div>
 
 <table class="district-table">
     <thead>
@@ -128,7 +170,7 @@
         </tr>
     </thead>
     <tbody>
-        {#each $sortedDistrictsData.slice(0, $visibleRows) as district (district.properties.GEOID)}
+        {#each $filteredAndSortedData.slice(0, $visibleRows) as district (district.properties.GEOID)}
             <tr 
                 on:click={() => navigateToDistrict(district.properties.GEOID)} 
                 tabindex="0" 
@@ -234,7 +276,7 @@
     </tbody>
 </table>
 
-{#if $sortedDistrictsData.length > 10}
+{#if $filteredAndSortedData.length > 10}
     <div class="show-more-container">
         <button on:click={toggleShowMore} class="show-more-button">
             {$showAllRows ? "show less" : "show more"}
@@ -243,6 +285,69 @@
 {/if}
 
 <style>
+    /* search bar styles */
+    .search-container {
+        margin: 1rem auto;
+        max-width: 90%;
+        width: 100%;
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .search-input-container {
+        width: 300px;
+    }
+
+    @media (max-width: 768px) {
+        .search-input-container {
+            width: 100%;
+        }
+    }
+
+    .search-input-container {
+        position: relative;
+        display: flex;
+        align-items: center;
+        max-width: 100%;
+    }
+
+    .search-icon-wrapper {
+        position: absolute;
+        left: 1rem;
+        display: flex;
+        align-items: center;
+        pointer-events: none;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 0.8rem 2.5rem;
+        font-size: 1rem;
+        border: 2px solid var(--colorLightGray);
+        border-radius: 8px;
+        transition: border-color 0.3s ease;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: var(--colorInclusive);
+    }
+
+    .clear-button {
+        position: absolute;
+        right: 1rem;
+        background: none;
+        border: none;
+        color: var(--colorMediumGray);
+        cursor: pointer;
+        font-size: 1.2rem;
+        padding: 0.25rem;
+    }
+
+    .clear-button:hover {
+        color: var(--colorText);
+    }
+
     /* Base Table Styles */
     table {
         border-collapse: collapse;

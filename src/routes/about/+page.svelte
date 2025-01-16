@@ -1,10 +1,12 @@
 <script>
+    import Scatterplot from '$lib/components/Scatterplot.svelte'
     import BubbleMap from '$lib/components/BubbleMap.svelte'
 </script>
 
-<h2 class="text-width">Coming soon</h2>
+
 
 <div class="text-width map-container" style="--map-width: {500}px; --map-height: {500}px;">
+    <Scatterplot />
     <BubbleMap />
 </div>
 
