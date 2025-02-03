@@ -16,8 +16,6 @@
     import { data } from '$lib/stores/stores.js'
     import { colors } from "$lib/styles/colorConfig"
     import { browser } from '$app/environment'
-
-    $: console.log($data)
   
     $: featureCollection = {
       type: "FeatureCollection",
@@ -187,5 +185,9 @@
         position: absolute;
         top: 0;
         left: 0;
+    }
+  
+    .districtShape {
+        vector-effect: non-scaling-stroke;
     }
 </style>

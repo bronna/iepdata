@@ -12,7 +12,8 @@
     import StateMap from "$lib/components/StateMap.svelte"
     import SelectDistricts from "$lib/components/SelectDistricts.svelte"
     import SimpleAccordion from "$lib/components/SimpleAccordion.svelte"
-    import DistrictsBeeswarm from "$lib/components/DistrictsBeeswarm.svelte"
+    //import DistrictsBeeswarm from "$lib/components/DistrictsBeeswarm.svelte"
+    import VisualizationToggle from "$lib/components/VisualizationToggle.svelte"
     import TableOfDistricts from "$lib/components/TableOfDistricts.svelte"
     import Sources from "$lib/components/Sources.svelte"
 
@@ -50,13 +51,13 @@
     <StateMap />
 
     <p class="text-width">
-        A common concern for families of students with disabilities is not knowing what supports their child will receive in different areas. Moving from one place to another, for example, can mean a drastic change in services, even though the child’s disability hasn’t changed. These changes can have a huge impact on the well being and development of a child.
+        For families of students with disabilities, a common concern is not knowing what supports their child is eligible for from one area to the next. Moving from one place to another, for example, can mean drastic changes in services, even though the disability hasn’t changed. These changes can have a huge impact on the well-being and developmental trajectory of a child.
     </p>
     <p class="text-width">
-        Usually, there isn’t much transparency behind the process of how disabled children are evaluated by agencies and districts, and even less transparency around how those evaluations lead to decisions about services. However, there is aggregate data reported to state and federal governments that helps give a view into how different areas support their students.
+        Usually, families find that the process of how an agency or district evaluates a student's disability is not made transparent, and how those evaluations lead to decisions about services is even less so. However, data is reported to states and the federal government that helps give a view into how students, as a whole, are supported in different areas.
     </p>
     <p class="text-width">
-        Below, you can explore this data.
+        Below, you can explore that data.
     </p>
 </div>
 
@@ -76,7 +77,8 @@
 
             <SelectDistricts />
 
-            <DistrictsBeeswarm index={index} />
+            <!-- <DistrictsBeeswarm index={index} /> -->
+            <VisualizationToggle index={index} />
         </div>
 
         <div slot="foreground">
@@ -94,7 +96,7 @@
                         {$selectedDistrictData[0].properties["Institution Name"]} has <strong>{$selectedDistrictData[0].properties["Total Student Count"].toLocaleString()} students</strong> with IEPs
                         <br>
                         <br>
-                        <em>(An IEP is a document that outlines what supports a disabled student will receive at school. It's personalized to each student)</em>
+                        <em>(An IEP is a document that outlines what supports a student with a disability will receive at school. It's personalized to each student)</em>
                     </div>
                 </section>
                 <section>

@@ -7,10 +7,8 @@
 
 <div class="text-width about">
     <p>
-        This project is about making data for disabled students in Oregon more accessible and understandable. Brianna started working on it after talking to several principals of elementary schools about what her child's grade school experience would be like. She was disturbed by the lack of transparency and consistency in supports that disabled students receive in different areas, and set out to find the data that could help give a better sense of things. She started this site as a way to visualize and format that data into accessible tools for families, students, and advocates.
+        This project makes data about disabled students in Oregon more accessible and understandable for families, students, and advocates. It started after Brianna spent a summer calling principals of elementary schools all over Oregon and California about what her child's grade school experience might look like. Very quickly, she was disturbed by the lack of transparency and consistency in supports that disabled students received in different areas. She sought out data that could give her a better sense of things. Soon, she realized this data could also be used by others, to help them understand the landscape of supports for disabled students they're advocating for.
     </p>
-
-    <img src="$lib/images/about.jpg" alt="about" style="width: 100px; height: auto; margin-top: 2rem; margin-bottom: 2rem;">
 </div>
 
 

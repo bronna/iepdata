@@ -1,18 +1,3 @@
-# .aidigestignore
-
-```
-.db
-.svelte-kit
-build-*
-ios
-android
-modules/
-parse-skdocs.cjs
-sk.json
-oregon_data_23.json
-oregon_data.json
-```
-
 # .gitignore
 
 ```
@@ -26,7 +11,8 @@ node_modules
 !.env.example
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
-
+codebase.md
+.aidigestignore
 ```
 
 # .npmrc
@@ -616,8 +602,6 @@ You can preview the production build with `npm run preview`.
     import { data } from '$lib/stores/stores.js'
     import { colors } from "$lib/styles/colorConfig"
     import { browser } from '$app/environment'
-
-    $: console.log($data)
   
     $: featureCollection = {
       type: "FeatureCollection",
@@ -787,6 +771,10 @@ You can preview the production build with `npm run preview`.
         position: absolute;
         top: 0;
         left: 0;
+    }
+  
+    .districtShape {
+        vector-effect: non-scaling-stroke;
     }
 </style>
 ```
@@ -2129,7 +2117,7 @@ You can preview the production build with `npm run preview`.
       on:click={() => isOpen = true}
     >
       <MessageSquare class="feedback__trigger-icon" />
-      Give Feedback
+      Feedback
     </button>
   
     {#if isOpen}
@@ -2956,7 +2944,212 @@ You can preview the production build with `npm run preview`.
 </style>
 ```
 
-# src/lib/components/Scatterplot.svelte
+# src/lib/components/ScatterplotIdentificationSize.svelte
+
+```svelte
+<script>
+    import { scaleLinear, scaleSqrt, scaleOrdinal } from 'd3-scale'
+    import { extent } from 'd3-array'
+    import { colors } from '$lib/styles/colorConfig'
+    import { data } from '$lib/stores/stores.js'
+    import SVGChart from './SVGChart.svelte'
+
+    export let width = 800
+    export let height = 400
+
+    let dimensions = {
+        width,
+        height,
+        margin: { top: 40, right: 40, bottom: 60, left: 60 },
+        innerWidth: 0,
+        innerHeight: 0
+    }
+
+    $: {
+        dimensions.innerWidth = width - dimensions.margin.left - dimensions.margin.right
+        dimensions.innerHeight = height - dimensions.margin.top - dimensions.margin.bottom
+    }
+
+    // Filter out districts with missing data
+    $: filteredData = $data.filter(d => 
+        d.properties['Total Student Count'] && 
+        d.properties["Students with Disabilities"] &&
+        d.properties.GEOID !== '999999'
+    )
+
+    // Create scales
+    $: xScale = scaleLinear()
+        .domain([0, extent(filteredData, d => d.properties['Total Student Count'])[1]])
+        .range([0, dimensions.innerWidth])
+        .nice()
+
+    $: yScale = scaleLinear()
+        .domain(extent(filteredData, d => d.properties["Students with Disabilities"]))
+        .range([dimensions.innerHeight, 0])
+        .nice()
+
+    // Create radius scale (using sqrt scale for accurate circle area representation)
+    $: rScale = scaleSqrt()
+        .domain(extent(filteredData, d => d.properties['Total Student Count']))
+        .range(width < 768 ? [2, 20] : [3, 50])
+
+    // Create color scale for quartiles
+    const colorScale = scaleOrdinal()
+        .domain([1, 2, 3, 4])
+        .range([
+            colors.colorSeparate,
+            colors.colorNonInclusive, 
+            colors.colorSemiInclusive, 
+            colors.colorInclusive
+        ])
+
+    // Format numbers with commas
+    const formatNumber = num => num.toLocaleString()
+</script>
+
+<div class="scatterplot" bind:clientWidth={width} bind:clientHeight={height}>
+    <SVGChart {dimensions}>
+        <!-- X-axis -->
+        <g class="x-axis">
+            <!-- X-axis line -->
+            <line 
+                x1={0}
+                y1={dimensions.innerHeight}
+                x2={dimensions.innerWidth}
+                y2={dimensions.innerHeight}
+                stroke={colors.colorLightGray}
+                stroke-width="1"
+            />
+            
+            <!-- X-axis ticks and labels -->
+            {#each xScale.ticks(5) as tick}
+                <g transform="translate({xScale(tick)}, {dimensions.innerHeight})">
+                    <line 
+                        y2="6" 
+                        stroke={colors.colorLightGray}
+                        stroke-width="1"
+                    />
+                    <text 
+                        y="20" 
+                        text-anchor="middle"
+                        fill={colors.colorText}
+                        font-size="12px"
+                    >
+                        {formatNumber(tick)}
+                    </text>
+                </g>
+            {/each}
+
+            <!-- X-axis label -->
+            <text
+                x={dimensions.innerWidth / 2}
+                y={dimensions.innerHeight + 45}
+                text-anchor="middle"
+                fill={colors.colorText}
+                font-size="14px"
+                font-weight="600"
+            >
+                Number of Students with IEPs
+            </text>
+        </g>
+
+        <!-- Y-axis -->
+        <g class="y-axis">
+            <!-- Y-axis line -->
+            <line 
+                x1={0}
+                y1={0}
+                x2={0}
+                y2={dimensions.innerHeight}
+                stroke={colors.colorLightGray}
+                stroke-width="1"
+            />
+            
+            <!-- Y-axis ticks and labels -->
+            {#each yScale.ticks(5) as tick}
+                <g transform="translate(0, {yScale(tick)})">
+                    <line 
+                        x2="-6" 
+                        stroke={colors.colorLightGray}
+                        stroke-width="1"
+                    />
+                    <text 
+                        x="-12" 
+                        dy="0.32em" 
+                        text-anchor="end"
+                        fill={colors.colorText}
+                        font-size="12px"
+                    >
+                        {tick.toFixed(1)}
+                    </text>
+                </g>
+            {/each}
+
+            <!-- Y-axis label -->
+            <text
+                transform="rotate(-90)"
+                x={-dimensions.innerHeight / 2}
+                y={-45}
+                text-anchor="middle"
+                fill={colors.colorText}
+                font-size="14px"
+                font-weight="600"
+            >
+                % Students with IEPs
+            </text>
+        </g>
+
+        <!-- Plot points -->
+        {#each filteredData as district}
+            <circle
+                cx={xScale(district.properties['Total Student Count'])}
+                cy={yScale(district.properties["Students with Disabilities"])}
+                r={rScale(district.properties['Total Student Count'])}
+                fill={colorScale(district.properties.quartile)}
+                opacity="0.8"
+                stroke={colors.colorBackgroundWhite}
+                stroke-width="1"
+            >
+                <title>
+                    {district.properties['Institution Name']}
+                    Students with IEPs: {formatNumber(district.properties['Total Student Count'])}
+                    Percent Students with IEPs: {district.properties["Students with Disabilities"]}
+                    Quartile: {district.properties.quartile} of 4
+                </title>
+            </circle>
+        {/each}
+
+        <!-- Add horizontal line at 11% -->
+        <line
+            x1={0}
+            y1={yScale(11)}
+            x2={dimensions.innerWidth}
+            y2={yScale(11)}
+            stroke={colors.colorInclusive}
+            stroke-width="1"
+            stroke-dasharray="4"
+        />
+    </SVGChart>
+</div>
+
+<style>
+    .scatterplot {
+        width: 100%;
+        height: 400px;
+    }
+
+    circle {
+        transition: opacity 0.2s;
+    }
+
+    circle:hover {
+        opacity: 1;
+        cursor: pointer;
+    }
+</style>
+```
+
+# src/lib/components/ScatterplotInclSize.svelte
 
 ```svelte
 <script>
@@ -4598,6 +4791,128 @@ You can preview the production build with `npm run preview`.
   </style>
 ```
 
+# src/lib/components/VisualizationToggle.svelte
+
+```svelte
+<script>
+    import { fade } from 'svelte/transition'
+    import { Map, BarChart2 } from 'lucide-svelte'
+    import { colors } from '$lib/styles/colorConfig'
+    import { selectedDistrict, selectedDistrictData } from '$lib/stores/stores.js'
+    
+    $: districtData = $selectedDistrictData?.[0]?.properties
+    import DistrictsBeeswarm from './DistrictsBeeswarm.svelte'
+    import BubbleMap from './BubbleMap.svelte'
+
+    export let index
+    export let showToggle = false
+    
+    let currentView = 'beeswarm'
+    
+    $: showToggle = index >= 7 // Only show toggle after scroller reaches final state
+</script>
+
+{#if showToggle}
+    <div class="viz-container" transition:fade={{ duration: 300 }}>
+        <div class="toggle-buttons" transition:fade={{ duration: 300 }}>
+            <button 
+                class="toggle-btn {currentView === 'beeswarm' ? 'active' : ''}"
+                on:click={() => currentView = 'beeswarm'}
+                aria-label="Show beeswarm visualization"
+            >
+                <BarChart2 
+                    size={20} 
+                    color={currentView === 'beeswarm' ? colors.colorWhite : colors.colorText} 
+                />
+                <span>Beeswarm</span>
+            </button>
+            <button 
+                class="toggle-btn {currentView === 'map' ? 'active' : ''}"
+                on:click={() => currentView = 'map'}
+                aria-label="Show map visualization"
+            >
+                <Map 
+                    size={20} 
+                    color={currentView === 'map' ? colors.colorWhite : colors.colorText} 
+                />
+                <span>Map</span>
+            </button>
+        </div>
+
+        <div class="visualization">
+            {#if currentView === 'beeswarm'}
+                <div transition:fade={{ duration: 300 }}>
+                    <DistrictsBeeswarm {index} />
+                </div>
+            {:else}
+                <div transition:fade={{ duration: 300 }}>
+                    <BubbleMap />
+                </div>
+            {/if}
+        </div>
+    </div>
+{:else}
+    <DistrictsBeeswarm {index} />
+{/if}
+
+<style>
+    .viz-container {
+        width: 100%;
+        position: relative;
+    }
+
+    .toggle-buttons {
+        position: absolute;
+        top: -50px;
+        right: 2rem;
+        display: flex;
+        gap: 0.5rem;
+        z-index: 10;
+    }
+
+    .toggle-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border: 1.5px solid var(--colorText);
+        border-radius: 20px;
+        background: var(--colorBackgroundWhite);
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .toggle-btn.active {
+        background: var(--colorText);
+        color: var(--colorBackgroundWhite);
+    }
+
+    .toggle-btn:hover:not(.active) {
+        background: var(--colorLightLightGray);
+    }
+
+    .visualization {
+        width: 100%;
+    }
+
+    @media (max-width: 768px) {
+        .toggle-buttons {
+            right: 1rem;
+        }
+
+        .toggle-btn span {
+            display: none;
+        }
+
+        .toggle-btn {
+            padding: 0.5rem;
+        }
+    }
+</style>
+```
+
 # src/lib/data/processData.js
 
 ```js
@@ -4848,6 +5163,10 @@ export const getData = () => {
         })
 }
 ```
+
+# src/lib/images/about.jpg
+
+This is a binary file of the type: Image
 
 # src/lib/index.js
 
@@ -5390,7 +5709,8 @@ export const prerender = true
     import StateMap from "$lib/components/StateMap.svelte"
     import SelectDistricts from "$lib/components/SelectDistricts.svelte"
     import SimpleAccordion from "$lib/components/SimpleAccordion.svelte"
-    import DistrictsBeeswarm from "$lib/components/DistrictsBeeswarm.svelte"
+    //import DistrictsBeeswarm from "$lib/components/DistrictsBeeswarm.svelte"
+    import VisualizationToggle from "$lib/components/VisualizationToggle.svelte"
     import TableOfDistricts from "$lib/components/TableOfDistricts.svelte"
     import Sources from "$lib/components/Sources.svelte"
 
@@ -5454,7 +5774,8 @@ export const prerender = true
 
             <SelectDistricts />
 
-            <DistrictsBeeswarm index={index} />
+            <!-- <DistrictsBeeswarm index={index} /> -->
+            <VisualizationToggle index={index} />
         </div>
 
         <div slot="foreground">
@@ -5635,22 +5956,25 @@ export const prerender = true
 
 ```svelte
 <script>
-    import Scatterplot from '$lib/components/Scatterplot.svelte'
-    import BubbleMap from '$lib/components/BubbleMap.svelte'
+
+
 </script>
 
+<h1>About</h1>
 
+<div class="text-width about">
+    <p>
+        This project is about making data for disabled students in Oregon more accessible and understandable. Brianna started working on it after talking to several principals of elementary schools about what her child's grade school experience would be like. She was disturbed by the lack of transparency and consistency in supports that disabled students receive in different areas, and set out to find the data that could help give a better sense of things. She started this site as a way to visualize and format that data into accessible tools for families, students, and advocates.
+    </p>
 
-<div class="text-width map-container" style="--map-width: {500}px; --map-height: {500}px;">
-    <Scatterplot />
-    <BubbleMap />
+    <img src="$lib/images/about.jpg" alt="about" style="width: 100px; height: auto; margin-top: 2rem; margin-bottom: 2rem;">
 </div>
 
+
 <style>
-    .map-container {
-        margin: 0 auto;
-        width: 100%;
-        height: 100%;
+    .about {
+        margin-top: 4rem;
+        margin-bottom: 4rem;
     }
 </style>
 
@@ -5691,12 +6015,22 @@ export async function POST({ request }) {
 
 <h1>Contact</h1>
 
-<h2 class="text-width">Coming soon</h2>
+<div class="text-width contact">
+    <p>
+        We're always looking to improve these tools to make them more helpful and accessible! We'd love to hear from you.
+    </p>
+    <p>
+        You can contact us by email at <strong>disabilityeddata@protonmail.com</strong>, or by using the <strong>'Feedback' button</strong> in the bottom right corner below.
+    </p>
+    <p>
+        Thank you!
+    </p>
+</div>
 
 <style>
-    h2 {
-        margin-top: 3rem;
-        margin-bottom: 3rem;
+    .contact {
+        margin-top: 4rem;
+        margin-bottom: 4rem;
     }
 </style>
 
@@ -5710,12 +6044,31 @@ export async function POST({ request }) {
 
 <h1>Resources</h1>
 
-<h2 class="text-width">Coming soon</h2>
+<div class="text-width resources">
+    <div class="link">
+        <a href="https://factoregon.org/" target="_blank">FACT Oregon</a>
+        <p>Has a support line for families to ask questions about navigating systems and getting the resources their child needs. They also have courses for parents, and so much more.</p>
+    </div>
+    <div class="link">
+        <a href="https://www.droregon.org/" target="_blank">Disability Rights Oregon</a>
+        <p>Does legal advocacy work for people of all ages with disabilities, including children and students. Some of their work has contributed to passing legislation that makes it illegal for disabled students to be denied the right to attend school for the full day, and to end restraint and seclusion practices in schools.</p>
+    </div>
+    <div class="link">
+        <a href="https://sites.ed.gov/idea/" target="_blank">Individuals with Disabilities Act (IDEA)</a>
+        <p>The law enacted to make sure all children have the right to a free and appropriate public education nationwide. IDEA also specifies that children with disabilities have the right to be educated in the 'least restrictive environment,' or, in other words, as mainstream an environment as possible with needed supports.</p>
+    </div>
+</div>
 
 <style>
-    h2 {
-        margin-top: 3rem;
-        margin-bottom: 3rem;
+    .resources {
+        margin-top: 4rem;
+        margin-bottom: 4rem;
+    }
+
+    .link a {
+        font-weight: bold;
+        color: var(--colorInclusiveDark);
+        font-size: 1.2rem;
     }
 </style>
 ```
@@ -5728,12 +6081,160 @@ export async function POST({ request }) {
 
 <h1>Stay updated</h1>
 
-<h2 class="text-width">Coming soon</h2>
+<div class="text-width subscribe">
+    <p>
+        Subscribe to our <a href="https://disabilityeddata.substack.com/">newsletter</a> to get updates on new data, features, and more.
+    </p>
+    <div class="embed">
+        <iframe src="https://disabilityeddata.substack.com/embed" width="480" height="150" style="border:1px solid #EEE; background:white;" frameborder="0" scrolling="no"></iframe>
+    </div>
+</div>
 
 <style>
-    h2 {
-        margin-top: 3rem;
-        margin-bottom: 3rem;
+    .subscribe {
+        margin-top: 4rem;
+        margin-bottom: 4rem;
+    }
+
+    a {
+        font-weight: bold;
+        color: var(--colorInclusiveDark);
+        font-size: 1.2rem;
+    }
+
+    .embed {
+        display: flex;
+        justify-content: center;
+        margin-top: 2rem;
+    }
+</style>
+```
+
+# src/routes/viz-tests/+page.js
+
+```js
+import { getData } from '$lib/data/processData.js'
+import { forceSimulation, forceCollide, forceX, forceY } from 'd3-force'
+import { geoTransverseMercator, geoPath } from 'd3-geo'
+
+export async function load({ params }) {
+    const data = await getData()
+    
+    // add force calc logic, cx and cy for each district's bubble, so that can then be passed into the BubbleMap component to position bubbles right away
+
+    return {
+        data
+    }
+}
+```
+
+# src/routes/viz-tests/+page.svelte
+
+```svelte
+<script>
+    import { fade } from 'svelte/transition'
+    import ScatterplotIdentificationSize from '$lib/components/ScatterplotIdentificationSize.svelte';
+    import ScatterplotInclSize from '$lib/components/ScatterplotInclSize.svelte'
+    import BubbleMap from '$lib/components/BubbleMap.svelte'
+    import DistrictsBeeswarm from '$lib/components/DistrictsBeeswarm.svelte'
+    import { colors } from '$lib/styles/colorConfig'
+
+    export let data
+    console.log('viz test data:', data)
+
+    let currentView = 'map'
+</script>
+
+<h1>Visualizations-in-Progress</h1>
+
+<div class="text-width map-container" style="--map-width: {500}px; --map-height: {500}px;">
+    
+    <div class="viz-in-progress">
+        <ScatterplotIdentificationSize />
+    </div>
+
+    <div class="viz-in-progress">
+        <div class="toggle-controls">
+            <button 
+                class="toggle-btn {currentView === 'beeswarm' ? 'active' : ''}"
+                on:click={() => currentView = 'beeswarm'}
+            >
+                Beeswarm
+            </button>
+            <button 
+                class="toggle-btn {currentView === 'map' ? 'active' : ''}"
+                on:click={() => currentView = 'map'}
+            >
+                Map
+            </button>
+        </div>
+    
+        <div class="visualization">
+            {#if currentView === 'beeswarm'}
+                <div transition:fade={{ duration: 300 }}>
+                    <DistrictsBeeswarm />
+                </div>
+            {:else}
+                <div transition:fade={{ duration: 300 }}>
+                    <BubbleMap />
+                </div>
+            {/if}
+        </div>
+    </div>
+
+    <div class="viz-in-progress">
+        <ScatterplotInclSize />
+    </div>
+
+</div>
+
+<style>
+    .viz-in-progress {
+        margin: 5rem 0;
+    }
+
+    .map-container {
+        margin: 0 auto;
+        width: 100%;
+        height: 100%;
+    }
+
+    .toggle-controls {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .toggle-btn {
+        padding: 0.5rem 1rem;
+        border: 1.5px solid var(--colorText);
+        border-radius: 20px;
+        background: var(--colorBackgroundWhite);
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .toggle-btn.active {
+        background: var(--colorText);
+        color: var(--colorBackgroundWhite);
+    }
+
+    .toggle-btn:hover:not(.active) {
+        background: var(--colorLightLightGray);
+    }
+
+    .visualization {
+        position: relative;
+        width: 100%;
+        height: 400px;
+        margin: 1rem 0;
+    }
+
+    .visualization > div {
+        position: absolute;
+        width: 100%;
+        height: 100%;
     }
 </style>
 ```
