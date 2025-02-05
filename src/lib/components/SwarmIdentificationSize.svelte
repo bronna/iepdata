@@ -25,7 +25,7 @@
     // Filter out districts with missing data
     $: filteredData = $data.filter(d => 
         d.properties['Total Student Count'] && 
-        // d.properties["Students with Disabilities"] &&
+        d.properties["Students with Disabilities"] &&
         d.properties.GEOID !== '999999'
     )
 
@@ -53,17 +53,26 @@
     // Format numbers with commas
     const formatNumber = num => num.toLocaleString()
 
-    // Force simulation setup
+    // Force simulation setup with improved parameters
     let nodes = []
     $: {
         const simulation = forceSimulation(filteredData)
-            .force('x', forceX(d => xScale(d.properties["Students with Disabilities"])).strength(1))
-            .force('y', forceY(dimensions.innerHeight / 2).strength(0.1))
-            .force('collide', forceCollide(d => rScale(d.properties['Total Student Count']) + 1))
+            .force('x', forceX(d => xScale(d.properties["Students with Disabilities"]))
+                .strength(1)) // Increased x-force strength
+            .force('y', forceY(dimensions.innerHeight / 2)
+                .strength(0.1))
+            .force('collide', forceCollide(d => rScale(d.properties['Total Student Count']) + 2)
+                .strength(0.8)
+                .iterations(4)) // Added more iterations for better collision resolution
+            .alpha(0.8) // Increased initial alpha for more movement
+            .alphaDecay(0.02) // Slower decay for more simulation time
+            .velocityDecay(0.4)
             .stop()
 
-        // Run the simulation
-        for (let i = 0; i < 120; ++i) simulation.tick()
+        // Run more simulation ticks for better stabilization
+        for (let i = 0; i < 300; ++i) {
+            simulation.tick()
+        }
         
         nodes = simulation.nodes()
     }
@@ -111,7 +120,7 @@
                 font-size="14px"
                 font-weight="600"
             >
-                % of students in district with an IEP
+                % of students with IEPs in each school district
             </text>
         </g>
 
@@ -138,7 +147,7 @@
         <!-- Add line at current state funding -->
         <line
             x1={xScale(11)}
-            y1={0}
+            y1={40}
             x2={xScale(11)}
             y2={dimensions.innerHeight}
             stroke={colors.colorWhite}
@@ -147,50 +156,50 @@
         />
         <line
             x1={xScale(11)}
-            y1={0}
+            y1={40}
             x2={xScale(11)}
             y2={dimensions.innerHeight}
             stroke={colors.colorText}
             stroke-width="1.25"
-
         />
         <text
             x={xScale(11)}
-            y={-10}
+            y={30}
             text-anchor="middle"
             fill={colors.colorText}
             font-size="16px"
+            font-weight="600"
         >
             current state funding cap: 11%
         </text>
 
         <!-- Add line at proposed state funding -->
         <line
-            x1={xScale(14)}
+            x1={xScale(15)}
             y1={-20}
-            x2={xScale(14)}
+            x2={xScale(15)}
             y2={dimensions.innerHeight}
             stroke={colors.colorWhite}
             stroke-width="4"
             opacity="0.6"
         />
         <line
-            x1={xScale(14)}
+            x1={xScale(15)}
             y1={-20}
-            x2={xScale(14)}
+            x2={xScale(15)}
             y2={dimensions.innerHeight}
             stroke={colors.colorText}
             stroke-width="1.25"
-
         />
         <text
-            x={xScale(14)}
+            x={xScale(15)}
             y={-28}
             text-anchor="middle"
             fill={colors.colorText}
             font-size="16px"
+            font-weight="600"
         >
-            proposed state funding cap: 14%
+            proposed state funding cap: 15%
         </text>
     </SVGChart>
 </div>

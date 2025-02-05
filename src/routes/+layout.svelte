@@ -34,7 +34,7 @@
         <slot />
     </main>
 
-    <FeedbackComponent />
+    <!-- <FeedbackComponent /> -->
 
     <Footer />
 </div>

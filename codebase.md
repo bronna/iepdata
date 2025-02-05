@@ -4000,6 +4000,223 @@ You can preview the production build with `npm run preview`.
 </svg>
 ```
 
+# src/lib/components/SwarmIdentificationSize.svelte
+
+```svelte
+<script>
+    import { scaleLinear, scaleSqrt, scaleOrdinal } from 'd3-scale'
+    import { extent } from 'd3-array'
+    import { forceSimulation, forceX, forceY, forceCollide } from 'd3-force'
+    import { colors } from '$lib/styles/colorConfig'
+    import { data } from '$lib/stores/stores.js'
+    import SVGChart from './SVGChart.svelte'
+
+    export let width = 1200
+    export let height = 600
+
+    let dimensions = {
+        width,
+        height,
+        margin: { top: 40, right: 40, bottom: 60, left: 60 },
+        innerWidth: 0,
+        innerHeight: 0
+    }
+
+    $: {
+        dimensions.innerWidth = width - dimensions.margin.left - dimensions.margin.right
+        dimensions.innerHeight = height - dimensions.margin.top - dimensions.margin.bottom
+    }
+
+    // Filter out districts with missing data
+    $: filteredData = $data.filter(d => 
+        d.properties['Total Student Count'] && 
+        // d.properties["Students with Disabilities"] &&
+        d.properties.GEOID !== '999999'
+    )
+
+    // Create scales
+    $: xScale = scaleLinear()
+        .domain(extent(filteredData, d => d.properties["Students with Disabilities"]))
+        .range([0, dimensions.innerWidth])
+        .nice()
+
+    // Create radius scale (using sqrt scale for accurate circle area representation)
+    $: rScale = scaleSqrt()
+        .domain(extent(filteredData, d => d.properties['Total Student Count']))
+        .range(width < 768 ? [2, 20] : [3, 50])
+
+    // Create color scale for quartiles
+    const colorScale = scaleOrdinal()
+        .domain([1, 2, 3, 4])
+        .range([
+            colors.colorSeparate,
+            colors.colorNonInclusive, 
+            colors.colorSemiInclusive, 
+            colors.colorInclusive
+        ])
+
+    // Format numbers with commas
+    const formatNumber = num => num.toLocaleString()
+
+    // Force simulation setup
+    let nodes = []
+    $: {
+        const simulation = forceSimulation(filteredData)
+            .force('x', forceX(d => xScale(d.properties["Students with Disabilities"])).strength(1))
+            .force('y', forceY(dimensions.innerHeight / 2).strength(0.1))
+            .force('collide', forceCollide(d => rScale(d.properties['Total Student Count']) + 1))
+            .stop()
+
+        // Run the simulation
+        for (let i = 0; i < 120; ++i) simulation.tick()
+        
+        nodes = simulation.nodes()
+    }
+</script>
+
+<div class="swarmplot" bind:clientWidth={width} bind:clientHeight={height}>
+    <SVGChart {dimensions}>
+        <!-- X-axis -->
+        <g class="x-axis">
+            <!-- X-axis line -->
+            <line 
+                x1={0}
+                y1={dimensions.innerHeight}
+                x2={dimensions.innerWidth}
+                y2={dimensions.innerHeight}
+                stroke={colors.colorLightGray}
+                stroke-width="1"
+            />
+            
+            <!-- X-axis ticks and labels -->
+            {#each xScale.ticks(5) as tick}
+                <g transform="translate({xScale(tick)}, {dimensions.innerHeight})">
+                    <line 
+                        y2="6" 
+                        stroke={colors.colorLightGray}
+                        stroke-width="1"
+                    />
+                    <text 
+                        y="20" 
+                        text-anchor="middle"
+                        fill={colors.colorText}
+                        font-size="12px"
+                    >
+                        {tick}%
+                    </text>
+                </g>
+            {/each}
+
+            <!-- X-axis label -->
+            <text
+                x={dimensions.innerWidth / 2}
+                y={dimensions.innerHeight + 45}
+                text-anchor="middle"
+                fill={colors.colorText}
+                font-size="14px"
+                font-weight="600"
+            >
+                % of students in district with an IEP
+            </text>
+        </g>
+
+        <!-- Plot points -->
+        {#each nodes as node}
+            <circle
+                cx={node.x}
+                cy={node.y}
+                r={rScale(node.properties['Total Student Count'])}
+                fill={colorScale(node.properties.quartile)}
+                opacity="0.8"
+                stroke={colors.colorBackgroundWhite}
+                stroke-width="1"
+            >
+                <title>
+                    {node.properties['Institution Name']}
+                    Students with IEPs: {formatNumber(node.properties['Total Student Count'])}
+                    Percent Students with IEPs: {node.properties["Students with Disabilities"]}%
+                    Quartile: {node.properties.quartile} of 4
+                </title>
+            </circle>
+        {/each}
+
+        <!-- Add line at current state funding -->
+        <line
+            x1={xScale(11)}
+            y1={0}
+            x2={xScale(11)}
+            y2={dimensions.innerHeight}
+            stroke={colors.colorWhite}
+            stroke-width="4"
+            opacity="0.6"
+        />
+        <line
+            x1={xScale(11)}
+            y1={0}
+            x2={xScale(11)}
+            y2={dimensions.innerHeight}
+            stroke={colors.colorText}
+            stroke-width="1.25"
+
+        />
+        <text
+            x={xScale(11)}
+            y={-10}
+            text-anchor="middle"
+            fill={colors.colorText}
+            font-size="16px"
+        >
+            current state funding cap: 11%
+        </text>
+
+        <!-- Add line at proposed state funding -->
+        <line
+            x1={xScale(15)}
+            y1={-20}
+            x2={xScale(15)}
+            y2={dimensions.innerHeight}
+            stroke={colors.colorWhite}
+            stroke-width="4"
+            opacity="0.6"
+        />
+        <line
+            x1={xScale(15)}
+            y1={-20}
+            x2={xScale(15)}
+            y2={dimensions.innerHeight}
+            stroke={colors.colorText}
+            stroke-width="1.25"
+
+        />
+        <text
+            x={xScale(15)}
+            y={-28}
+            text-anchor="middle"
+            fill={colors.colorText}
+            font-size="16px"
+        >
+            proposed state funding cap: 15%
+        </text>
+    </SVGChart>
+</div>
+
+<style>
+    .swarmplot {
+        width: 100%;
+        height: 600px;
+    }
+
+    circle {
+        transition: opacity 0.2s;
+    }
+
+    circle:hover {
+        opacity: 1;
+        cursor: pointer;
+    }
+</style>
+```
+
 # src/lib/components/TableOfDistricts.svelte
 
 ```svelte
@@ -5748,13 +5965,13 @@ export const prerender = true
     <StateMap />
 
     <p class="text-width">
-        A common concern for families of students with disabilities is not knowing what supports their child will receive in different areas. Moving from one place to another, for example, can mean a drastic change in services, even though the child’s disability hasn’t changed. These changes can have a huge impact on the well being and development of a child.
+        For families of students with disabilities, a common concern is not knowing what supports their child is eligible for from one area to the next. Moving from one place to another can mean drastic changes in services, even though the disability hasn’t changed. These changes can have a huge impact on the well-being and developmental trajectory of a child.
     </p>
     <p class="text-width">
-        Usually, there isn’t much transparency behind the process of how disabled children are evaluated by agencies and districts, and even less transparency around how those evaluations lead to decisions about services. However, there is aggregate data reported to state and federal governments that helps give a view into how different areas support their students.
+        Usually, families find that the process of how an agency or district evaluates a student's disability is not transparent, and how those evaluations are used to make decisions about services is even less so. However, data is reported to states and the federal government that helps give a view into how students, as a whole, are supported in different areas.
     </p>
     <p class="text-width">
-        Below, you can explore this data.
+        Below, you can explore that data.
     </p>
 </div>
 
@@ -5793,7 +6010,7 @@ export const prerender = true
                         {$selectedDistrictData[0].properties["Institution Name"]} has <strong>{$selectedDistrictData[0].properties["Total Student Count"].toLocaleString()} students</strong> with IEPs
                         <br>
                         <br>
-                        <em>(An IEP is a document that outlines what supports a disabled student will receive at school. It's personalized to each student)</em>
+                        <em>(An IEP is a document that outlines what supports a student with a disability will receive at school. It's personalized to each student)</em>
                     </div>
                 </section>
                 <section>
@@ -5964,10 +6181,8 @@ export const prerender = true
 
 <div class="text-width about">
     <p>
-        This project is about making data for disabled students in Oregon more accessible and understandable. Brianna started working on it after talking to several principals of elementary schools about what her child's grade school experience would be like. She was disturbed by the lack of transparency and consistency in supports that disabled students receive in different areas, and set out to find the data that could help give a better sense of things. She started this site as a way to visualize and format that data into accessible tools for families, students, and advocates.
+        This project makes data about disabled students in Oregon more accessible and understandable for families, students, and advocates. It started after Brianna spent a summer calling principals of elementary schools all over Oregon and California to get a sense of what her child's grade school experience might look like. Very quickly, she was disturbed by the lack of transparency and consistency in supports that disabled students receive in different areas. She sought out data that could give her a better sense of things. Soon, she realized this data could also be used by others, to help them understand the landscape of supports for the disabled students they're advocating for.
     </p>
-
-    <img src="$lib/images/about.jpg" alt="about" style="width: 100px; height: auto; margin-top: 2rem; margin-bottom: 2rem;">
 </div>
 
 
@@ -6047,15 +6262,15 @@ export async function POST({ request }) {
 <div class="text-width resources">
     <div class="link">
         <a href="https://factoregon.org/" target="_blank">FACT Oregon</a>
-        <p>Has a support line for families to ask questions about navigating systems and getting the resources their child needs. They also have courses for parents, and so much more.</p>
+        <p>Has a support line and appointments for families who need help navigating systems of services for their disabled loved ones. They also have courses-on-demand, seminars, and much more.</p>
     </div>
     <div class="link">
         <a href="https://www.droregon.org/" target="_blank">Disability Rights Oregon</a>
-        <p>Does legal advocacy work for people of all ages with disabilities, including children and students. Some of their work has contributed to passing legislation that makes it illegal for disabled students to be denied the right to attend school for the full day, and to end restraint and seclusion practices in schools.</p>
+        <p>Legal advocacy organization for people of all ages with disabilities, including children and students. Some of their work, for example, has contributed to the passing of legislation that ends restraint and seclusion practices in schools, and makes it illegal to deny students with disabilities the right to attend school for the full day.</p>
     </div>
     <div class="link">
         <a href="https://sites.ed.gov/idea/" target="_blank">Individuals with Disabilities Act (IDEA)</a>
-        <p>The law enacted to make sure all children have the right to a free and appropriate public education nationwide. IDEA also specifies that children with disabilities have the right to be educated in the 'least restrictive environment,' or, in other words, as mainstream an environment as possible with needed supports.</p>
+        <p>The federal law enacted to make sure all children have the right to a free and appropriate public education. IDEA also specifies that children with disabilities have the right to be educated in the 'least restrictive environment,' or, in other words, in as mainstream an environment as possible with the needed supports provided.</p>
     </div>
 </div>
 
@@ -6133,11 +6348,11 @@ export async function load({ params }) {
 ```svelte
 <script>
     import { fade } from 'svelte/transition'
-    import ScatterplotIdentificationSize from '$lib/components/ScatterplotIdentificationSize.svelte';
+    import SwarmIdentificationSize from '$lib/components/SwarmIdentificationSize.svelte'
+    import ScatterplotIdentificationSize from '$lib/components/ScatterplotIdentificationSize.svelte'
     import ScatterplotInclSize from '$lib/components/ScatterplotInclSize.svelte'
     import BubbleMap from '$lib/components/BubbleMap.svelte'
     import DistrictsBeeswarm from '$lib/components/DistrictsBeeswarm.svelte'
-    import { colors } from '$lib/styles/colorConfig'
 
     export let data
     console.log('viz test data:', data)
@@ -6145,9 +6360,12 @@ export async function load({ params }) {
     let currentView = 'map'
 </script>
 
-<h1>Visualizations-in-Progress</h1>
+<h1>Visualization Tests</h1>
 
-<div class="text-width map-container" style="--map-width: {500}px; --map-height: {500}px;">
+<div class="map-container">
+    <div class="viz-in-progress">
+        <SwarmIdentificationSize />
+    </div>
     
     <div class="viz-in-progress">
         <ScatterplotIdentificationSize />
@@ -6227,7 +6445,7 @@ export async function load({ params }) {
     .visualization {
         position: relative;
         width: 100%;
-        height: 400px;
+        height: 500px;
         margin: 1rem 0;
     }
 
