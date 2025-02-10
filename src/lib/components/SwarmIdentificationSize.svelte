@@ -31,14 +31,15 @@
 
     // Create scales
     $: xScale = scaleLinear()
-        .domain(extent(filteredData, d => d.properties["Students with Disabilities"]))
+        //.domain(extent(filteredData, d => d.properties["Students with Disabilities"]))
+        .domain([10, 23])
         .range([0, dimensions.innerWidth])
         .nice()
 
     // Create radius scale (using sqrt scale for accurate circle area representation)
     $: rScale = scaleSqrt()
         .domain(extent(filteredData, d => d.properties['Total Student Count']))
-        .range(width < 768 ? [2, 20] : [3, 50])
+        .range(width < 768 ? [2, 26] : [3, 50])
 
     // Create color scale for quartiles
     const colorScale = scaleOrdinal()
@@ -58,10 +59,10 @@
     $: {
         const simulation = forceSimulation(filteredData)
             .force('x', forceX(d => xScale(d.properties["Students with Disabilities"]))
-                .strength(1)) // Increased x-force strength
+                .strength(1.2)) // Increased x-force strength
             .force('y', forceY(dimensions.innerHeight / 2)
                 .strength(0.1))
-            .force('collide', forceCollide(d => rScale(d.properties['Total Student Count']) + 2)
+            .force('collide', forceCollide(d => rScale(d.properties['Total Student Count']) + 1)
                 .strength(0.8)
                 .iterations(4)) // Added more iterations for better collision resolution
             .alpha(0.8) // Increased initial alpha for more movement
@@ -83,18 +84,18 @@
         <!-- X-axis -->
         <g class="x-axis">
             <!-- X-axis line -->
-            <line 
+            <!-- <line 
                 x1={0}
                 y1={dimensions.innerHeight}
                 x2={dimensions.innerWidth}
                 y2={dimensions.innerHeight}
                 stroke={colors.colorLightGray}
                 stroke-width="1"
-            />
+            /> -->
             
             <!-- X-axis ticks and labels -->
             {#each xScale.ticks(5) as tick}
-                <g transform="translate({xScale(tick)}, {dimensions.innerHeight})">
+                <g transform="translate({xScale(tick)}, {dimensions.innerHeight - 100})">
                     <line 
                         y2="6" 
                         stroke={colors.colorLightGray}
@@ -104,7 +105,7 @@
                         y="20" 
                         text-anchor="middle"
                         fill={colors.colorText}
-                        font-size="12px"
+                        font-size="14px"
                     >
                         {tick}%
                     </text>
@@ -114,13 +115,13 @@
             <!-- X-axis label -->
             <text
                 x={dimensions.innerWidth / 2}
-                y={dimensions.innerHeight + 45}
+                y={dimensions.innerHeight - 50}
                 text-anchor="middle"
                 fill={colors.colorText}
-                font-size="14px"
+                font-size="16px"
                 font-weight="600"
             >
-                % of students with IEPs in each school district
+                % Students with IEPs
             </text>
         </g>
 
@@ -131,7 +132,7 @@
                 cy={node.y}
                 r={rScale(node.properties['Total Student Count'])}
                 fill={colorScale(node.properties.quartile)}
-                opacity="0.8"
+                opacity="0.85"
                 stroke={colors.colorBackgroundWhite}
                 stroke-width="1"
             >
@@ -147,59 +148,71 @@
         <!-- Add line at current state funding -->
         <line
             x1={xScale(11)}
-            y1={40}
+            y1={180}
             x2={xScale(11)}
-            y2={dimensions.innerHeight}
+            y2={dimensions.innerHeight - 100}
             stroke={colors.colorWhite}
-            stroke-width="4"
-            opacity="0.6"
+            stroke-width="8"
+            opacity="0.4"
         />
         <line
             x1={xScale(11)}
-            y1={40}
+            y1={180}
             x2={xScale(11)}
-            y2={dimensions.innerHeight}
+            y2={dimensions.innerHeight - 100}
             stroke={colors.colorText}
-            stroke-width="1.25"
+            stroke-width="1.5"
+            stroke-dasharray="2"
         />
         <text
             x={xScale(11)}
-            y={30}
+            y={150}
             text-anchor="middle"
             fill={colors.colorText}
             font-size="16px"
-            font-weight="600"
+            font-weight="500"
         >
-            current state funding cap: 11%
+            current state
+        </text>
+        <text
+            x={xScale(11)}
+            y={168}
+            text-anchor="middle"
+            fill={colors.colorText}
+            font-size="16px"
+            font-weight="500"
+        >
+            funding cap: 11%
         </text>
 
         <!-- Add line at proposed state funding -->
         <line
             x1={xScale(15)}
-            y1={-20}
+            y1={120}
             x2={xScale(15)}
-            y2={dimensions.innerHeight}
+            y2={dimensions.innerHeight - 100}
             stroke={colors.colorWhite}
-            stroke-width="4"
-            opacity="0.6"
+            stroke-width="8"
+            opacity="0.4"
         />
         <line
             x1={xScale(15)}
-            y1={-20}
+            y1={120}
             x2={xScale(15)}
-            y2={dimensions.innerHeight}
+            y2={dimensions.innerHeight - 100}
             stroke={colors.colorText}
-            stroke-width="1.25"
+            stroke-width="1.5"
+            stroke-dasharray="2"
         />
         <text
             x={xScale(15)}
-            y={-28}
+            y={108}
             text-anchor="middle"
             fill={colors.colorText}
             font-size="16px"
-            font-weight="600"
+            font-weight="500"
         >
-            proposed state funding cap: 15%
+            proposed cap: 15% (HB2451)
         </text>
     </SVGChart>
 </div>
