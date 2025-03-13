@@ -1,0 +1,74 @@
+[
+    {
+      "School": "Bolton Primary School",
+      "Total School Enrollment": 216.0,
+      "Per Pupil Spending": "$21306",
+      "Economically Disadvantaged %": "12%",
+      "Students w/Disabilities %": "18%",
+      "Proficient & Above %": "73%"
+    },
+    {
+      "School": "Boones Ferry Primary School",
+      "Total School Enrollment": 497.0,
+      "Per Pupil Spending": "$18367",
+      "Economically Disadvantaged %": "35%",
+      "Students w/Disabilities %": "16%",
+      "Proficient & Above %": "46%"
+    },
+    {
+      "School": "Cedaroak Park Primary School",
+      "Total School Enrollment": 339.0,
+      "Per Pupil Spending": "$17304",
+      "Economically Disadvantaged %": "11%",
+      "Students w/Disabilities %": "16%",
+      "Proficient & Above %": "68%"
+    },
+    {
+      "School": "Sunset Primary School",
+      "Total School Enrollment": 367.0,
+      "Per Pupil Spending": "$16951",
+      "Economically Disadvantaged %": "12%",
+      "Students w/Disabilities %": "19%",
+      "Proficient & Above %": "66%"
+    },
+    {
+      "School": "Boeckman Creek Primary School",
+      "Total School Enrollment": 468.0,
+      "Per Pupil Spending": "$16935",
+      "Economically Disadvantaged %": "31%",
+      "Students w/Disabilities %": "16%",
+      "Proficient & Above %": "49%"
+    },
+    {
+      "School": "Willamette Primary School",
+      "Total School Enrollment": 424.0,
+      "Per Pupil Spending": "$16786",
+      "Economically Disadvantaged %": "17%",
+      "Students w/Disabilities %": "18%",
+      "Proficient & Above %": "62%"
+    },
+    {
+      "School": "Stafford Primary School",
+      "Total School Enrollment": 352.0,
+      "Per Pupil Spending": "$16759",
+      "Economically Disadvantaged %": "8%",
+      "Students w/Disabilities %": "15%",
+      "Proficient & Above %": "64%"
+    },
+    {
+      "School": "Lowrie Primary School",
+      "Total School Enrollment": 476.0,
+      "Per Pupil Spending": "$16388",
+      "Economically Disadvantaged %": "22%",
+      "Students w/Disabilities %": "10%",
+      "Proficient & Above %": "59%"
+    },
+    {
+      "School": "Trillium Creek Primary School",
+      "Total School Enrollment": 465.0,
+      "Per Pupil Spending": "$16018",
+      "Economically Disadvantaged %": "7%",
+      "Students w/Disabilities %": "12%",
+      "Proficient & Above %": "68%"
+    }
+  ]

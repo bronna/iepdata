@@ -54,6 +54,12 @@
     // Format numbers with commas
     const formatNumber = num => num.toLocaleString()
 
+    // Find the 5 largest districts by "Total Student Count"
+    $: largestDistricts = filteredData
+        .sort((a, b) => b.properties['Total Student Count'] - a.properties['Total Student Count'])
+        .slice(0, 5)
+        .map(district => district.properties.GEOID)
+
     // Force simulation setup with improved parameters
     let nodes = []
     $: {
@@ -83,16 +89,6 @@
     <SVGChart {dimensions}>
         <!-- X-axis -->
         <g class="x-axis">
-            <!-- X-axis line -->
-            <!-- <line 
-                x1={0}
-                y1={dimensions.innerHeight}
-                x2={dimensions.innerWidth}
-                y2={dimensions.innerHeight}
-                stroke={colors.colorLightGray}
-                stroke-width="1"
-            /> -->
-            
             <!-- X-axis ticks and labels -->
             {#each xScale.ticks(5) as tick}
                 <g transform="translate({xScale(tick)}, {dimensions.innerHeight - 100})">
@@ -115,7 +111,7 @@
             <!-- X-axis label -->
             <text
                 x={dimensions.innerWidth / 2}
-                y={dimensions.innerHeight - 50}
+                y={dimensions.innerHeight - 40}
                 text-anchor="middle"
                 fill={colors.colorText}
                 font-size="16px"
@@ -144,29 +140,55 @@
                 </title>
             </circle>
         {/each}
+        
+        <!-- Labels for the 5 largest districts -->
+        {#each nodes as node}
+            {#if largestDistricts.includes(node.properties.GEOID)}
+                <!-- White background for text readability -->
+                <text
+                    x={node.x}
+                    y={node.y}
+                    text-anchor="middle"
+                    dominant-baseline="middle"
+                    fill="white"
+                    stroke="white"
+                    stroke-width="4"
+                    stroke-linejoin="round"
+                    font-size="12px"
+                    font-weight="600"
+                    pointer-events="none"
+                >
+                    {node.properties['Institution Name']}
+                </text>
+                <!-- Actual text label -->
+                <text
+                    x={node.x}
+                    y={node.y}
+                    text-anchor="middle"
+                    dominant-baseline="middle"
+                    fill={colors.colorText}
+                    font-size="12px"
+                    font-weight="600"
+                    pointer-events="none"
+                >
+                    {node.properties['Institution Name']}
+                </text>
+            {/if}
+        {/each}
 
         <!-- Add line at current state funding -->
         <line
             x1={xScale(11)}
-            y1={180}
+            y1={60}
             x2={xScale(11)}
-            y2={dimensions.innerHeight - 100}
-            stroke={colors.colorWhite}
-            stroke-width="8"
-            opacity="0.4"
-        />
-        <line
-            x1={xScale(11)}
-            y1={180}
-            x2={xScale(11)}
-            y2={dimensions.innerHeight - 100}
+            y2={dimensions.innerHeight - 80}
             stroke={colors.colorText}
             stroke-width="1.5"
             stroke-dasharray="2"
         />
         <text
             x={xScale(11)}
-            y={150}
+            y={30}
             text-anchor="middle"
             fill={colors.colorText}
             font-size="16px"
@@ -176,7 +198,7 @@
         </text>
         <text
             x={xScale(11)}
-            y={168}
+            y={48}
             text-anchor="middle"
             fill={colors.colorText}
             font-size="16px"
@@ -188,31 +210,22 @@
         <!-- Add line at proposed state funding -->
         <line
             x1={xScale(15)}
-            y1={120}
+            y1={60}
             x2={xScale(15)}
-            y2={dimensions.innerHeight - 100}
-            stroke={colors.colorWhite}
-            stroke-width="8"
-            opacity="0.4"
-        />
-        <line
-            x1={xScale(15)}
-            y1={120}
-            x2={xScale(15)}
-            y2={dimensions.innerHeight - 100}
+            y2={dimensions.innerHeight - 80}
             stroke={colors.colorText}
             stroke-width="1.5"
             stroke-dasharray="2"
         />
         <text
             x={xScale(15)}
-            y={108}
+            y={48}
             text-anchor="middle"
             fill={colors.colorText}
             font-size="16px"
             font-weight="500"
         >
-            proposed cap: 15% (HB2451)
+            15% cap
         </text>
     </SVGChart>
 </div>

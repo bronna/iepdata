@@ -2762,6 +2762,8 @@ You can preview the production build with `npm run preview`.
 </script>
 
 <nav class={direction} style="--linkColor: {linkColor}">
+    <a href="/inclusion">Inclusion</a>
+    <a href="/funding">Funding</a>
     <a href="/about">About</a>
     <a href="/resources">Resources</a>
     <a href="/contact">Contact</a>
@@ -3800,6 +3802,307 @@ You can preview the production build with `npm run preview`.
   </style>
 ```
 
+# src/lib/components/SmallSchools.svelte
+
+```svelte
+<!-- Add a legend for the color scale -->
+<g class="legend" transform="translate({dimensions.innerWidth - 200}, 180)">
+    <text font-size="12px" font-weight="600">Disadvantaged %:</text>
+    
+    <!-- Color legend -->
+    <rect x="10" y="20" width="20" height="15" fill="#f7c16f" />
+    <text x="40" y="33" font-size="10px">Below average ({Math.round(avgDisadvantagedPercent)}%)</text>
+    
+    <rect x="10" y="45" width="20" height="15" fill="#6acf96" />
+    <text x="40" y="58" font-size="10px">Above average ({Math.round(avgDisadvantagedPercent)}%)</text>
+</g>
+
+<script>
+    import { scaleLinear, scaleSqrt, scaleThreshold } from 'd3-scale'
+    import { extent } from 'd3-array'
+    import { colors } from '$lib/styles/colorConfig'
+    import SVGChart from '$lib/components/SVGChart.svelte'
+
+    // Import the data
+    import smallSchoolsData from '$lib/data/small_schools.json'
+
+    export let width = 800
+    export let height = 400
+
+    let dimensions = {
+        width,
+        height,
+        margin: { top: 40, right: 190, bottom: 130, left: 70 },
+        innerWidth: 0,
+        innerHeight: 0
+    }
+
+    $: {
+        dimensions.innerWidth = width - dimensions.margin.left - dimensions.margin.right
+        dimensions.innerHeight = height - dimensions.margin.top - dimensions.margin.bottom
+    }
+
+    // Process the data to parse numeric values
+    $: processedData = smallSchoolsData.map(school => {
+        // Create a derived name field for display that's more compact
+        const shortName = school.School.replace(" Primary School", "");
+
+        // Parse individual metrics
+        const expenditure = parseInt(school["Per Pupil Spending"].replace(/\$|,/g, ''));
+        const performance = parseInt(school["Proficient & Above %"].replace(/%/g, ''));
+        const disabilityPercent = parseInt(school["Students w/Disabilities %"].replace(/%/g, ''));
+        const economicDisadvantagePercent = parseInt(school["Economically Disadvantaged %"].replace(/%/g, ''));
+        const enrollment = parseFloat(school["Total School Enrollment"]);
+
+        // Calculate total disadvantaged percentage (sum of economic disadvantage and disability)
+        const totalDisadvantagedPercent = economicDisadvantagePercent + disabilityPercent;
+
+        return {
+            ...school,
+            shortName,
+            expenditure,
+            performance,
+            disabilityPercent,
+            economicDisadvantagePercent,
+            totalDisadvantagedPercent,
+            enrollment
+        }
+    })
+
+    // Create a scale for circle radius based on enrollment (uses sqrt to scale by area not radius)
+    $: rScale = scaleSqrt()
+        .domain(extent(processedData, d => d.enrollment))
+        .range([10, 20])
+
+    // Log the processed data to check values
+    console.log("Processed school data:", processedData)
+
+    // Calculate the average disadvantaged percentage
+    $: avgDisadvantagedPercent = processedData.reduce((sum, d) => sum + d.totalDisadvantagedPercent, 0) / processedData.length
+
+    // Create a color scale for disadvantaged percentage
+    $: colorScale = scaleThreshold()
+        .domain([avgDisadvantagedPercent])
+        .range(["#6acf96", "#f7c16f"]) // Schools below average: #f7c16f, Schools above average: #6acf96
+
+    // Create scales with fixed domains to ensure all schools are visible
+    $: xScale = scaleLinear()
+        .domain([16000, 22000]) // Fixed domain to include all schools
+        .range([0, dimensions.innerWidth])
+        .nice()
+
+    $: yScale = scaleLinear()
+        .domain([40, 75]) // Fixed domain to include all schools' performance values
+        .range([dimensions.innerHeight, 0])
+        .nice()
+
+    // Format numbers with commas
+    const formatMoney = num => `${num.toLocaleString()}`
+</script>
+
+
+<div class="scatterplot-container" bind:clientWidth={width} bind:clientHeight={height}>
+<h2 class="text-width">School Performance vs. Per Pupil Spending</h2>
+<div class="scatterplot">
+<SVGChart {dimensions}>
+<!-- X-axis -->
+<g class="x-axis">
+    <!-- X-axis line -->
+    <line 
+        x1={0}
+        y1={dimensions.innerHeight}
+        x2={dimensions.innerWidth}
+        y2={dimensions.innerHeight}
+        stroke={colors.colorLightGray}
+        stroke-width="1"
+    />
+    
+    <!-- X-axis ticks and labels -->
+    {#each xScale.ticks(5) as tick}
+        <g transform="translate({xScale(tick)}, {dimensions.innerHeight})">
+            <line 
+                y2="6" 
+                stroke={colors.colorLightGray}
+                stroke-width="1"
+            />
+            <text 
+                y="20" 
+                text-anchor="middle"
+                fill={colors.colorText}
+                font-size="12px"
+            >
+                {formatMoney(tick)}
+            </text>
+        </g>
+    {/each}
+
+    <!-- X-axis label -->
+    <text
+        x={dimensions.innerWidth / 2}
+        y={dimensions.innerHeight + 45}
+        text-anchor="middle"
+        fill={colors.colorText}
+        font-size="14px"
+        font-weight="600"
+    >
+        Per Pupil Spending
+    </text>
+</g>
+
+<!-- Y-axis -->
+<g class="y-axis">
+    <!-- Y-axis line -->
+    <line 
+        x1={0}
+        y1={0}
+        x2={0}
+        y2={dimensions.innerHeight}
+        stroke={colors.colorLightGray}
+        stroke-width="1"
+    />
+    
+    <!-- Y-axis ticks and labels -->
+    {#each yScale.ticks(5) as tick}
+        <g transform="translate(0, {yScale(tick)})">
+            <line 
+                x2="-6" 
+                stroke={colors.colorLightGray}
+                stroke-width="1"
+            />
+            <text 
+                x="-12" 
+                dy="0.32em" 
+                text-anchor="end"
+                fill={colors.colorText}
+                font-size="12px"
+            >
+                {tick}%
+            </text>
+        </g>
+    {/each}
+
+    <!-- Y-axis label -->
+    <text
+        transform="rotate(-90)"
+        x={-dimensions.innerHeight / 2}
+        y={-60}
+        text-anchor="middle"
+        fill={colors.colorText}
+        font-size="14px"
+        font-weight="600"
+    >
+        Proficient & Above
+    </text>
+</g>
+
+<!-- Plot points -->
+{#each processedData as school}
+    <g class="data-point">
+        <!-- Circles sized by school enrollment and colored by disadvantaged percentage -->
+        <circle
+            cx={xScale(school.expenditure)}
+            cy={yScale(school.performance)}
+            r={rScale(school.enrollment)}
+            fill={colorScale(school.totalDisadvantagedPercent)}
+            opacity= 0.8
+            stroke={colors.colorBackgroundWhite}
+            stroke-width="1"
+        >
+            <title>
+                {school.School}
+                Per Pupil Spending: {formatMoney(school.expenditure)}
+                Proficient & Above: {school.performance}%
+                Students with Disabilities: {school.disabilityPercent}%
+                Economically Disadvantaged: {school.economicDisadvantagePercent}%
+                Total Disadvantaged: {school.totalDisadvantagedPercent}%
+                Total Enrollment: {school.enrollment} students
+            </title>
+        </circle>
+        
+        <text
+            x={xScale(school.expenditure)}
+            y={
+                // Adjust vertical position to ensure labels stay within chart
+                Math.max(
+                    yScale(school.performance) - rScale(school.enrollment) - 5, 
+                    0 // Minimum distance from top
+                )
+            }
+            text-anchor="middle"
+            font-size="10px"
+            fill={colors.colorText}
+        >
+            {school.shortName}
+        </text>
+    </g>
+{/each}
+
+<!-- Add a legend with grid lines for x-axis -->
+<g class="legend" transform="translate({dimensions.innerWidth - 200}, 100)">
+    <text font-size="12px" font-weight="600">Circle Size:</text>
+    <text y="20" font-size="11px">Total School Enrollment</text>
+    
+    <!-- Calculate legend circle sizes based on actual enrollment values -->
+    <circle cx="20" cy="50" r={rScale(200)} fill=#f7c16f opacity="0.8"/>
+    <text x="40" y="53" font-size="10px">200 students</text>
+    
+    <circle cx="20" cy="85" r={rScale(350)} fill=#f7c16f opacity="0.8"/>
+    <text x="40" y="88" font-size="10px">350 students</text>
+    
+    <circle cx="20" cy="130" r={rScale(500)} fill=#f7c16f opacity="0.8"/>
+    <text x="40" y="133" font-size="10px">500 students</text>
+</g>
+
+<!-- Add horizontal grid lines for better readability -->
+{#each yScale.ticks(5) as tick}
+    <line 
+        x1={0}
+        y1={yScale(tick)}
+        x2={dimensions.innerWidth}
+        y2={yScale(tick)}
+        stroke={colors.colorLightGray}
+        stroke-width="0.5"
+        stroke-dasharray="4"
+    />
+{/each}
+</SVGChart>
+</div>
+</div>
+
+<style>
+    .scatterplot-container {
+        padding: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    h2 {
+        text-align: center;
+        margin-bottom: 1rem;
+        color: var(--colorText);
+        font-family: var(--font-headers);
+    }
+
+    .scatterplot {
+        width: 100%;
+        height: 400px;
+        margin: 0 auto;
+    }
+
+    .data-point {
+        transition: opacity 0.2s;
+    }
+
+    .data-point:hover {
+        opacity: 1;
+    }
+
+    .data-point:hover circle {
+        stroke-width: 2;
+        stroke: var(--colorText);
+    }
+</style>
+```
+
 # src/lib/components/Sources.svelte
 
 ```svelte
@@ -4030,20 +4333,21 @@ You can preview the production build with `npm run preview`.
     // Filter out districts with missing data
     $: filteredData = $data.filter(d => 
         d.properties['Total Student Count'] && 
-        // d.properties["Students with Disabilities"] &&
+        d.properties["Students with Disabilities"] &&
         d.properties.GEOID !== '999999'
     )
 
     // Create scales
     $: xScale = scaleLinear()
-        .domain(extent(filteredData, d => d.properties["Students with Disabilities"]))
+        //.domain(extent(filteredData, d => d.properties["Students with Disabilities"]))
+        .domain([10, 23])
         .range([0, dimensions.innerWidth])
         .nice()
 
     // Create radius scale (using sqrt scale for accurate circle area representation)
     $: rScale = scaleSqrt()
         .domain(extent(filteredData, d => d.properties['Total Student Count']))
-        .range(width < 768 ? [2, 20] : [3, 50])
+        .range(width < 768 ? [2, 26] : [3, 50])
 
     // Create color scale for quartiles
     const colorScale = scaleOrdinal()
@@ -4058,17 +4362,26 @@ You can preview the production build with `npm run preview`.
     // Format numbers with commas
     const formatNumber = num => num.toLocaleString()
 
-    // Force simulation setup
+    // Force simulation setup with improved parameters
     let nodes = []
     $: {
         const simulation = forceSimulation(filteredData)
-            .force('x', forceX(d => xScale(d.properties["Students with Disabilities"])).strength(1))
-            .force('y', forceY(dimensions.innerHeight / 2).strength(0.1))
-            .force('collide', forceCollide(d => rScale(d.properties['Total Student Count']) + 1))
+            .force('x', forceX(d => xScale(d.properties["Students with Disabilities"]))
+                .strength(1.2)) // Increased x-force strength
+            .force('y', forceY(dimensions.innerHeight / 2)
+                .strength(0.1))
+            .force('collide', forceCollide(d => rScale(d.properties['Total Student Count']) + 1)
+                .strength(0.8)
+                .iterations(4)) // Added more iterations for better collision resolution
+            .alpha(0.8) // Increased initial alpha for more movement
+            .alphaDecay(0.02) // Slower decay for more simulation time
+            .velocityDecay(0.4)
             .stop()
 
-        // Run the simulation
-        for (let i = 0; i < 120; ++i) simulation.tick()
+        // Run more simulation ticks for better stabilization
+        for (let i = 0; i < 300; ++i) {
+            simulation.tick()
+        }
         
         nodes = simulation.nodes()
     }
@@ -4079,18 +4392,18 @@ You can preview the production build with `npm run preview`.
         <!-- X-axis -->
         <g class="x-axis">
             <!-- X-axis line -->
-            <line 
+            <!-- <line 
                 x1={0}
                 y1={dimensions.innerHeight}
                 x2={dimensions.innerWidth}
                 y2={dimensions.innerHeight}
                 stroke={colors.colorLightGray}
                 stroke-width="1"
-            />
+            /> -->
             
             <!-- X-axis ticks and labels -->
             {#each xScale.ticks(5) as tick}
-                <g transform="translate({xScale(tick)}, {dimensions.innerHeight})">
+                <g transform="translate({xScale(tick)}, {dimensions.innerHeight - 100})">
                     <line 
                         y2="6" 
                         stroke={colors.colorLightGray}
@@ -4100,7 +4413,7 @@ You can preview the production build with `npm run preview`.
                         y="20" 
                         text-anchor="middle"
                         fill={colors.colorText}
-                        font-size="12px"
+                        font-size="14px"
                     >
                         {tick}%
                     </text>
@@ -4110,13 +4423,13 @@ You can preview the production build with `npm run preview`.
             <!-- X-axis label -->
             <text
                 x={dimensions.innerWidth / 2}
-                y={dimensions.innerHeight + 45}
+                y={dimensions.innerHeight - 40}
                 text-anchor="middle"
                 fill={colors.colorText}
-                font-size="14px"
+                font-size="16px"
                 font-weight="600"
             >
-                % of students in district with an IEP
+                % Students with IEPs
             </text>
         </g>
 
@@ -4127,7 +4440,7 @@ You can preview the production build with `npm run preview`.
                 cy={node.y}
                 r={rScale(node.properties['Total Student Count'])}
                 fill={colorScale(node.properties.quartile)}
-                opacity="0.8"
+                opacity="0.85"
                 stroke={colors.colorBackgroundWhite}
                 stroke-width="1"
             >
@@ -4141,61 +4454,73 @@ You can preview the production build with `npm run preview`.
         {/each}
 
         <!-- Add line at current state funding -->
-        <line
+        <!-- <line
             x1={xScale(11)}
-            y1={0}
+            y1={180}
             x2={xScale(11)}
-            y2={dimensions.innerHeight}
+            y2={dimensions.innerHeight - 100}
             stroke={colors.colorWhite}
-            stroke-width="4"
-            opacity="0.6"
-        />
+            stroke-width="8"
+            opacity="0.4"
+        /> -->
         <line
             x1={xScale(11)}
-            y1={0}
+            y1={60}
             x2={xScale(11)}
-            y2={dimensions.innerHeight}
+            y2={dimensions.innerHeight - 80}
             stroke={colors.colorText}
-            stroke-width="1.25"
-
+            stroke-width="1.5"
+            stroke-dasharray="2"
         />
         <text
             x={xScale(11)}
-            y={-10}
+            y={30}
             text-anchor="middle"
             fill={colors.colorText}
             font-size="16px"
+            font-weight="500"
         >
-            current state funding cap: 11%
+            current state
+        </text>
+        <text
+            x={xScale(11)}
+            y={48}
+            text-anchor="middle"
+            fill={colors.colorText}
+            font-size="16px"
+            font-weight="500"
+        >
+            funding cap: 11%
         </text>
 
         <!-- Add line at proposed state funding -->
-        <line
+        <!-- <line
             x1={xScale(15)}
-            y1={-20}
+            y1={120}
             x2={xScale(15)}
-            y2={dimensions.innerHeight}
+            y2={dimensions.innerHeight - 100}
             stroke={colors.colorWhite}
-            stroke-width="4"
-            opacity="0.6"
-        />
+            stroke-width="8"
+            opacity="0.4"
+        /> -->
         <line
             x1={xScale(15)}
-            y1={-20}
+            y1={60}
             x2={xScale(15)}
-            y2={dimensions.innerHeight}
+            y2={dimensions.innerHeight - 80}
             stroke={colors.colorText}
-            stroke-width="1.25"
-
+            stroke-width="1.5"
+            stroke-dasharray="2"
         />
         <text
             x={xScale(15)}
-            y={-28}
+            y={48}
             text-anchor="middle"
             fill={colors.colorText}
             font-size="16px"
+            font-weight="500"
         >
-            proposed state funding cap: 15%
+            15% cap
         </text>
     </SVGChart>
 </div>
@@ -5381,6 +5706,85 @@ export const getData = () => {
 }
 ```
 
+# src/lib/data/small_schools.json
+
+```json
+[
+    {
+      "School": "Bolton Primary School",
+      "Total School Enrollment": 216.0,
+      "Per Pupil Spending": "$21306",
+      "Economically Disadvantaged %": "12%",
+      "Students w/Disabilities %": "18%",
+      "Proficient & Above %": "73%"
+    },
+    {
+      "School": "Boones Ferry Primary School",
+      "Total School Enrollment": 497.0,
+      "Per Pupil Spending": "$18367",
+      "Economically Disadvantaged %": "35%",
+      "Students w/Disabilities %": "16%",
+      "Proficient & Above %": "46%"
+    },
+    {
+      "School": "Cedaroak Park Primary School",
+      "Total School Enrollment": 339.0,
+      "Per Pupil Spending": "$17304",
+      "Economically Disadvantaged %": "11%",
+      "Students w/Disabilities %": "16%",
+      "Proficient & Above %": "68%"
+    },
+    {
+      "School": "Sunset Primary School",
+      "Total School Enrollment": 367.0,
+      "Per Pupil Spending": "$16951",
+      "Economically Disadvantaged %": "12%",
+      "Students w/Disabilities %": "19%",
+      "Proficient & Above %": "66%"
+    },
+    {
+      "School": "Boeckman Creek Primary School",
+      "Total School Enrollment": 468.0,
+      "Per Pupil Spending": "$16935",
+      "Economically Disadvantaged %": "31%",
+      "Students w/Disabilities %": "16%",
+      "Proficient & Above %": "49%"
+    },
+    {
+      "School": "Willamette Primary School",
+      "Total School Enrollment": 424.0,
+      "Per Pupil Spending": "$16786",
+      "Economically Disadvantaged %": "17%",
+      "Students w/Disabilities %": "18%",
+      "Proficient & Above %": "62%"
+    },
+    {
+      "School": "Stafford Primary School",
+      "Total School Enrollment": 352.0,
+      "Per Pupil Spending": "$16759",
+      "Economically Disadvantaged %": "8%",
+      "Students w/Disabilities %": "15%",
+      "Proficient & Above %": "64%"
+    },
+    {
+      "School": "Lowrie Primary School",
+      "Total School Enrollment": 476.0,
+      "Per Pupil Spending": "$16388",
+      "Economically Disadvantaged %": "22%",
+      "Students w/Disabilities %": "10%",
+      "Proficient & Above %": "59%"
+    },
+    {
+      "School": "Trillium Creek Primary School",
+      "Total School Enrollment": 465.0,
+      "Per Pupil Spending": "$16018",
+      "Economically Disadvantaged %": "7%",
+      "Students w/Disabilities %": "12%",
+      "Proficient & Above %": "68%"
+    }
+  ]
+```
+
 # src/lib/images/about.jpg
 
 This is a binary file of the type: Image
@@ -5829,7 +6233,7 @@ export const arrowRight = `
         <slot />
     </main>
 
-    <FeedbackComponent />
+    <!-- <FeedbackComponent /> -->
 
     <Footer />
 </div>
@@ -6251,6 +6655,327 @@ export async function POST({ request }) {
 
 ```
 
+# src/routes/funding/+page.js
+
+```js
+import { getData } from '$lib/data/processData.js'
+import { forceSimulation, forceCollide, forceX, forceY } from 'd3-force'
+import { geoTransverseMercator, geoPath } from 'd3-geo'
+
+export async function load({ params }) {
+    const data = await getData()
+    
+    // add force calc logic, cx and cy for each district's bubble, so that can then be passed into the BubbleMap component to position bubbles right away
+
+    return {
+        data
+    }
+}
+```
+
+# src/routes/funding/+page.svelte
+
+```svelte
+<script>
+    import { fade } from 'svelte/transition'
+    import SwarmIdentificationSize from '$lib/components/SwarmIdentificationSize.svelte'
+
+    export let data
+    console.log('viz test data:', data)
+
+    let currentView = 'map'
+</script>
+
+<h1 class="text-width">Oregon funding of special education leaves large gap</h1>
+<div class="source text-width">
+    Data: Oregon Dept of Education, 2022-23 school year
+</div>
+
+<div class="map-container">
+    <div class="viz-in-progress">
+        <SwarmIdentificationSize />
+    </div>
+</div>
+
+<style>
+    .viz-in-progress {
+        margin-bottom: 0;
+    }
+
+    .map-container {
+        margin: 0 auto;
+        width: 100%;
+        height: 100%;
+    }
+
+    .source {
+        text-align: center;
+        margin-top: 1rem;
+        margin-bottom: 0rem;
+    }
+</style>
+```
+
+# src/routes/inclusion/+page.svelte
+
+```svelte
+<svelte:head>
+    <title>Data on inclusion for students with disabilities</title>
+    <meta name="Inclusion Data" content="Data on inclusion for students with disabilities" />
+</svelte:head>
+
+<script>
+    import { data, selectedDistrict, selectedDistrictData } from "$lib/stores/stores.js"
+    import Beeswarm from "$lib/components/Beeswarm.svelte"
+    import Divider from "$lib/components/Divider.svelte"
+    import { Search, Pencil, TableProperties } from 'lucide-svelte'
+    import Scroller from "$lib/components/Scroller.svelte"
+    import StateMap from "$lib/components/StateMap.svelte"
+    import SelectDistricts from "$lib/components/SelectDistricts.svelte"
+    import SimpleAccordion from "$lib/components/SimpleAccordion.svelte"
+    //import DistrictsBeeswarm from "$lib/components/DistrictsBeeswarm.svelte"
+    import VisualizationToggle from "$lib/components/VisualizationToggle.svelte"
+    import TableOfDistricts from "$lib/components/TableOfDistricts.svelte"
+    import Sources from "$lib/components/Sources.svelte"
+
+    console.log($data)
+
+    // Scroller variables
+    let index, offset, progress
+	let top = 0
+	let threshold = 0.1
+	let bottom = 0.8
+
+    let isDistrictSelected = false
+    $: isDistrictSelected = $selectedDistrict && $selectedDistrict.length > 0
+    $: {
+        if ($selectedDistrict) {
+            index = 0;
+        }
+    }
+</script>
+
+
+<div class="intro">
+    <div class="beeswarm-container">
+        <Beeswarm />
+    </div>
+
+    <h1 class="headline text-width">
+        Find rates of inclusion, discipline, graduation and more for disabled students in Oregon
+    </h1>
+
+    <h3 class="byline text-width">
+        Updated with data from the 2022-23 school year
+    </h3>
+
+    <StateMap />
+
+    <p class="text-width">
+        For families of students with disabilities, a common concern is not knowing what supports their child is eligible for from one area to the next. Moving from one place to another can mean drastic changes in services, even though the disability hasn’t changed. These changes can have a huge impact on the well-being and developmental trajectory of a child.
+    </p>
+    <p class="text-width">
+        Usually, families find that the process of how an agency or district evaluates a student's disability is not transparent, and how those evaluations are used to make decisions about services is even less so. However, data is reported to states and the federal government that helps give a view into how students, as a whole, are supported in different areas.
+    </p>
+    <p class="text-width">
+        Below, you can explore that data.
+    </p>
+</div>
+
+<div class="content-wrapper">
+    <Scroller 
+        top={top} 
+        threshold={threshold} 
+        bottom={bottom} 
+        bind:index 
+        bind:offset 
+        bind:progress
+    >
+        <div slot="background" class="background">
+            <Divider>
+                <Search />
+            </Divider>
+
+            <SelectDistricts />
+
+            <!-- <DistrictsBeeswarm index={index} /> -->
+            <VisualizationToggle index={index} />
+        </div>
+
+        <div slot="foreground">
+            <section>
+            </section>
+            {#if isDistrictSelected}
+                <section>
+                    <div class="text-foreground">These circles represent all of the school districts in <strong>Oregon</strong>. Districts farther to the <strong>right</strong> are <strong><em>more inclusive</em></strong>. Districts farther to the <strong>left</strong> are <strong><em>less inclusive</em></strong>.</div>
+                </section>
+                <section>
+                    <div class="text-foreground"><strong>{$selectedDistrictData[0].properties["Institution Name"]}</strong> is selected. Let's learn more about its inclusion of students with disabilities</div>
+                </section>
+                <section>
+                    <div class="text-foreground">
+                        {$selectedDistrictData[0].properties["Institution Name"]} has <strong>{$selectedDistrictData[0].properties["Total Student Count"].toLocaleString()} students</strong> with IEPs
+                        <br>
+                        <br>
+                        <em>(An IEP is a document that outlines what supports a student with a disability will receive at school. It's personalized to each student)</em>
+                    </div>
+                </section>
+                <section>
+                    <div class="text-foreground">
+                        Based on how much of their day those students spend in regular classrooms, <strong>{$selectedDistrictData[0].properties["Institution Name"]}</strong> has an <strong>inclusion score</strong> of <strong>{$selectedDistrictData[0].properties.quartile} out of 4</strong> and is more inclusive than <strong>{$selectedDistrictData[0].properties.percent_more_inclusive}% of districts</strong> in Oregon.
+                        <br>
+                        <br>
+                        <SimpleAccordion title="How is the inclusion score calculated?">
+                            The inclusion score is based on the percent of children with disabilites who are in a regular classroom for:
+                            <ul>
+                                <li>- more than 80% of the day</li>
+                                <li>- more than 40% and less than 80% of the day</li>
+                                <li>- less than 40% of the day</li>
+                            </ul>
+                            Or, in a completely separate environment, like a hospital or detention facility.
+                        </SimpleAccordion>
+                    </div>
+                </section>
+                <section>
+                    <div class="text-foreground">This is how inclusive {$selectedDistrictData[0].properties["Institution Name"]} is compared to the <strong>largest districts</strong> in the state</div>
+                </section>
+                <section>
+                    <div class="text-foreground">And to the <strong>districts it touches</strong></div>
+                </section>
+                <section>
+                    <div class="text-foreground">
+                        There's a lot more to explore in {$selectedDistrictData[0].properties["Institution Name"]}'s IEP data, including <strong>graduation rates</strong> and <strong>racial representation</strong>. You can find that information by clicking on 'learn more' in the district's <strong>tooltip</strong>, or in the <strong>table below</strong>
+                        <br>
+                        <br>
+                        To <strong>start over</strong> select a new district
+                    </div>
+                </section>
+            {:else}
+                <section>
+                    <div class="text-foreground">Please select a district to view detailed information.</div>
+                </section>
+            {/if}
+        </div>
+    </Scroller>
+
+    <div class="post-scroll-content">
+        <Divider>
+            <TableProperties />
+        </Divider>
+    
+        <div class="table">
+            <TableOfDistricts data={$data} />
+        </div>
+    
+        <Divider>
+            <Pencil />
+        </Divider>
+    
+        <Sources />
+    </div>
+</div>
+
+
+<style>
+    .intro {
+        margin-top: -4rem;
+        margin-bottom: 1rem;
+        position: relative;
+    }
+
+    .beeswarm-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        z-index: 1;
+    }
+
+    .headline {
+        text-align: left;
+        color: var(--colorInclusiveDark);
+        position: relative;
+        z-index: 2;
+        margin-top: 14rem;
+        margin-bottom: 2.5rem;
+        background: linear-gradient(to bottom, transparent 0%, var(--colorBackgroundWhite) 30%);
+        padding: 3rem 0 0rem 0;
+        font-size: 2.4rem;
+        line-height: 3rem;
+    }
+
+    @media (max-width: 768px) {
+        .headline {
+            width: 100%;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 1rem 1rem;
+        }
+    }
+
+    .byline {
+        font-size: 1rem;
+        margin-bottom: 0.75rem;
+        color: var(--colorNonInclusive);
+    }
+
+    .no-scroll {
+        overflow-y: hidden !important;
+    }
+
+    .content-wrapper {
+        position: relative;
+        z-index: 1;
+    }
+
+    .background {
+        background-color: var(--colorBackgroundWhite);
+        padding-bottom: 2rem;
+    }
+
+    .post-scroll-content {
+        position: relative;
+        z-index: 2;
+        background-color: var(--colorBackgroundWhite);
+        margin-top: 2rem;
+    }
+
+    section {
+        height: 100vh;
+        max-width: 40rem;
+        margin: 0 auto;
+        pointer-events: none; /* Makes the section transparent to pointer events */
+    }
+
+    .text-foreground {
+        display: inline-block;
+        padding: 1rem;
+        color: var(--colorWhite);
+        background-color: var(--colorText);
+        background-color: color-mix(in srgb, var(--colorText) 90%, transparent);
+        border-radius: 0.25rem;
+        font-size: 1.3rem;
+        text-align: center;
+        box-shadow: var(--shadow);
+        max-width: 90%;
+        position: relative;
+        z-index: 100;     
+        pointer-events: auto;
+    }
+
+    .text-foreground * {
+        pointer-events: auto; /* Re-enables pointer events for text-foreground contents */
+    }
+
+    .table {
+        background-color: var(--colorBackgroundWhite);
+        z-index: 5;
+    }
+</style>
+
+
+```
+
 # src/routes/resources/+page.svelte
 
 ```svelte
@@ -6284,6 +7009,113 @@ export async function POST({ request }) {
         font-weight: bold;
         color: var(--colorInclusiveDark);
         font-size: 1.2rem;
+    }
+</style>
+```
+
+# src/routes/smallschools/+page.svelte
+
+```svelte
+<script>
+    import SmallSchools from '$lib/components/SmallSchools.svelte';
+    import Divider from "$lib/components/Divider.svelte";
+    import { LineChart } from 'lucide-svelte';
+    import { colors } from "$lib/styles/colorConfig";
+</script>
+
+<svelte:head>
+    <title>School Performance Analysis</title>
+    <meta name="description" content="Analysis of small school performance compared to per pupil spending" />
+</svelte:head>
+
+<div class="container">
+    <h1 class="text-width">Small Schools Performance Analysis</h1>
+    
+    <div class="text-width description">
+        <p>
+            This analysis explores the relationship between per pupil spending and academic 
+            performance in small primary schools. The scatterplot below shows the 
+            percentage of students achieving proficient and above scores plotted against 
+            per pupil spending.
+        </p>
+        <p>
+            Circle size represents the percentage of students with disabilities at each school.
+        </p>
+    </div>
+    
+    <Divider>
+        <LineChart color={colors.colorInclusiveDark} />
+    </Divider>
+    
+    <div class="viz-container">
+        <SmallSchools />
+    </div>
+    
+    <div class="text-width findings">
+        <h3>Key Observations</h3>
+        <ul>
+            <li>Schools with higher per pupil spending tend to show higher proficiency rates.</li>
+            <li>Schools with larger percentages of students with disabilities often have higher per pupil spending.</li>
+            <li>The data suggests allocating resources may help improve outcomes for all students.</li>
+        </ul>
+        
+        <div class="source">
+            <p><strong>Source:</strong> Oregon Department of Education, 2022-23 school year</p>
+        </div>
+    </div>
+</div>
+
+<style>
+    .container {
+        padding: 2rem 0;
+    }
+    
+    h1 {
+        text-align: left;
+        color: var(--colorInclusiveDark);
+        margin-bottom: 1.5rem;
+    }
+    
+    .description {
+        margin-bottom: 2rem;
+    }
+    
+    .description p {
+        margin-bottom: 1rem;
+    }
+    
+    .viz-container {
+        margin: 2rem auto;
+        max-width: 1000px;
+        width: 100%;
+    }
+    
+    .findings {
+        margin-top: 3rem;
+    }
+    
+    .findings h3 {
+        color: var(--colorInclusiveDark);
+        margin-bottom: 1rem;
+        font-family: var(--font-headers);
+    }
+    
+    .findings ul {
+        margin-left: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .findings li {
+        margin-bottom: 0.5rem;
+        line-height: 1.6;
+    }
+    
+    .source {
+        font-size: 0.9rem;
+        color: var(--colorDarkGray);
+        margin-top: 2rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--colorLightGray);
     }
 </style>
 ```
@@ -6335,8 +7167,6 @@ import { geoTransverseMercator, geoPath } from 'd3-geo'
 export async function load({ params }) {
     const data = await getData()
     
-    // add force calc logic, cx and cy for each district's bubble, so that can then be passed into the BubbleMap component to position bubbles right away
-
     return {
         data
     }
