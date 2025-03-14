@@ -617,6 +617,7 @@ You can preview the production build with `npm run preview`.
     let mapElement
     let simulation
     let nodes = []  // Will store our circle data
+    let mapReady = false // Flag to track if the map is ready to render
 
     // Find the bounds encompassing all districts in the state
     let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity;
@@ -637,21 +638,33 @@ You can preview the production build with `npm run preview`.
     function updateProjection() {
         if (!browser || !mapElement || !$data.length) return
         
-        const widthStateBounds = maxLng - minLng
-        const heightStateBounds = maxLat - minLat
-        const aspectRatio = widthStateBounds / heightStateBounds
-  
-        dims.width = mapElement.offsetWidth
-        dims.height = mapElement.offsetHeight
-  
-        projection = geoTransverseMercator()
-            .rotate([-centralLong, -centralLat])
-            .fitSize([dims.width, dims.height], featureCollection);
-  
-        districtPathGenerator = geoPath(projection);
+        // Use setTimeout to ensure DOM is fully ready
+        setTimeout(() => {
+            // Make sure mapElement has dimensions before proceeding
+            if (mapElement.offsetWidth === 0 || mapElement.offsetHeight === 0) {
+                // Set default dimensions if not available from the element
+                dims.width = dims.width || 800;
+                dims.height = dims.height || 400;
+            } else {
+                dims.width = mapElement.offsetWidth
+                dims.height = mapElement.offsetHeight
+            }
+            
+            // Only proceed if we have valid dimensions and data
+            if (dims.width > 0 && dims.height > 0 && $data.length > 0) {
+                projection = geoTransverseMercator()
+                    .rotate([-centralLong, -centralLat])
+                    .fitSize([dims.width, dims.height], featureCollection);
+            
+                districtPathGenerator = geoPath(projection);
 
-        // Update nodes with new positions
-        updateNodesData()
+                // Update nodes with new positions
+                updateNodesData();
+                
+                // Mark map as ready to render
+                mapReady = true;
+            }
+        }, 100); // Small delay to ensure DOM is ready
     }
   
     let currentTransform = writable({ x: 0, y: 0, k: 1 })
@@ -663,7 +676,7 @@ You can preview the production build with `npm run preview`.
         .range([colors.colorSeparate, colors.colorNonInclusive, colors.colorSemiInclusive, colors.colorInclusive])
 
     $: rScale = scaleSqrt()
-        .domain(extent($data, d => d.properties['Total Student Count']))
+        .domain(extent($data, d => d.properties['Total Student Count'] || 0))
         .range([3, 50])
 
     function updateNodesData() {
@@ -674,19 +687,37 @@ You can preview the production build with `npm run preview`.
             .filter(d => 
                 d.properties.GEOID !== "999999" && 
                 d.properties.weighted_inclusion !== null && 
-                d.properties.weighted_inclusion !== undefined
+                d.properties.weighted_inclusion !== undefined &&
+                d.geometry // Ensure geometry exists
             )
             .map(district => {
-                const [x, y] = districtPathGenerator.centroid(district)
-                return {
-                    x,
-                    y,
-                    originalX: x,
-                    originalY: y,
-                    r: rScale(district.properties['Total Student Count']),
-                    district: district,
+                try {
+                    const centroid = districtPathGenerator.centroid(district);
+                    // Check if centroid is valid (not NaN)
+                    const x = isNaN(centroid[0]) ? dims.width / 2 : centroid[0];
+                    const y = isNaN(centroid[1]) ? dims.height / 2 : centroid[1];
+                    
+                    return {
+                        x,
+                        y,
+                        originalX: x,
+                        originalY: y,
+                        r: rScale(district.properties['Total Student Count'] || 0),
+                        district: district,
+                    }
+                } catch (e) {
+                    console.warn("Error processing district:", district.properties.GEOID);
+                    // Provide fallback values
+                    return {
+                        x: dims.width / 2,
+                        y: dims.height / 2,
+                        originalX: dims.width / 2,
+                        originalY: dims.height / 2,
+                        r: 5, // Default small radius
+                        district: district,
+                    }
                 }
-            })
+            });
 
         // Initialize or update force simulation
         if (!simulation) {
@@ -707,27 +738,38 @@ You can preview the production build with `npm run preview`.
     onMount(() => {
         if (!browser) return
         
-        setTimeout(updateProjection, 0)
-        window.addEventListener('resize', updateProjection)
+        // Wait a bit before initializing to make sure DOM is ready
+        setTimeout(updateProjection, 200)
+        
+        // Set up resize handler
+        const handleResize = () => {
+            // Add debounce to avoid too many updates
+            clearTimeout(window.resizeTimer);
+            window.resizeTimer = setTimeout(updateProjection, 250);
+        };
+        
+        window.addEventListener('resize', handleResize)
         
         return () => {
             if (simulation) simulation.stop()
-            window.removeEventListener('resize', updateProjection)
+            window.removeEventListener('resize', handleResize)
+            clearTimeout(window.resizeTimer);
         }
     })
 
+    // Re-initialize when data changes
     $: if (browser && $data.length) {
-        setTimeout(updateProjection, 0)
+        setTimeout(updateProjection, 200)
     }
 </script>
 
-<div id="map" bind:this={mapElement}>
-    <svg bind:this={svgElement} width={dims.width} height={dims.height}>
-        <g bind:this={gElement}>
-            {#if districtPathGenerator && dims.width > 0 && dims.height > 0 && $data.length}
+<div id="map" bind:this={mapElement} style="width: 100%; height: 100%;">
+    {#if mapReady && projection && districtPathGenerator && dims.width > 0 && dims.height > 0}
+        <svg bind:this={svgElement} width={dims.width} height={dims.height}>
+            <g bind:this={gElement}>
                 <g>
                     {#each $data as district}
-                        {#if district.properties.GEOID !== "999999"}
+                        {#if district.properties.GEOID !== "999999" && district.geometry}
                             <path
                                 class="districtShape"
                                 d={districtPathGenerator(district)}
@@ -739,22 +781,28 @@ You can preview the production build with `npm run preview`.
                         {/if}
                     {/each}
                     
-                    <!-- Render circles from simulation nodes instead -->
+                    <!-- Render circles from simulation nodes -->
                     {#each nodes as node}
-                        <circle
-                            cx={node.x}
-                            cy={node.y}
-                            r={node.r}
-                            fill={colorScale(node.district.properties.quartile)}
-                            stroke={colors.colorBackgroundWhite}
-                            stroke-width="1"
-                            opacity="0.8"
-                        ></circle>
+                        {#if !isNaN(node.x) && !isNaN(node.y) && node.r > 0}
+                            <circle
+                                cx={node.x}
+                                cy={node.y}
+                                r={node.r}
+                                fill={colorScale(node.district.properties.quartile)}
+                                stroke={colors.colorBackgroundWhite}
+                                stroke-width="1"
+                                opacity="0.8"
+                            ></circle>
+                        {/if}
                     {/each}
                 </g>
-            {/if}
-        </g>
-    </svg>
+            </g>
+        </svg>
+    {:else}
+        <div class="loading">
+            <p>Loading map...</p>
+        </div>
+    {/if}
 </div>
 
 <style>
@@ -775,6 +823,15 @@ You can preview the production build with `npm run preview`.
   
     .districtShape {
         vector-effect: non-scaling-stroke;
+    }
+
+    .loading {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        height: 100%;
+        color: var(--colorDarkGray);
     }
 </style>
 ```
@@ -4362,6 +4419,12 @@ You can preview the production build with `npm run preview`.
     // Format numbers with commas
     const formatNumber = num => num.toLocaleString()
 
+    // Find the 5 largest districts by "Total Student Count"
+    $: largestDistricts = filteredData
+        .sort((a, b) => b.properties['Total Student Count'] - a.properties['Total Student Count'])
+        .slice(0, 5)
+        .map(district => district.properties.GEOID)
+
     // Force simulation setup with improved parameters
     let nodes = []
     $: {
@@ -4391,16 +4454,6 @@ You can preview the production build with `npm run preview`.
     <SVGChart {dimensions}>
         <!-- X-axis -->
         <g class="x-axis">
-            <!-- X-axis line -->
-            <!-- <line 
-                x1={0}
-                y1={dimensions.innerHeight}
-                x2={dimensions.innerWidth}
-                y2={dimensions.innerHeight}
-                stroke={colors.colorLightGray}
-                stroke-width="1"
-            /> -->
-            
             <!-- X-axis ticks and labels -->
             {#each xScale.ticks(5) as tick}
                 <g transform="translate({xScale(tick)}, {dimensions.innerHeight - 100})">
@@ -4452,17 +4505,43 @@ You can preview the production build with `npm run preview`.
                 </title>
             </circle>
         {/each}
+        
+        <!-- Labels for the 5 largest districts -->
+        {#each nodes as node}
+            {#if largestDistricts.includes(node.properties.GEOID)}
+                <!-- White background for text readability -->
+                <text
+                    x={node.x}
+                    y={node.y}
+                    text-anchor="middle"
+                    dominant-baseline="middle"
+                    fill="white"
+                    stroke="white"
+                    stroke-width="4"
+                    stroke-linejoin="round"
+                    font-size="12px"
+                    font-weight="600"
+                    pointer-events="none"
+                >
+                    {node.properties['Institution Name']}
+                </text>
+                <!-- Actual text label -->
+                <text
+                    x={node.x}
+                    y={node.y}
+                    text-anchor="middle"
+                    dominant-baseline="middle"
+                    fill={colors.colorText}
+                    font-size="12px"
+                    font-weight="600"
+                    pointer-events="none"
+                >
+                    {node.properties['Institution Name']}
+                </text>
+            {/if}
+        {/each}
 
         <!-- Add line at current state funding -->
-        <!-- <line
-            x1={xScale(11)}
-            y1={180}
-            x2={xScale(11)}
-            y2={dimensions.innerHeight - 100}
-            stroke={colors.colorWhite}
-            stroke-width="8"
-            opacity="0.4"
-        /> -->
         <line
             x1={xScale(11)}
             y1={60}
@@ -4494,15 +4573,6 @@ You can preview the production build with `npm run preview`.
         </text>
 
         <!-- Add line at proposed state funding -->
-        <!-- <line
-            x1={xScale(15)}
-            y1={120}
-            x2={xScale(15)}
-            y2={dimensions.innerHeight - 100}
-            stroke={colors.colorWhite}
-            stroke-width="8"
-            opacity="0.4"
-        /> -->
         <line
             x1={xScale(15)}
             y1={60}
@@ -5387,7 +5457,8 @@ You can preview the production build with `npm run preview`.
                     <DistrictsBeeswarm {index} />
                 </div>
             {:else}
-                <div transition:fade={{ duration: 300 }}>
+                <div transition:fade={{ duration: 300 }}
+                     style="width: 100%; height: 400px;">
                     <BubbleMap />
                 </div>
             {/if}
@@ -5437,6 +5508,8 @@ You can preview the production build with `npm run preview`.
 
     .visualization {
         width: 100%;
+        min-height: 400px;
+        position: relative;
     }
 
     @media (max-width: 768px) {
@@ -6233,7 +6306,7 @@ export const arrowRight = `
         <slot />
     </main>
 
-    <!-- <FeedbackComponent /> -->
+    <FeedbackComponent />
 
     <Footer />
 </div>
@@ -6686,15 +6759,32 @@ export async function load({ params }) {
     let currentView = 'map'
 </script>
 
-<h1 class="text-width">Oregon funding of special education leaves large gap</h1>
-<div class="source text-width">
-    Data: Oregon Dept of Education, 2022-23 school year
+<h1 class="text-width">Oregon's special education funding gap: the 11% cap problem</h1>
+
+<div class="text-width first-text">
+    <p> 
+        Oregon's current special education funding cap of 11% falls significantly short of meeting the actual needs of school districts across the state. Many of Oregon's largest districts identify well above this threshold, with the largest districts serving student populations where 18% of students have Individualized Education Plans (IEPs).
+    </p>
 </div>
 
 <div class="map-container">
     <div class="viz-in-progress">
         <SwarmIdentificationSize />
     </div>
+    <div class="source">
+        Data: Oregon Dept of Education, 2022-23 school year
+    </div>
+</div>
+
+<div class="text-width last-text">
+    <h3>The current landscape</h3>
+    <p>Major districts like Portland Public Schools (18% students with IEPs), Salem-Keizer (18%), and Medford (17%) are operating well beyond the funding cap. Even districts like Beaverton (13%) and Eugene 4J (14%) exceed the arbitrary 11% threshold that determines state funding allocation.</p>
+    <h3>
+        Financial implications
+    </h3>
+    <p>
+        This funding structure creates a problematic disincentive for districts to identify students with disabilities. When districts identify students beyond the 11% cap, they must absorb those additional costs without corresponding state support.
+    </p>
 </div>
 
 <style>
@@ -6709,9 +6799,18 @@ export async function load({ params }) {
     }
 
     .source {
-        text-align: center;
-        margin-top: 1rem;
-        margin-bottom: 0rem;
+        text-align: right;
+        margin-top: -5rem;
+        margin-bottom: 2rem;
+        margin-right: 2rem;
+    }
+
+    .first-text {
+        margin-top: 2rem;
+    }
+
+    .last-text {
+        margin-bottom: 4rem;
     }
 </style>
 ```

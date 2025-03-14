@@ -49,7 +49,8 @@
                     <DistrictsBeeswarm {index} />
                 </div>
             {:else}
-                <div transition:fade={{ duration: 300 }}>
+                <div transition:fade={{ duration: 300 }}
+                     style="width: 100%; height: 400px;">
                     <BubbleMap />
                 </div>
             {/if}
@@ -99,6 +100,8 @@
 
     .visualization {
         width: 100%;
+        min-height: 400px;
+        position: relative;
     }
 
     @media (max-width: 768px) {
