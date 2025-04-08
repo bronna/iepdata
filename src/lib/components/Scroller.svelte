@@ -71,6 +71,7 @@
 	export let threshold = 0.5;
 	export let query = 'section';
 	export let parallax = false;
+	export let showHelpers = false; // New prop to toggle debug helpers
 
 	// bindings
 	export let index = 0;
@@ -181,6 +182,18 @@
 	<svelte-scroller-foreground bind:this={foreground}>
 		<slot name="foreground"></slot>
 	</svelte-scroller-foreground>
+
+	{#if showHelpers}
+		<div class="scroller-helper top-helper" style="top: {top_px}px">
+			<span class="helper-label">Top ({top})</span>
+		</div>
+		<div class="scroller-helper threshold-helper" style="top: {threshold_px}px">
+			<span class="helper-label">Threshold ({threshold})</span>
+		</div>
+		<div class="scroller-helper bottom-helper" style="top: {bottom_px}px">
+			<span class="helper-label">Bottom ({bottom})</span>
+		</div>
+	{/if}
 </svelte-scroller-outer>
 
 <style>
@@ -220,4 +233,38 @@
 		-moz-transform: translate3d(0, 0, 0);
 		transform: translate3d(0, 0, 0); */
 	}
-</style>
+
+	/* Debug helpers */
+	.scroller-helper {
+		position: fixed;
+		left: 0;
+		right: 0;
+		height: 2px;
+		z-index: 1000;
+		pointer-events: none;
+	}
+
+	.top-helper {
+		background-color: rgba(255, 0, 0, 0.5);
+	}
+
+	.threshold-helper {
+		background-color: rgba(0, 255, 0, 0.5);
+	}
+
+	.bottom-helper {
+		background-color: rgba(0, 0, 255, 0.5);
+	}
+
+	.helper-label {
+		position: absolute;
+		left: 10px;
+		top: -20px;
+		background-color: rgba(0, 0, 0, 0.7);
+		color: white;
+		padding: 2px 8px;
+		border-radius: 4px;
+		font-size: 12px;
+		white-space: nowrap;
+	}
+</style> 

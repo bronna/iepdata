@@ -1,6 +1,9 @@
 <script>
     import { fade } from 'svelte/transition'
     import SwarmIdentificationSize from '$lib/components/SwarmIdentificationSize.svelte'
+    import Divider from "$lib/components/Divider.svelte"
+    import { Pencil } from 'lucide-svelte'
+    import Sources from "$lib/components/Sources.svelte"
 
     export let data
     console.log('viz test data:', data)
@@ -36,6 +39,12 @@
     </p>
 </div>
 
+<Divider>
+    <Pencil />
+</Divider>
+
+<Sources />
+
 <style>
     .viz-in-progress {
         margin-bottom: 0;
@@ -49,7 +58,7 @@
 
     .source {
         text-align: right;
-        margin-top: -5rem;
+        margin-top: -1rem;
         margin-bottom: 2rem;
         margin-right: 2rem;
     }

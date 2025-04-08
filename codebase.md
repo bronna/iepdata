@@ -599,10 +599,22 @@ You can preview the production build with `npm run preview`.
         forceX,
         forceY
     } from 'd3'
-    import { data } from '$lib/stores/stores.js'
+    import { data, selectedDistrict } from '$lib/stores/stores.js'
     import { colors } from "$lib/styles/colorConfig"
     import { browser } from '$app/environment'
+    import { fade } from 'svelte/transition'
+    import tippy from 'tippy.js'
+    import 'tippy.js/dist/tippy.css'
   
+    // Reference cities to help with orientation
+    const majorCities = [
+        { name: "Portland", lon: -122.6784, lat: 45.5152 },
+        { name: "Salem", lon: -123.0351, lat: 44.9429 },
+        { name: "Eugene", lon: -123.0868, lat: 44.0521 },
+        { name: "Bend", lon: -121.3153, lat: 44.0582 },
+        { name: "Medford", lon: -122.8756, lat: 42.3265 }
+    ];
+    
     $: featureCollection = {
       type: "FeatureCollection",
       features: $data
@@ -618,7 +630,8 @@ You can preview the production build with `npm run preview`.
     let simulation
     let nodes = []  // Will store our circle data
     let mapReady = false // Flag to track if the map is ready to render
-
+    let showLabels = true // Option to toggle city labels
+    
     // Find the bounds encompassing all districts in the state
     let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity;
   
@@ -634,6 +647,9 @@ You can preview the production build with `npm run preview`.
             }
         })
     }
+
+    // Get the selected district data for highlighting
+    $: selectedDistrictData = $data.find(d => d.properties.GEOID === $selectedDistrict);
 
     function updateProjection() {
         if (!browser || !mapElement || !$data.length) return
@@ -704,6 +720,7 @@ You can preview the production build with `npm run preview`.
                         originalY: y,
                         r: rScale(district.properties['Total Student Count'] || 0),
                         district: district,
+                        isSelected: district.properties.GEOID === $selectedDistrict
                     }
                 } catch (e) {
                     console.warn("Error processing district:", district.properties.GEOID);
@@ -715,6 +732,7 @@ You can preview the production build with `npm run preview`.
                         originalY: dims.height / 2,
                         r: 5, // Default small radius
                         district: district,
+                        isSelected: district.properties.GEOID === $selectedDistrict
                     }
                 }
             });
@@ -734,6 +752,24 @@ You can preview the production build with `npm run preview`.
             simulation.alpha(1).restart()
         }
     }
+
+    // Toggle city labels
+    function toggleLabels() {
+        showLabels = !showLabels;
+    }
+
+    // Calculate selected district's label position
+    $: selectedLabelPosition = (() => {
+        if (!selectedDistrictData || !projection || !selectedDistrictData.geometry) return null;
+        
+        const centroid = districtPathGenerator.centroid(selectedDistrictData);
+        if (isNaN(centroid[0]) || isNaN(centroid[1])) return null;
+        
+        return {
+            x: centroid[0],
+            y: centroid[1] - 15 // Position label above the district
+        };
+    })();
 
     onMount(() => {
         if (!browser) return
@@ -761,12 +797,57 @@ You can preview the production build with `npm run preview`.
     $: if (browser && $data.length) {
         setTimeout(updateProjection, 200)
     }
+
+    // Handle clicks on districts
+    // Tooltip content generation function to match DistrictsBeeswarm
+    function tooltipContent(nodeData) {
+        return `
+            <span style="font-family:'Source Sans 3', sans-serif;"><strong>${nodeData["Institution Name"]}</strong><br>
+            Inclusion score: <strong>${nodeData.quartile}</strong> out of 4 ${nodeData["Total Student Count"] < 500 ? '<strong>*</strong>' : ''}<br>
+            <strong>${nodeData["Total Student Count"]}</strong> students with IEPs<br>
+            <a class="tooltip-link" href="/${nodeData.GEOID}"><strong>Learn more ></strong></a></span>
+        `;
+    }
+
+    // Tooltip action for Svelte
+    function tooltipAction(element, nodeContent) {
+        const tooltip = tippy(element, {
+            content: nodeContent,
+            allowHTML: true,
+            interactive: true,
+            appendTo: document.body,
+            animation: 'fade',
+            delay: [100, 0],
+            placement: 'top',
+            theme: 'custom'
+        });
+
+        return {
+            update(newContent) {
+                tooltip.setContent(newContent);
+            },
+            destroy() {
+                tooltip.destroy();
+            }
+        };
+    }
+
+    function handleDistrictClick(district) {
+        selectedDistrict.set(district.properties.GEOID);
+    }
 </script>
 
 <div id="map" bind:this={mapElement} style="width: 100%; height: 100%;">
+    <div class="map-controls">
+        <button class="control-btn" on:click={toggleLabels}>
+            {showLabels ? 'Hide' : 'Show'} City Labels
+        </button>
+    </div>
+
     {#if mapReady && projection && districtPathGenerator && dims.width > 0 && dims.height > 0}
         <svg bind:this={svgElement} width={dims.width} height={dims.height}>
             <g bind:this={gElement}>
+                <!-- Background map shapes -->
                 <g>
                     {#each $data as district}
                         {#if district.properties.GEOID !== "999999" && district.geometry}
@@ -781,20 +862,125 @@ You can preview the production build with `npm run preview`.
                         {/if}
                     {/each}
                     
-                    <!-- Render circles from simulation nodes -->
+                    <!-- First render non-selected circles -->
                     {#each nodes as node}
-                        {#if !isNaN(node.x) && !isNaN(node.y) && node.r > 0}
+                        {#if !isNaN(node.x) && !isNaN(node.y) && node.r > 0 && !node.isSelected}
+                            <!-- svelte-ignore a11y-click-events-have-key-events -->
                             <circle
                                 cx={node.x}
                                 cy={node.y}
                                 r={node.r}
                                 fill={colorScale(node.district.properties.quartile)}
                                 stroke={colors.colorBackgroundWhite}
-                                stroke-width="1"
-                                opacity="0.8"
+                                stroke-width={1}
+                                opacity={0.8}
+                                on:click={() => handleDistrictClick(node.district)}
+                                class="district-circle"
+                                use:tooltipAction={tooltipContent(node.district.properties)}
                             ></circle>
                         {/if}
                     {/each}
+                    
+                    <!-- Then render selected circle with highlight effect -->
+                    {#each nodes as node}
+                        {#if !isNaN(node.x) && !isNaN(node.y) && node.r > 0 && node.isSelected}
+                            <!-- Background highlight circle -->
+                            <circle
+                                cx={node.x}
+                                cy={node.y}
+                                r={node.r + 6}
+                                fill="none"
+                                stroke={colors.colorDarkGray}
+                                stroke-width={6}
+                                stroke-opacity={0.5}
+                            />
+                            <!-- Selected circle -->
+                            <!-- svelte-ignore a11y-click-events-have-key-events -->
+                            <circle
+                                cx={node.x}
+                                cy={node.y}
+                                r={node.r}
+                                fill={colorScale(node.district.properties.quartile)}
+                                stroke={colors.colorWhite}
+                                stroke-width={1}
+                                on:click={() => handleDistrictClick(node.district)}
+                                class="district-circle selected"
+                                use:tooltipAction={tooltipContent(node.district.properties)}
+                            ></circle>
+                        {/if}
+                    {/each}
+
+                                                <!-- Selected district label -->
+                    {#if selectedLabelPosition && $selectedDistrict}
+                        <g in:fade={{ duration: 300 }}>
+                            <!-- White text stroke for better readability -->
+                            <text 
+                                x={selectedLabelPosition.x}
+                                y={selectedLabelPosition.y - 15}
+                                text-anchor="middle"
+                                dominant-baseline="middle"
+                                fill="white"
+                                stroke="white"
+                                stroke-width="5"
+                                stroke-linejoin="round"
+                                font-size="14px"
+                                font-weight="400"
+                            >
+                                {selectedDistrictData?.properties["Institution Name"]}
+                            </text>
+                            <!-- Label text -->
+                            <text 
+                                x={selectedLabelPosition.x}
+                                y={selectedLabelPosition.y - 15}
+                                text-anchor="middle"
+                                dominant-baseline="middle"
+                                fill="black"
+                                font-size="14px"
+                                font-weight="400"
+                            >
+                                {selectedDistrictData?.properties["Institution Name"]}
+                            </text>
+                        </g>
+                    {/if}
+
+                    <!-- Major cities markers -->
+                    {#if showLabels}
+                        {#each majorCities as city}
+                            {#if projection}
+                                {@const [x, y] = projection([city.lon, city.lat])}
+                                <g class="city-marker" in:fade={{ duration: 300 }}>
+                                    <!-- City dot -->
+                                    <circle 
+                                        cx={x} 
+                                        cy={y} 
+                                        r="3" 
+                                        fill={colors.colorWhite}
+                                        stroke={colors.colorDarkGray}
+                                        stroke-width="1"
+                                    />
+                                    <!-- City label with background -->
+                                    <rect 
+                                        x={x + 5} 
+                                        y={y - 10} 
+                                        width={city.name.length * 6 + 10} 
+                                        height="16" 
+                                        rx="4" 
+                                        fill="white" 
+                                        opacity="0.8"
+                                    />
+                                    <text 
+                                        x={x + 10} 
+                                        y={y} 
+                                        font-size="11px" 
+                                        fill={colors.colorDarkGray}
+                                        font-style="italic"
+                                    >
+                                        {city.name}
+                                    </text>
+                                </g>
+                            {/if}
+                        {/each}
+                    {/if}
                 </g>
             </g>
         </svg>
@@ -832,6 +1018,71 @@ You can preview the production build with `npm run preview`.
         width: 100%;
         height: 100%;
         color: var(--colorDarkGray);
+    }
+
+    .map-controls {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 10;
+        background: rgba(255,255,255,0.8);
+        border-radius: 4px;
+        padding: 5px;
+    }
+
+    .control-btn {
+        background: var(--colorText);
+        color: white;
+        border: none;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        cursor: pointer;
+    }
+
+    .control-btn:hover {
+        background: var(--colorDarkGray);
+    }
+
+    .district-circle {
+        cursor: pointer;
+        transition: opacity 0.2s;
+    }
+
+    .district-circle:hover {
+        opacity: 1;
+    }
+    
+    .district-circle.selected {
+        opacity: 1;
+    }
+
+    .city-marker {
+        pointer-events: none;
+    }
+    
+    /* Tooltip styles matching DistrictsBeeswarm */
+    :global(.tippy-box) {
+        background-color: white;
+        color: black;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        font-size: 14px;
+        padding: 8px;
+    }
+
+    :global(.tippy-arrow) {
+        color: white;
+    }
+
+    :global(.tooltip-link) {
+        color: #0066cc;
+        text-decoration: none;
+    }
+
+    :global(.tooltip-link:hover) {
+        text-decoration: underline;
     }
 </style>
 ```
@@ -3478,6 +3729,7 @@ You can preview the production build with `npm run preview`.
 	export let threshold = 0.5;
 	export let query = 'section';
 	export let parallax = false;
+	export let showHelpers = false; // New prop to toggle debug helpers
 
 	// bindings
 	export let index = 0;
@@ -3588,6 +3840,18 @@ You can preview the production build with `npm run preview`.
 	<svelte-scroller-foreground bind:this={foreground}>
 		<slot name="foreground"></slot>
 	</svelte-scroller-foreground>
+
+	{#if showHelpers}
+		<div class="scroller-helper top-helper" style="top: {top_px}px">
+			<span class="helper-label">Top ({top})</span>
+		</div>
+		<div class="scroller-helper threshold-helper" style="top: {threshold_px}px">
+			<span class="helper-label">Threshold ({threshold})</span>
+		</div>
+		<div class="scroller-helper bottom-helper" style="top: {bottom_px}px">
+			<span class="helper-label">Bottom ({bottom})</span>
+		</div>
+	{/if}
 </svelte-scroller-outer>
 
 <style>
@@ -3627,8 +3891,166 @@ You can preview the production build with `npm run preview`.
 		-moz-transform: translate3d(0, 0, 0);
 		transform: translate3d(0, 0, 0); */
 	}
-</style>
 
+	/* Debug helpers */
+	.scroller-helper {
+		position: fixed;
+		left: 0;
+		right: 0;
+		height: 2px;
+		z-index: 1000;
+		pointer-events: none;
+	}
+
+	.top-helper {
+		background-color: rgba(255, 0, 0, 0.5);
+	}
+
+	.threshold-helper {
+		background-color: rgba(0, 255, 0, 0.5);
+	}
+
+	.bottom-helper {
+		background-color: rgba(0, 0, 255, 0.5);
+	}
+
+	.helper-label {
+		position: absolute;
+		left: 10px;
+		top: -20px;
+		background-color: rgba(0, 0, 0, 0.7);
+		color: white;
+		padding: 2px 8px;
+		border-radius: 4px;
+		font-size: 12px;
+		white-space: nowrap;
+	}
+</style> 
+```
+
+# src/lib/components/ScrollyCard.svelte
+
+```svelte
+<script>
+    // Props for the card
+    export let active = false; // Whether this card is currently active
+  </script>
+  
+  <div class="scrolly-card {active ? 'active' : ''}">
+    <slot></slot>
+  </div>
+  
+  <style>
+    .scrolly-card {
+      display: inline-block;
+      padding: 1rem;
+      color: var(--colorWhite);
+      background-color: var(--colorText);
+      background-color: color-mix(in srgb, var(--colorText) 90%, transparent);
+      border-radius: 0.25rem;
+      font-size: 1.3rem;
+      text-align: center;
+      box-shadow: var(--shadow);
+      max-width: 90%;
+      position: relative;
+      z-index: 100;     
+      pointer-events: auto;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+  
+    .scrolly-card.active {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  
+    .scrolly-card:not(.active) {
+      opacity: 0.7;
+      transform: translateY(10px);
+    }
+  
+    /* Ensure all content within the card has pointer events */
+    .scrolly-card :global(*) {
+      pointer-events: auto;
+    }
+  </style>
+```
+
+# src/lib/components/ScrollyProgress.svelte
+
+```svelte
+<script>
+    export let currentIndex = 0;
+    export let totalSteps = 0;
+    export let onSkip = () => {}; // Function to call when Skip is clicked
+  </script>
+  
+  <div class="scrolly-progress-container">
+    <div class="dots-container">
+      {#each Array(totalSteps) as _, i}
+        <div 
+          class="progress-dot {i === currentIndex ? 'active' : ''} {i < currentIndex ? 'completed' : ''}"
+          aria-label="Step {i + 1} of {totalSteps}"
+        ></div>
+      {/each}
+    </div>
+    
+    <button class="skip-button" on:click={onSkip}>
+      Skip
+    </button>
+  </div>
+  
+  <style>
+    .scrolly-progress-container {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      z-index: 200;
+      pointer-events: auto;
+    }
+  
+    .dots-container {
+      display: flex;
+      gap: 0.5rem;
+    }
+  
+    .progress-dot {
+      width: 0.75rem;
+      height: 0.75rem;
+      border-radius: 50%;
+      background-color: var(--colorLightGray);
+      transition: all 0.3s ease;
+    }
+  
+    .progress-dot.active {
+      background-color: var(--colorInclusive);
+      transform: scale(1.2);
+    }
+  
+    .progress-dot.completed {
+      background-color: var(--colorInclusiveGray);
+    }
+  
+    .skip-button {
+      background-color: var(--colorText);
+      color: var(--colorWhite);
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 2rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+  
+    .skip-button:hover {
+      background-color: var(--colorDarkGray);
+    }
+  </style>
 ```
 
 # src/lib/components/SelectDistricts.svelte
@@ -3862,18 +4284,6 @@ You can preview the production build with `npm run preview`.
 # src/lib/components/SmallSchools.svelte
 
 ```svelte
-<!-- Add a legend for the color scale -->
-<g class="legend" transform="translate({dimensions.innerWidth - 200}, 180)">
-    <text font-size="12px" font-weight="600">Disadvantaged %:</text>
-    
-    <!-- Color legend -->
-    <rect x="10" y="20" width="20" height="15" fill="#f7c16f" />
-    <text x="40" y="33" font-size="10px">Below average ({Math.round(avgDisadvantagedPercent)}%)</text>
-    
-    <rect x="10" y="45" width="20" height="15" fill="#6acf96" />
-    <text x="40" y="58" font-size="10px">Above average ({Math.round(avgDisadvantagedPercent)}%)</text>
-</g>
-
 <script>
     import { scaleLinear, scaleSqrt, scaleThreshold } from 'd3-scale'
     import { extent } from 'd3-array'
@@ -3883,13 +4293,13 @@ You can preview the production build with `npm run preview`.
     // Import the data
     import smallSchoolsData from '$lib/data/small_schools.json'
 
-    export let width = 800
-    export let height = 400
+    export let width = 1200
+    export let height = 800
 
     let dimensions = {
         width,
         height,
-        margin: { top: 40, right: 190, bottom: 130, left: 70 },
+        margin: { top: 40, right: 260, bottom: 130, left: 70 },
         innerWidth: 0,
         innerHeight: 0
     }
@@ -3897,6 +4307,73 @@ You can preview the production build with `npm run preview`.
     $: {
         dimensions.innerWidth = width - dimensions.margin.left - dimensions.margin.right
         dimensions.innerHeight = height - dimensions.margin.top - dimensions.margin.bottom
+    }
+
+    // Function to get both fill and stroke colors for schools
+    function getSchoolColors(schoolName) {
+        // Check if the school name matches any of the three that should be blue
+        if (schoolName.includes('Cedaroak Park') || 
+            schoolName.includes('Sunset') || 
+            schoolName.includes('Stafford')) {
+            return {
+                fill: "#01b6e1", // Blue
+                stroke: "#0194b5"  // Darker blue for stroke
+            }
+        }
+        // Default gray colors
+        return {
+            fill: "#ff9900", // Medium orange
+            stroke: "#cc7a00"  // Darker orange for stroke
+        }
+    }
+
+    // Create pie chart segments for disadvantaged percentage
+    function createPieSegments(totalRadius, centerX, centerY, percentage) {
+        // Calculate angles for the pie slices
+        const disadvantagedAngle = percentage * 360 / 100;
+        
+        // Create SVG arc paths
+        // First, the disadvantaged slice (from 0 to the percentage angle)
+        const disadvantagedSlice = calculateArc(
+            centerX, 
+            centerY, 
+            totalRadius, 
+            0, 
+            disadvantagedAngle
+        );
+        
+        // Then, the remaining slice
+        const remainingSlice = calculateArc(
+            centerX, 
+            centerY, 
+            totalRadius, 
+            disadvantagedAngle, 
+            360
+        );
+        
+        return {
+            disadvantagedSlice,
+            remainingSlice
+        };
+    }
+    
+    // Helper function to calculate SVG arc path
+    function calculateArc(cx, cy, r, startAngle, endAngle) {
+        // Convert angles from degrees to radians
+        const startRad = (startAngle - 90) * Math.PI / 180; // -90 to start at the top
+        const endRad = (endAngle - 90) * Math.PI / 180;
+        
+        // Calculate start and end points
+        const x1 = cx + r * Math.cos(startRad);
+        const y1 = cy + r * Math.sin(startRad);
+        const x2 = cx + r * Math.cos(endRad);
+        const y2 = cy + r * Math.sin(endRad);
+        
+        // Determine the large arc flag
+        const largeArcFlag = endAngle - startAngle <= 180 ? 0 : 1;
+        
+        // Create the SVG arc path
+        return `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`;
     }
 
     // Process the data to parse numeric values
@@ -3929,18 +4406,13 @@ You can preview the production build with `npm run preview`.
     // Create a scale for circle radius based on enrollment (uses sqrt to scale by area not radius)
     $: rScale = scaleSqrt()
         .domain(extent(processedData, d => d.enrollment))
-        .range([10, 20])
+        .range([10, 26])
 
-    // Log the processed data to check values
-    console.log("Processed school data:", processedData)
+    // Calculate the average per pupil spending
+    $: avgSpending = processedData.reduce((sum, d) => sum + d.expenditure, 0) / processedData.length
 
-    // Calculate the average disadvantaged percentage
-    $: avgDisadvantagedPercent = processedData.reduce((sum, d) => sum + d.totalDisadvantagedPercent, 0) / processedData.length
-
-    // Create a color scale for disadvantaged percentage
-    $: colorScale = scaleThreshold()
-        .domain([avgDisadvantagedPercent])
-        .range(["#6acf96", "#f7c16f"]) // Schools below average: #f7c16f, Schools above average: #6acf96
+    // Calculate the average performance
+    $: avgPerformance = processedData.reduce((sum, d) => sum + d.performance, 0) / processedData.length
 
     // Create scales with fixed domains to ensure all schools are visible
     $: xScale = scaleLinear()
@@ -3954,7 +4426,97 @@ You can preview the production build with `npm run preview`.
         .nice()
 
     // Format numbers with commas
-    const formatMoney = num => `${num.toLocaleString()}`
+    const formatMoney = value => `$${value.toLocaleString()}`
+    
+    // Grid configuration for dot grid
+    const dotSize = 1.5 // Size of each dot
+    
+    // Generate dots for the grid based on axis ticks
+    $: dots = []
+    $: {
+        dots = []
+        
+        // Get tick values for both axes
+        const xTicks = xScale.ticks(5) // Same number as we're using for the axis
+        const yTicks = yScale.ticks(5) // Same number as we're using for the axis
+        
+        // Create half-interval ticks for x-axis
+        const xTicksWithHalves = []
+        for (let i = 0; i < xTicks.length - 1; i++) {
+            xTicksWithHalves.push(xTicks[i]) // Add the main tick
+            // Calculate and add the half-interval tick
+            const halfInterval = (xTicks[i] + xTicks[i+1]) / 2
+            xTicksWithHalves.push(halfInterval)
+        }
+        // Add the last main tick
+        if (xTicks.length > 0) {
+            xTicksWithHalves.push(xTicks[xTicks.length - 1])
+        }
+        
+        // Generate dots at the intersections of ticks
+        xTicksWithHalves.forEach(xTick => {
+            yTicks.forEach(yTick => {
+                dots.push({
+                    x: xScale(xTick),
+                    y: yScale(yTick)
+                })
+            })
+        })
+    }
+    
+    // Define positions for leader line labels with more control options
+    const leaderLineLabels = {
+        "Lowrie": { 
+            offsetX: 42, 
+            offsetY: 24,
+            lineStartX: 21,  // Offset from circle center where line begins
+            lineStartY: 14,
+            lineEndX: 40,  // Control where the leader line ends
+            lineEndY: 20,
+            anchor: "end"   // text-anchor: start, middle, or end
+        },
+        "Stafford": { 
+            offsetX: 60, 
+            offsetY: 15,
+            lineStartX: 20,
+            lineStartY: 2,
+            lineEndX: 58,
+            lineEndY: 11,
+            anchor: "end"
+        },
+        "Sunset": { 
+            offsetX: 65, 
+            offsetY: 10,
+            lineStartX: 18,
+            lineStartY: 8,
+            lineEndX: 63,
+            lineEndY: 6,
+            anchor: "start"
+        },
+        "Cedaroak Park": { 
+            offsetX: 30, 
+            offsetY: -25,
+            lineStartX: 13,
+            lineStartY: -13,
+            lineEndX: 28,
+            lineEndY: -28,
+            anchor: "middle"
+        },
+        "Willamette": { 
+            offsetX: 45, 
+            offsetY: 25,
+            lineStartX: 18,
+            lineStartY: 12,
+            lineEndX: 43,
+            lineEndY: 20,
+            anchor: "start"
+        }
+    };
+    
+    // Check if a school needs a leader line
+    function needsLeaderLine(schoolName) {
+        return Object.keys(leaderLineLabels).includes(schoolName);
+    }
 </script>
 
 
@@ -3962,166 +4524,240 @@ You can preview the production build with `npm run preview`.
 <h2 class="text-width">School Performance vs. Per Pupil Spending</h2>
 <div class="scatterplot">
 <SVGChart {dimensions}>
-<!-- X-axis -->
-<g class="x-axis">
-    <!-- X-axis line -->
-    <line 
-        x1={0}
-        y1={dimensions.innerHeight}
-        x2={dimensions.innerWidth}
-        y2={dimensions.innerHeight}
-        stroke={colors.colorLightGray}
-        stroke-width="1"
-    />
-    
-    <!-- X-axis ticks and labels -->
-    {#each xScale.ticks(5) as tick}
-        <g transform="translate({xScale(tick)}, {dimensions.innerHeight})">
-            <line 
-                y2="6" 
-                stroke={colors.colorLightGray}
-                stroke-width="1"
+    <!-- Dot grid background -->
+    <g class="dot-grid">
+        {#each dots as dot}
+            <circle 
+                cx={dot.x}
+                cy={dot.y}
+                r={dotSize}
+                fill={colors.colorLightGray}
+                opacity="0.6"
             />
-            <text 
-                y="20" 
-                text-anchor="middle"
-                fill={colors.colorText}
-                font-size="12px"
-            >
-                {formatMoney(tick)}
-            </text>
-        </g>
-    {/each}
+        {/each}
+    </g>
 
-    <!-- X-axis label -->
-    <text
-        x={dimensions.innerWidth / 2}
-        y={dimensions.innerHeight + 45}
-        text-anchor="middle"
-        fill={colors.colorText}
-        font-size="14px"
-        font-weight="600"
-    >
-        Per Pupil Spending
-    </text>
-</g>
+    <!-- X-axis -->
+    <g class="x-axis">
+        <!-- X-axis ticks and labels -->
+        {#each xScale.ticks(5) as tick}
+            <g transform="translate({xScale(tick)}, {dimensions.innerHeight})">
+                <line 
+                    y2="6" 
+                    stroke={colors.colorLightGray}
+                    stroke-width="1"
+                />
+                <text 
+                    y="20" 
+                    text-anchor="middle"
+                    fill={colors.colorText}
+                    font-size="12px"
+                >
+                    {formatMoney(tick)}
+                </text>
+            </g>
+        {/each}
 
-<!-- Y-axis -->
-<g class="y-axis">
-    <!-- Y-axis line -->
-    <line 
-        x1={0}
-        y1={0}
-        x2={0}
-        y2={dimensions.innerHeight}
-        stroke={colors.colorLightGray}
-        stroke-width="1"
-    />
-    
-    <!-- Y-axis ticks and labels -->
-    {#each yScale.ticks(5) as tick}
-        <g transform="translate(0, {yScale(tick)})">
-            <line 
-                x2="-6" 
-                stroke={colors.colorLightGray}
-                stroke-width="1"
-            />
-            <text 
-                x="-12" 
-                dy="0.32em" 
-                text-anchor="end"
-                fill={colors.colorText}
-                font-size="12px"
-            >
-                {tick}%
-            </text>
-        </g>
-    {/each}
-
-    <!-- Y-axis label -->
-    <text
-        transform="rotate(-90)"
-        x={-dimensions.innerHeight / 2}
-        y={-60}
-        text-anchor="middle"
-        fill={colors.colorText}
-        font-size="14px"
-        font-weight="600"
-    >
-        Proficient & Above
-    </text>
-</g>
-
-<!-- Plot points -->
-{#each processedData as school}
-    <g class="data-point">
-        <!-- Circles sized by school enrollment and colored by disadvantaged percentage -->
-        <circle
-            cx={xScale(school.expenditure)}
-            cy={yScale(school.performance)}
-            r={rScale(school.enrollment)}
-            fill={colorScale(school.totalDisadvantagedPercent)}
-            opacity= 0.8
-            stroke={colors.colorBackgroundWhite}
-            stroke-width="1"
-        >
-            <title>
-                {school.School}
-                Per Pupil Spending: {formatMoney(school.expenditure)}
-                Proficient & Above: {school.performance}%
-                Students with Disabilities: {school.disabilityPercent}%
-                Economically Disadvantaged: {school.economicDisadvantagePercent}%
-                Total Disadvantaged: {school.totalDisadvantagedPercent}%
-                Total Enrollment: {school.enrollment} students
-            </title>
-        </circle>
-        
+        <!-- X-axis label -->
         <text
-            x={xScale(school.expenditure)}
-            y={
-                // Adjust vertical position to ensure labels stay within chart
-                Math.max(
-                    yScale(school.performance) - rScale(school.enrollment) - 5, 
-                    0 // Minimum distance from top
-                )
-            }
+            x={dimensions.innerWidth / 2}
+            y={dimensions.innerHeight + 45}
             text-anchor="middle"
-            font-size="10px"
             fill={colors.colorText}
+            font-size="14px"
+            font-weight="600"
         >
-            {school.shortName}
+            Per Pupil Spending
         </text>
     </g>
-{/each}
 
-<!-- Add a legend with grid lines for x-axis -->
-<g class="legend" transform="translate({dimensions.innerWidth - 200}, 100)">
-    <text font-size="12px" font-weight="600">Circle Size:</text>
-    <text y="20" font-size="11px">Total School Enrollment</text>
-    
-    <!-- Calculate legend circle sizes based on actual enrollment values -->
-    <circle cx="20" cy="50" r={rScale(200)} fill=#f7c16f opacity="0.8"/>
-    <text x="40" y="53" font-size="10px">200 students</text>
-    
-    <circle cx="20" cy="85" r={rScale(350)} fill=#f7c16f opacity="0.8"/>
-    <text x="40" y="88" font-size="10px">350 students</text>
-    
-    <circle cx="20" cy="130" r={rScale(500)} fill=#f7c16f opacity="0.8"/>
-    <text x="40" y="133" font-size="10px">500 students</text>
-</g>
+    <!-- Y-axis -->
+    <g class="y-axis">
+        <!-- Y-axis ticks and labels -->
+        {#each yScale.ticks(5) as tick}
+            <g transform="translate(0, {yScale(tick)})">
+                <line 
+                    x2="-6" 
+                    stroke={colors.colorLightGray}
+                    stroke-width="1"
+                />
+                <text 
+                    x="-12" 
+                    dy="0.32em" 
+                    text-anchor="end"
+                    fill={colors.colorText}
+                    font-size="12px"
+                >
+                    {tick}%
+                </text>
+            </g>
+        {/each}
 
-<!-- Add horizontal grid lines for better readability -->
-{#each yScale.ticks(5) as tick}
-    <line 
-        x1={0}
-        y1={yScale(tick)}
-        x2={dimensions.innerWidth}
-        y2={yScale(tick)}
-        stroke={colors.colorLightGray}
-        stroke-width="0.5"
-        stroke-dasharray="4"
-    />
-{/each}
+        <!-- Y-axis label -->
+        <text
+            transform="rotate(-90)"
+            x={-dimensions.innerHeight / 2}
+            y={-60}
+            text-anchor="middle"
+            fill={colors.colorText}
+            font-size="14px"
+            font-weight="600"
+        >
+            Proficient & Above
+        </text>
+    </g>
+
+    <!-- Average lines -->
+    <g class="average-lines">
+        <!-- Avg per pupil spending line -->
+        <line 
+            x1={xScale(avgSpending)}
+            y1={0}
+            x2={xScale(avgSpending)}
+            y2={dimensions.innerHeight + 20}
+            stroke={colors.colorMediumGray}
+            stroke-width="1"
+            stroke-dasharray="4"
+        />
+
+        <!-- Avg per pupil spending label -->
+        <text 
+            x={xScale(avgSpending) - 75}
+            y={dimensions.innerHeight - 10}
+            font-size="12px"
+            fill={colors.colorDarkGray}
+        >
+            Avg Spending
+        </text>
+
+        <!-- Avg performance line -->
+        <line 
+            x1={-30}
+            y1={yScale(avgPerformance)}
+            x2={dimensions.innerWidth + 19}
+            y2={yScale(avgPerformance)}
+            stroke={colors.colorMediumGray}
+            stroke-width="1"
+            stroke-dasharray="4"
+        />
+        
+        <!-- Avg performance label -->
+        <text 
+            x={dimensions.innerWidth - 102}
+            y={yScale(avgPerformance) - 10}
+            font-size="12px"
+            fill={colors.colorDarkGray}
+        >
+            Avg School Performance
+        </text>
+    </g>
+
+    <!-- Plot points -->
+    {#each processedData as school}
+        <g class="data-point">
+            <!-- Pie chart showing disadvantaged percentage -->
+            <g>
+                {#if school.totalDisadvantagedPercent}
+                    {@const segments = createPieSegments(
+                        rScale(school.enrollment), 
+                        xScale(school.expenditure),
+                        yScale(school.performance),
+                        school.totalDisadvantagedPercent
+                    )}
+                    
+                    <!-- Regular portion slice -->
+                    <path 
+                        d={segments.remainingSlice}
+                        fill={getSchoolColors(school.School).fill}
+                        opacity="0.9"
+                    />
+                    
+                    <!-- Disadvantaged portion slice (slightly more opaque) -->
+                    <path 
+                        d={segments.disadvantagedSlice}
+                        fill={getSchoolColors(school.School).fill}
+                        opacity="0.65"
+                        stroke={getSchoolColors(school.School).stroke}
+                        stroke-width="1"
+                    />
+                {/if}
+            </g>
+            
+            <!-- Circle outline around the whole pie for consistency -->
+            <circle
+                cx={xScale(school.expenditure)}
+                cy={yScale(school.performance)}
+                r={rScale(school.enrollment)}
+                fill="none"
+                stroke={colors.colorBackgroundWhite}
+                stroke-width="1"
+            >
+                <title>
+                    {school.School}
+                    Per Pupil Spending: {formatMoney(school.expenditure)}
+                    Proficient & Above: {school.performance}%
+                    Students with Disabilities: {school.disabilityPercent}%
+                    Economically Disadvantaged: {school.economicDisadvantagePercent}%
+                    Total Disadvantaged: {school.totalDisadvantagedPercent}%
+                    Total Enrollment: {school.enrollment} students
+                </title>
+            </circle>
+            
+            {#if needsLeaderLine(school.shortName)}
+                <!-- Leader line -->
+                <line 
+                    x1={xScale(school.expenditure) + leaderLineLabels[school.shortName].lineStartX}
+                    y1={yScale(school.performance) + leaderLineLabels[school.shortName].lineStartY}
+                    x2={xScale(school.expenditure) + leaderLineLabels[school.shortName].lineEndX}
+                    y2={yScale(school.performance) + leaderLineLabels[school.shortName].lineEndY}
+                    stroke={colors.colorDarkGray}
+                    stroke-width="0.5"
+                    stroke-dasharray="2,1"
+                />
+                <!-- Offset label with leader line -->
+                <text
+                    x={xScale(school.expenditure) + leaderLineLabels[school.shortName].offsetX}
+                    y={yScale(school.performance) + leaderLineLabels[school.shortName].offsetY}
+                    text-anchor={leaderLineLabels[school.shortName].offsetX < 0 ? "end" : "start"}
+                    font-size="11px"
+                    fill={colors.colorText}
+                >
+                    <tspan font-weight="600">{school.shortName}</tspan>
+                    <tspan> ({school.totalDisadvantagedPercent}% disadv)</tspan>
+                </text>
+            {:else}
+                <!-- Regular inline label -->
+                <text
+                    x={xScale(school.expenditure)}
+                    y={yScale(school.performance) - rScale(school.enrollment) - 8}
+                    text-anchor="middle"
+                    font-size="11px"
+                    fill={colors.colorText}
+                >
+                    <tspan font-weight="600">{school.shortName}</tspan>
+                    <tspan> ({school.totalDisadvantagedPercent}% disadv)</tspan>
+                </text>
+            {/if}
+        </g>
+    {/each}
+
+    <!-- School Size legend - restored to original position -->
+    <g class="legend" transform="translate({dimensions.innerWidth - 57}, 220)">
+        <text font-size="12px" font-weight="600" fill={colors.colorDarkGray}>School Size:</text>
+        
+        <!-- Calculate legend circle sizes based on actual enrollment values -->
+        <circle cx="28" cy={36 + rScale(500) - rScale(200)} r={rScale(200)} fill="none" stroke={colors.colorMediumGray} stroke-width=1/>
+        <text x="60" y="53" font-size="10px">200</text>
+
+        <circle cx="28" cy={36 + rScale(500) - rScale(300)} r={rScale(300)} fill="none" stroke={colors.colorMediumGray} stroke-width=1/>
+        <text x="60" y="41" font-size="10px">300</text>
+        
+        <circle cx="28" cy={36 + rScale(500) - rScale(400)} r={rScale(400)} fill="none" stroke={colors.colorMediumGray} stroke-width=1/>
+        <text x="60" y="29" font-size="10px">400</text>
+        
+        <circle cx="28" cy="36" r={rScale(500)} fill="none" stroke={colors.colorMediumGray} stroke-width=1/>
+        <text x="60" y="17" font-size="10px">500 students</text>
+    </g>
 </SVGChart>
 </div>
 </div>
@@ -4156,6 +4792,10 @@ You can preview the production build with `npm run preview`.
     .data-point:hover circle {
         stroke-width: 2;
         stroke: var(--colorText);
+    }
+    
+    .dot-grid circle {
+        pointer-events: none; /* Ensure dots don't interfere with hover interactions */
     }
 </style>
 ```
@@ -4369,10 +5009,26 @@ You can preview the production build with `npm run preview`.
     import { forceSimulation, forceX, forceY, forceCollide } from 'd3-force'
     import { colors } from '$lib/styles/colorConfig'
     import { data } from '$lib/stores/stores.js'
+    import { Search } from 'lucide-svelte'
+    import { writable, derived } from "svelte/store"
     import SVGChart from './SVGChart.svelte'
 
+    const searchTermStore = writable('')
+    let searchInputValue = ''
+
+    // Update search term store when input changes
+    $: {
+        searchTermStore.set(searchInputValue)
+    }
+
+    // Clear search function
+    function clearSearch() {
+        searchInputValue = ''
+        searchTermStore.set('')
+    }
+
     export let width = 1200
-    export let height = 600
+    export let height = 800
 
     let dimensions = {
         width,
@@ -4397,7 +5053,7 @@ You can preview the production build with `npm run preview`.
     // Create scales
     $: xScale = scaleLinear()
         //.domain(extent(filteredData, d => d.properties["Students with Disabilities"]))
-        .domain([10, 23])
+        .domain([8, 22])
         .range([0, dimensions.innerWidth])
         .nice()
 
@@ -4450,13 +5106,31 @@ You can preview the production build with `npm run preview`.
     }
 </script>
 
+<!-- Search bar above chart -->
+<div class="search-container">
+    <div class="search-input-container">
+        <div class="search-icon-wrapper">
+            <Search size={20} color="var(--colorMediumGray)" />
+        </div>
+        <input
+            type="text"
+            bind:value={searchInputValue}
+            placeholder="Search for a district..."
+            class="search-input"
+        />
+        {#if searchInputValue}
+            <button class="clear-button" on:click={clearSearch}>✕</button>
+        {/if}
+    </div>
+</div>
+
 <div class="swarmplot" bind:clientWidth={width} bind:clientHeight={height}>
     <SVGChart {dimensions}>
         <!-- X-axis -->
         <g class="x-axis">
             <!-- X-axis ticks and labels -->
             {#each xScale.ticks(5) as tick}
-                <g transform="translate({xScale(tick)}, {dimensions.innerHeight - 100})">
+                <g transform="translate({xScale(tick)}, {dimensions.innerHeight - 20})">
                     <line 
                         y2="6" 
                         stroke={colors.colorLightGray}
@@ -4475,14 +5149,14 @@ You can preview the production build with `npm run preview`.
 
             <!-- X-axis label -->
             <text
-                x={dimensions.innerWidth / 2}
-                y={dimensions.innerHeight - 40}
-                text-anchor="middle"
+                x="-10"
+                y={dimensions.innerHeight + 25}
+                text-anchor="start"
                 fill={colors.colorText}
-                font-size="16px"
+                font-size="14px"
                 font-weight="600"
             >
-                % Students with IEPs
+                % students with IEPs
             </text>
         </g>
 
@@ -4518,9 +5192,10 @@ You can preview the production build with `npm run preview`.
                     fill="white"
                     stroke="white"
                     stroke-width="4"
+                    opacity="0.75"
                     stroke-linejoin="round"
                     font-size="12px"
-                    font-weight="600"
+                    font-weight="700"
                     pointer-events="none"
                 >
                     {node.properties['Institution Name']}
@@ -4533,7 +5208,7 @@ You can preview the production build with `npm run preview`.
                     dominant-baseline="middle"
                     fill={colors.colorText}
                     font-size="12px"
-                    font-weight="600"
+                    font-weight="700"
                     pointer-events="none"
                 >
                     {node.properties['Institution Name']}
@@ -4544,58 +5219,170 @@ You can preview the production build with `npm run preview`.
         <!-- Add line at current state funding -->
         <line
             x1={xScale(11)}
-            y1={60}
+            y1={10}
             x2={xScale(11)}
             y2={dimensions.innerHeight - 80}
-            stroke={colors.colorText}
-            stroke-width="1.5"
-            stroke-dasharray="2"
+            stroke={colors.colorBackgroundWhite}
+            stroke-width="6"
+            opacity="0.3"
+        />
+        <line
+            x1={xScale(11)}
+            y1={10}
+            x2={xScale(11)}
+            y2={dimensions.innerHeight - 80}
+            stroke={colors.colorDarkGray}
+            stroke-width="2"
+            stroke-dasharray="4 2"
+        />
+        <rect
+            x={xScale(11) - 120}
+            y={10}
+            width="240"
+            height="84"
+            fill="white"
+            rx="5"
+            ry="5"
         />
         <text
             x={xScale(11)}
-            y={30}
+            y={20}
             text-anchor="middle"
             fill={colors.colorText}
             font-size="16px"
             font-weight="500"
         >
-            current state
-        </text>
-        <text
-            x={xScale(11)}
-            y={48}
-            text-anchor="middle"
-            fill={colors.colorText}
-            font-size="16px"
-            font-weight="500"
-        >
-            funding cap: 11%
+            <tspan x={xScale(11)} dy="0"><tspan font-weight="bold">Oregon</tspan> caps funding for</tspan>
+            <tspan x={xScale(11)} dy="1.3em">students with disabilities at</tspan>
+            <tspan x={xScale(11)} dy="1.3em"><tspan font-weight="bold">11%</tspan> of a district's population</tspan>
+            <tspan x={xScale(11)} dy="1.3em">needing supports</tspan>
         </text>
 
         <!-- Add line at proposed state funding -->
         <line
             x1={xScale(15)}
-            y1={60}
+            y1={10}
             x2={xScale(15)}
             y2={dimensions.innerHeight - 80}
-            stroke={colors.colorText}
-            stroke-width="1.5"
-            stroke-dasharray="2"
+            stroke={colors.colorBackgroundWhite}
+            stroke-width="6"
+            opacity="0.3"
+            />
+        <line
+            x1={xScale(15)}
+            y1={10}
+            x2={xScale(15)}
+            y2={dimensions.innerHeight - 80}
+            stroke={colors.colorDarkGray}
+            stroke-width="2"
+            opacity="0.5"
+            stroke-dasharray="4 2"
+        />
+        <rect
+            x={xScale(15) - 80}
+            y={10}
+            width="160"
+            height="40"
+            fill="white"
+            rx="5"
+            ry="5"
         />
         <text
             x={xScale(15)}
-            y={48}
+            y={20}
             text-anchor="middle"
             fill={colors.colorText}
             font-size="16px"
             font-weight="500"
         >
-            15% cap
+            <tspan x={xScale(15)} dy="0">Some have suggested</tspan>
+            <tspan x={xScale(15)} dy="1.3em">a <tspan font-weight="bold">15%</tspan> cap</tspan>
+        </text>
+
+        <!--Add annotation-->
+        <text
+            x={xScale(19)}
+            y={20}
+            text-anchor="start"
+            fill={colors.colorText}
+            font-size="16px"
+            font-weight="500"
+        >
+            <tspan x={xScale(19)} dy="0">For <tspan font-weight="bold">Portland Public</tspan></tspan>
+            <tspan x={xScale(19)} dy="1.3em">and <tspan font-weight="bold">Salem-Keizer</tspan>,</tspan>
+            <tspan x={xScale(19)} dy="1.3em">two of the largest</tspan>
+            <tspan x={xScale(19)} dy="1.3em">districts in the state,</tspan>
+            <tspan x={xScale(19)} dy="1.3em"><tspan font-weight="bold">18%</tspan> of students</tspan>
+            <tspan x={xScale(19)} dy="1.3em">qualify for special</tspan>
+            <tspan x={xScale(19)} dy="1.3em">education supports</tspan>
         </text>
     </SVGChart>
 </div>
 
 <style>
+    /* search bar styles */
+    .search-container {
+        margin: 2rem auto 0.5rem auto;
+        max-width: 90%;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+
+    .search-input-container {
+        width: 300px;
+    }
+
+    @media (max-width: 768px) {
+        .search-input-container {
+            width: 100%;
+        }
+    }
+
+    .search-input-container {
+        position: relative;
+        display: flex;
+        align-items: center;
+        max-width: 100%;
+    }
+
+    .search-icon-wrapper {
+        position: absolute;
+        left: 1rem;
+        display: flex;
+        align-items: center;
+        pointer-events: none;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 0.8rem 2.5rem;
+        font-size: 1rem;
+        border: 2px solid var(--colorLightGray);
+        border-radius: 8px;
+        transition: border-color 0.3s ease;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: var(--colorInclusive);
+    }
+
+    .clear-button {
+        position: absolute;
+        right: 1rem;
+        background: none;
+        border: none;
+        color: var(--colorMediumGray);
+        cursor: pointer;
+        font-size: 1.2rem;
+        padding: 0.25rem;
+    }
+
+    .clear-button:hover {
+        color: var(--colorText);
+    }
+
     .swarmplot {
         width: 100%;
         height: 600px;
@@ -5528,6 +6315,1392 @@ You can preview the production build with `npm run preview`.
 </style>
 ```
 
+# src/lib/data/district_percents.json
+
+```json
+{
+  "2063": {
+    "District ID": 2063,
+    "District Name": "Adel SD 21",
+    "Student Enrollment": 11.0,
+    "Students with Disabilities %": null,
+    "Students Experiencing Poverty %": null
+  },
+  "2113": {
+    "District ID": 2113,
+    "District Name": "Adrian SD 61",
+    "Student Enrollment": 282.0,
+    "Students with Disabilities %": 0.12,
+    "Students Experiencing Poverty %": 0.29
+  },
+  "1899": {
+    "District ID": 1899,
+    "District Name": "Alsea SD 7J",
+    "Student Enrollment": 252.0,
+    "Students with Disabilities %": 0.17,
+    "Students Experiencing Poverty %": 0.5
+  },
+  "2252": {
+    "District ID": 2252,
+    "District Name": "Amity SD 4J",
+    "Student Enrollment": 725.0,
+    "Students with Disabilities %": 0.16,
+    "Students Experiencing Poverty %": 0.29
+  },
+  "2111": {
+    "District ID": 2111,
+    "District Name": "Annex SD 29",
+    "Student Enrollment": 104.0,
+    "Students with Disabilities %": 0.13,
+    "Students Experiencing Poverty %": 0.37
+  },
+  "2005": {
+    "District ID": 2005,
+    "District Name": "Arlington SD 3",
+    "Student Enrollment": 130.0,
+    "Students with Disabilities %": 0.16,
+    "Students Experiencing Poverty %": 0.41
+  },
+  "2115": {
+    "District ID": 2115,
+    "District Name": "Arock SD 81",
+    "Student Enrollment": 11.0,
+    "Students with Disabilities %": 0.16,
+    "Students Experiencing Poverty %": 0.41
+  },
+  "2041": {
+    "District ID": 2041,
+    "District Name": "Ashland SD 5",
+    "Student Enrollment": 2506.0,
+    "Students with Disabilities %": 0.16,
+    "Students Experiencing Poverty %": 0.26
+  },
+  "2051": {
+    "District ID": 2051,
+    "District Name": "Ashwood SD 8",
+    "Student Enrollment": null,
+    "Students with Disabilities %": 0.16,
+    "Students Experiencing Poverty %": 0.26
+  },
+  "1933": {
+    "District ID": 1933,
+    "District Name": "Astoria SD 1",
+    "Student Enrollment": 1746.0,
+    "Students with Disabilities %": 0.18,
+    "Students Experiencing Poverty %": 0.29
+  },
+  "2208": {
+    "District ID": 2208,
+    "District Name": "Athena-Weston SD 29RJ",
+    "Student Enrollment": 526.0,
+    "Students with Disabilities %": 0.13,
+    "Students Experiencing Poverty %": 0.38
+  },
+  "1894": {
+    "District ID": 1894,
+    "District Name": "Baker SD 5J",
+    "Student Enrollment": 5013.0,
+    "Students with Disabilities %": 0.14,
+    "Students Experiencing Poverty %": 0.3
+  },
+  "1969": {
+    "District ID": 1969,
+    "District Name": "Bandon SD 54",
+    "Student Enrollment": 628.0,
+    "Students with Disabilities %": 0.14,
+    "Students Experiencing Poverty %": 0.39
+  },
+  "2240": {
+    "District ID": 2240,
+    "District Name": "Banks SD 13",
+    "Student Enrollment": 1084.0,
+    "Students with Disabilities %": 0.16,
+    "Students Experiencing Poverty %": 0.2
+  },
+  "2243": {
+    "District ID": 2243,
+    "District Name": "Beaverton SD 48J",
+    "Student Enrollment": 38066.0,
+    "Students with Disabilities %": 0.13,
+    "Students Experiencing Poverty %": 0.22
+  },
+  "1976": {
+    "District ID": 1976,
+    "District Name": "Bend-LaPine Administrative SD 1",
+    "Student Enrollment": 16954.0,
+    "Students with Disabilities %": 0.12,
+    "Students Experiencing Poverty %": 0.21
+  },
+  "2088": {
+    "District ID": 2088,
+    "District Name": "Bethel SD 52",
+    "Student Enrollment": 4927.0,
+    "Students with Disabilities %": 0.2,
+    "Students Experiencing Poverty %": 0.41
+  },
+  "2095": {
+    "District ID": 2095,
+    "District Name": "Blachly SD 90",
+    "Student Enrollment": 397.0,
+    "Students with Disabilities %": 0.05,
+    "Students Experiencing Poverty %": 0.28
+  },
+  "2052": {
+    "District ID": 2052,
+    "District Name": "Black Butte SD 41",
+    "Student Enrollment": 26.0,
+    "Students with Disabilities %": 0.05,
+    "Students Experiencing Poverty %": 0.28
+  },
+  "1974": {
+    "District ID": 1974,
+    "District Name": "Brookings-Harbor SD 17C",
+    "Student Enrollment": 1274.0,
+    "Students with Disabilities %": 0.17,
+    "Students Experiencing Poverty %": 0.41
+  },
+  "1896": {
+    "District ID": 1896,
+    "District Name": "Burnt River SD 30J",
+    "Student Enrollment": 44.0,
+    "Students with Disabilities %": 0.17,
+    "Students Experiencing Poverty %": 0.45
+  },
+  "2046": {
+    "District ID": 2046,
+    "District Name": "Butte Falls SD 91",
+    "Student Enrollment": 146.0,
+    "Students with Disabilities %": 0.25,
+    "Students Experiencing Poverty %": 0.53
+  },
+  "1995": {
+    "District ID": 1995,
+    "District Name": "Camas Valley SD 21J",
+    "Student Enrollment": 213.0,
+    "Students with Disabilities %": 0.15,
+    "Students Experiencing Poverty %": 0.4
+  },
+  "1929": {
+    "District ID": 1929,
+    "District Name": "Canby SD 86",
+    "Student Enrollment": 4088.0,
+    "Students with Disabilities %": 0.15,
+    "Students Experiencing Poverty %": 0.27
+  },
+  "2139": {
+    "District ID": 2139,
+    "District Name": "Cascade SD 5",
+    "Student Enrollment": 2682.0,
+    "Students with Disabilities %": 0.17,
+    "Students Experiencing Poverty %": 0.29
+  },
+  "2185": {
+    "District ID": 2185,
+    "District Name": "Centennial SD 28J",
+    "Student Enrollment": 5419.0,
+    "Students with Disabilities %": 0.15,
+    "Students Experiencing Poverty %": 0.46
+  },
+  "1972": {
+    "District ID": 1972,
+    "District Name": "Central Curry SD 1",
+    "Student Enrollment": 411.0,
+    "Students with Disabilities %": 0.11,
+    "Students Experiencing Poverty %": 0.44
+  },
+  "2105": {
+    "District ID": 2105,
+    "District Name": "Central Linn SD 552",
+    "Student Enrollment": 512.0,
+    "Students with Disabilities %": 0.2,
+    "Students Experiencing Poverty %": 0.33
+  },
+  "2042": {
+    "District ID": 2042,
+    "District Name": "Central Point SD 6",
+    "Student Enrollment": 4697.0,
+    "Students with Disabilities %": 0.17,
+    "Students Experiencing Poverty %": 0.39
+  },
+  "2191": {
+    "District ID": 2191,
+    "District Name": "Central SD 13J",
+    "Student Enrollment": 3030.0,
+    "Students with Disabilities %": 0.14,
+    "Students Experiencing Poverty %": 0.42
+  },
+  "1945": {
+    "District ID": 1945,
+    "District Name": "Clatskanie SD 6J",
+    "Student Enrollment": 658.0,
+    "Students with Disabilities %": 0.21,
+    "Students Experiencing Poverty %": 0.31
+  },
+  "1927": {
+    "District ID": 1927,
+    "District Name": "Colton SD 53",
+    "Student Enrollment": 620.0,
+    "Students with Disabilities %": 0.16,
+    "Students Experiencing Poverty %": 0.26
+  },
+  "2006": {
+    "District ID": 2006,
+    "District Name": "Condon SD 25J",
+    "Student Enrollment": 136.0,
+    "Students with Disabilities %": 0.11,
+    "Students Experiencing Poverty %": 0.38
+  },
+  "1965": {
+    "District ID": 1965,
+    "District Name": "Coos Bay SD 9",
+    "Student Enrollment": 2946.0,
+    "Students with Disabilities %": 0.18,
+    "Students Experiencing Poverty %": 0.48
+  },
+  "1964": {
+    "District ID": 1964,
+    "District Name": "Coquille SD 8",
+    "Student Enrollment": 1268.0,
+    "Students with Disabilities %": 0.15,
+    "Students Experiencing Poverty %": 0.4
+  },
+  "2186": {
+    "District ID": 2186,
+    "District Name": "Corbett SD 39",
+    "Student Enrollment": 1068.0,
+    "Students with Disabilities %": 0.2,
+    "Students Experiencing Poverty %": 0.18
+  },
+  "1901": {
+    "District ID": 1901,
+    "District Name": "Corvallis SD 509J",
+    "Student Enrollment": 6051.0,
+    "Students with Disabilities %": 0.13,
+    "Students Experiencing Poverty %": 0.24
+  },
+  "2216": {
+    "District ID": 2216,
+    "District Name": "Cove SD 15",
+    "Student Enrollment": 303.0,
+    "Students with Disabilities %": 0.16,
+    "Students Experiencing Poverty %": 0.2
+  },
+  "2086": {
+    "District ID": 2086,
+    "District Name": "Creswell SD 40",
+    "Student Enrollment": 1107.0,
+    "Students with Disabilities %": 0.18,
+    "Students Experiencing Poverty %": 0.33
+  },
+  "1970": {
+    "District ID": 1970,
+    "District Name": "Crook County SD",
+    "Student Enrollment": 3233.0,
+    "Students with Disabilities %": 0.14,
+    "Students Experiencing Poverty %": 0.34
+  },
+  "2089": {
+    "District ID": 2089,
+    "District Name": "Crow-Applegate-Lorane SD 66",
+    "Student Enrollment": 295.0,
+    "Students with Disabilities %": 0.18,
+    "Students Experiencing Poverty %": 0.34
+  },
+  "2050": {
+    "District ID": 2050,
+    "District Name": "Culver SD 4",
+    "Student Enrollment": 662.0,
+    "Students with Disabilities %": 0.18,
+    "Students Experiencing Poverty %": 0.43
+  },
+  "2190": {
+    "District ID": 2190,
+    "District Name": "Dallas SD 2",
+    "Student Enrollment": 2977.0,
+    "Students with Disabilities %": 0.18,
+    "Students Experiencing Poverty %": 0.34
+  },
+  "2187": {
+    "District ID": 2187,
+    "District Name": "David Douglas SD 40",
+    "Student Enrollment": 8640.0,
+    "Students with Disabilities %": 0.14,
+    "Students Experiencing Poverty %": 0.5
+  },
+  "2253": {
+    "District ID": 2253,
+    "District Name": "Dayton SD 8",
+    "Student Enrollment": 846.0,
+    "Students with Disabilities %": 0.15,
+    "Students Experiencing Poverty %": 0.37
+  },
+  "2011": {
+    "District ID": 2011,
+    "District Name": "Dayville SD 16J",
+    "Student Enrollment": 44.0,
+    "Students with Disabilities %": 0.15,
+    "Students Experiencing Poverty %": 0.41
+  },
+  "2017": {
+    "District ID": 2017,
+    "District Name": "Diamond SD 7",
+    "Student Enrollment": 13.0,
+    "Students with Disabilities %": 0.15,
+    "Students Experiencing Poverty %": 0.41
+  },
+  "2021": {
+    "District ID": 2021,
+    "District Name": "Double O SD 28",
+    "Student Enrollment": 5.0,
+    "Students with Disabilities %": 0.15,
+    "Students Experiencing Poverty %": 0.41
+  },
+  "1993": {
+    "District ID": 1993,
+    "District Name": "Douglas County SD 15",
+    "Student Enrollment": 218.0,
+    "Students with Disabilities %": 0.18,
+    "Students Experiencing Poverty %": 0.39
+  },
+  "1991": {
+    "District ID": 1991,
+    "District Name": "Douglas County SD 4",
+    "Student Enrollment": 5504.0,
+    "Students with Disabilities %": 0.15,
+    "Students Experiencing Poverty %": 0.4
+  },
+  "2019": {
+    "District ID": 2019,
+    "District Name": "Drewsey SD 13",
+    "Student Enrollment": 8.0,
+    "Students with Disabilities %": 0.15,
+    "Students Experiencing Poverty %": 0.4
+  },
+  "2229": {
+    "District ID": 2229,
+    "District Name": "Dufur SD 29",
+    "Student Enrollment": 349.0,
+    "Students with Disabilities %": 0.21,
+    "Students Experiencing Poverty %": 0.31
+  },
+  "2043": {
+    "District ID": 2043,
+    "District Name": "Eagle Point SD 9",
+    "Student Enrollment": 4064.0,
+    "Students with Disabilities %": 0.16,
+    "Students Experiencing Poverty %": 0.46
+  },
+  "2203": {
+    "District ID": 2203,
+    "District Name": "Echo SD 5",
+    "Student Enrollment": 319.0,
+    "Students with Disabilities %": 0.1,
+    "Students Experiencing Poverty %": 0.21
+  },
+  "2217": {
+    "District ID": 2217,
+    "District Name": "Elgin SD 23",
+    "Student Enrollment": 385.0,
+    "Students with Disabilities %": 0.18,
+    "Students Experiencing Poverty %": 0.38
+  },
+  "1998": {
+    "District ID": 1998,
+    "District Name": "Elkton SD 34",
+    "Student Enrollment": 212.0,
+    "Students with Disabilities %": 0.15,
+    "Students Experiencing Poverty %": 0.32
+  },
+  "2221": {
+    "District ID": 2221,
+    "District Name": "Enterprise SD 21",
+    "Student Enrollment": 418.0,
+    "Students with Disabilities %": 0.2,
+    "Students Experiencing Poverty %": 0.21
+  },
+  "1930": {
+    "District ID": 1930,
+    "District Name": "Estacada SD 108",
+    "Student Enrollment": 3174.0,
+    "Students with Disabilities %": 0.13,
+    "Students Experiencing Poverty %": 0.27
+  },
+  "2082": {
+    "District ID": 2082,
+    "District Name": "Eugene SD 4J",
+    "Student Enrollment": 16000.0,
+    "Students with Disabilities %": 0.15,
+    "Students Experiencing Poverty %": 0.29
+  },
+  "2193": {
+    "District ID": 2193,
+    "District Name": "Falls City SD 57",
+    "Student Enrollment": 176.0,
+    "Students with Disabilities %": 0.18,
+    "Students Experiencing Poverty %": 0.57
+  },
+  "2084": {
+    "District ID": 2084,
+    "District Name": "Fern Ridge SD 28J",
+    "Student Enrollment": 1389.0,
+    "Students with Disabilities %": 0.22,
+    "Students Experiencing Poverty %": 0.33
+  },
+  "2241": {
+    "District ID": 2241,
+    "District Name": "Forest Grove SD 15",
+    "Student Enrollment": 5756.0,
+    "Students with Disabilities %": 0.16,
+    "Students Experiencing Poverty %": 0.35
+  },
+  "2248": {
+    "District ID": 2248,
+    "District Name": "Fossil SD 21J",
+    "Student Enrollment": 1933.0,
+    "Students with Disabilities %": 0.08,
+    "Students Experiencing Poverty %": 0.15
+  },
+  "2020": {
+    "District ID": 2020,
+    "District Name": "Frenchglen SD 16",
+    "Student Enrollment": 4.0,
+    "Students with Disabilities %": 0.08,
+    "Students Experiencing Poverty %": 0.15
+  },
+  "2245": {
+    "District ID": 2245,
+    "District Name": "Gaston SD 511J",
+    "Student Enrollment": 476.0,
+    "Students with Disabilities %": 0.18,
+    "Students Experiencing Poverty %": 0.29
+  },
+  "2137": {
+    "District ID": 2137,
+    "District Name": "Gervais SD 1",
+    "Student Enrollment": 1249.0,
+    "Students with Disabilities %": 0.17,
+    "Students Experiencing Poverty %": 0.39
+  },
+  "1931": {
+    "District ID": 1931,
+    "District Name": "Gladstone SD 115",
+    "Student Enrollment": 1545.0,
+    "Students with Disabilities %": 0.17,
+    "Students Experiencing Poverty %": 0.25
+  },
+  "2000": {
+    "District ID": 2000,
+    "District Name": "Glendale SD 77",
+    "Student Enrollment": 286.0,
+    "Students with Disabilities %": 0.17,
+    "Students Experiencing Poverty %": 0.5
+  },
+  "1992": {
+    "District ID": 1992,
+    "District Name": "Glide SD 12",
+    "Student Enrollment": 730.0,
+    "Students with Disabilities %": 0.19,
+    "Students Experiencing Poverty %": 0.36
+  },
+  "2054": {
+    "District ID": 2054,
+    "District Name": "Grants Pass SD 7",
+    "Student Enrollment": 5550.0,
+    "Students with Disabilities %": 0.16,
+    "Students Experiencing Poverty %": 0.45
+  },
+  "2100": {
+    "District ID": 2100,
+    "District Name": "Greater Albany Public SD 8J",
+    "Student Enrollment": 8709.0,
+    "Students with Disabilities %": 0.15,
+    "Students Experiencing Poverty %": 0.36
+  },
+  "2183": {
+    "District ID": 2183,
+    "District Name": "Gresham-Barlow SD 10J",
+    "Student Enrollment": 11464.0,
+    "Students with Disabilities %": 0.15,
+    "Students Experiencing Poverty %": 0.38
+  },
+  "2014": {
+    "District ID": 2014,
+    "District Name": "Harney County SD 3",
+    "Student Enrollment": 700.0,
+    "Students with Disabilities %": 0.17,
+    "Students Experiencing Poverty %": 0.38
+  },
+  "2015": {
+    "District ID": 2015,
+    "District Name": "Harney County SD 4",
+    "Student Enrollment": 1049.0,
+    "Students with Disabilities %": 0.1,
+    "Students Experiencing Poverty %": 0.18
+  },
+  "2023": {
+    "District ID": 2023,
+    "District Name": "Harney County Union High SD 1J",
+    "Student Enrollment": 1174.0,
+    "Students with Disabilities %": 0.07,
+    "Students Experiencing Poverty %": 0.23
+  },
+  "2114": {
+    "District ID": 2114,
+    "District Name": "Harper SD 66",
+    "Student Enrollment": 253.0,
+    "Students with Disabilities %": 0.09,
+    "Students Experiencing Poverty %": 0.36
+  },
+  "2099": {
+    "District ID": 2099,
+    "District Name": "Harrisburg SD 7J",
+    "Student Enrollment": 829.0,
+    "Students with Disabilities %": 0.18,
+    "Students Experiencing Poverty %": 0.33
+  },
+  "2201": {
+    "District ID": 2201,
+    "District Name": "Helix SD 1",
+    "Student Enrollment": 181.0,
+    "Students with Disabilities %": 0.11,
+    "Students Experiencing Poverty %": 0.18
+  },
+  "2206": {
+    "District ID": 2206,
+    "District Name": "Hermiston SD 8",
+    "Student Enrollment": 5335.0,
+    "Students with Disabilities %": 0.13,
+    "Students Experiencing Poverty %": 0.39
+  },
+  "2239": {
+    "District ID": 2239,
+    "District Name": "Hillsboro SD 1J",
+    "Student Enrollment": 18673.0,
+    "Students with Disabilities %": 0.15,
+    "Students Experiencing Poverty %": 0.28
+  },
+  "2024": {
+    "District ID": 2024,
+    "District Name": "Hood River County SD",
+    "Student Enrollment": 3757.0,
+    "Students with Disabilities %": 0.15,
+    "Students Experiencing Poverty %": 0.31
+  },
+  "1895": {
+    "District ID": 1895,
+    "District Name": "Huntington SD 16J",
+    "Student Enrollment": 77.0,
+    "Students with Disabilities %": 0.15,
+    "Students Experiencing Poverty %": 0.64
+  },
+  "2215": {
+    "District ID": 2215,
+    "District Name": "Imbler SD 11",
+    "Student Enrollment": 308.0,
+    "Students with Disabilities %": 0.11,
+    "Students Experiencing Poverty %": 0.16
+  },
+  "3997": {
+    "District ID": 3997,
+    "District Name": "Ione SD R2",
+    "Student Enrollment": 121.0,
+    "Students with Disabilities %": 0.21,
+    "Students Experiencing Poverty %": 0.27
+  },
+  "2053": {
+    "District ID": 2053,
+    "District Name": "Jefferson County SD 509J",
+    "Student Enrollment": 2659.0,
+    "Students with Disabilities %": 0.19,
+    "Students Experiencing Poverty %": 0.55
+  },
+  "2140": {
+    "District ID": 2140,
+    "District Name": "Jefferson SD 14J",
+    "Student Enrollment": 690.0,
+    "Students with Disabilities %": 0.14,
+    "Students Experiencing Poverty %": 0.4
+  },
+  "1934": {
+    "District ID": 1934,
+    "District Name": "Jewell SD 8",
+    "Student Enrollment": 118.0,
+    "Students with Disabilities %": 0.16,
+    "Students Experiencing Poverty %": 0.39
+  },
+  "2008": {
+    "District ID": 2008,
+    "District Name": "John Day SD 3",
+    "Student Enrollment": 462.0,
+    "Students with Disabilities %": 0.2,
+    "Students Experiencing Poverty %": 0.3
+  },
+  "2107": {
+    "District ID": 2107,
+    "District Name": "Jordan Valley SD 3",
+    "Student Enrollment": 65.0,
+    "Students with Disabilities %": 0.2,
+    "Students Experiencing Poverty %": 0.3
+  },
+  "2219": {
+    "District ID": 2219,
+    "District Name": "Joseph SD 6",
+    "Student Enrollment": 284.0,
+    "Students with Disabilities %": 0.14,
+    "Students Experiencing Poverty %": 0.35
+  },
+  "2091": {
+    "District ID": 2091,
+    "District Name": "Junction City SD 69",
+    "Student Enrollment": 1585.0,
+    "Students with Disabilities %": 0.18,
+    "Students Experiencing Poverty %": 0.35
+  },
+  "2109": {
+    "District ID": 2109,
+    "District Name": "Juntura SD 12",
+    "Student Enrollment": 7.0,
+    "Students with Disabilities %": 0.18,
+    "Students Experiencing Poverty %": 0.35
+  },
+  "2057": {
+    "District ID": 2057,
+    "District Name": "Klamath County SD",
+    "Student Enrollment": 6989.0,
+    "Students with Disabilities %": 0.18,
+    "Students Experiencing Poverty %": 0.47
+  },
+  "2056": {
+    "District ID": 2056,
+    "District Name": "Klamath Falls City Schools",
+    "Student Enrollment": 2724.0,
+    "Students with Disabilities %": 0.18,
+    "Students Experiencing Poverty %": 0.56
+  },
+  "2262": {
+    "District ID": 2262,
+    "District Name": "Knappa SD 4",
+    "Student Enrollment": 433.0,
+    "Students with Disabilities %": 0.25,
+    "Students Experiencing Poverty %": 0.22
+  },
+  "2212": {
+    "District ID": 2212,
+    "District Name": "La Grande SD 1",
+    "Student Enrollment": 1982.0,
+    "Students with Disabilities %": 0.2,
+    "Students Experiencing Poverty %": 0.38
+  },
+  "2059": {
+    "District ID": 2059,
+    "District Name": "Lake County SD 7",
+    "Student Enrollment": 691.0,
+    "Students with Disabilities %": 0.16,
+    "Students Experiencing Poverty %": 0.36
+  },
+  "1923": {
+    "District ID": 1923,
+    "District Name": "Lake Oswego SD 7J",
+    "Student Enrollment": 6871.0,
+    "Students with Disabilities %": 0.13,
+    "Students Experiencing Poverty %": 0.06
+  },
+  "2101": {
+    "District ID": 2101,
+    "District Name": "Lebanon Community SD 9",
+    "Student Enrollment": 3875.0,
+    "Students with Disabilities %": 0.18,
+    "Students Experiencing Poverty %": 0.41
+  },
+  "2097": {
+    "District ID": 2097,
+    "District Name": "Lincoln County SD",
+    "Student Enrollment": 4871.0,
+    "Students with Disabilities %": 0.16,
+    "Students Experiencing Poverty %": 0.43
+  },
+  "2012": {
+    "District ID": 2012,
+    "District Name": "Long Creek SD 17",
+    "Student Enrollment": 21.0,
+    "Students with Disabilities %": 0.16,
+    "Students Experiencing Poverty %": 0.57
+  },
+  "2092": {
+    "District ID": 2092,
+    "District Name": "Lowell SD 71",
+    "Student Enrollment": 1034.0,
+    "Students with Disabilities %": 0.13,
+    "Students Experiencing Poverty %": 0.26
+  },
+  "2085": {
+    "District ID": 2085,
+    "District Name": "Mapleton SD 32",
+    "Student Enrollment": 140.0,
+    "Students with Disabilities %": 0.22,
+    "Students Experiencing Poverty %": 0.6
+  },
+  "2094": {
+    "District ID": 2094,
+    "District Name": "Marcola SD 79J",
+    "Student Enrollment": 916.0,
+    "Students with Disabilities %": 0.12,
+    "Students Experiencing Poverty %": 0.25
+  },
+  "2090": {
+    "District ID": 2090,
+    "District Name": "McKenzie SD 68",
+    "Student Enrollment": 180.0,
+    "Students with Disabilities %": 0.22,
+    "Students Experiencing Poverty %": 0.45
+  },
+  "2256": {
+    "District ID": 2256,
+    "District Name": "McMinnville SD 40",
+    "Student Enrollment": 6276.0,
+    "Students with Disabilities %": 0.15,
+    "Students Experiencing Poverty %": 0.35
+  },
+  "2048": {
+    "District ID": 2048,
+    "District Name": "Medford SD 549C",
+    "Student Enrollment": 13550.0,
+    "Students with Disabilities %": 0.17,
+    "Students Experiencing Poverty %": 0.41
+  },
+  "2205": {
+    "District ID": 2205,
+    "District Name": "Milton-Freewater Unified SD 7",
+    "Student Enrollment": 1512.0,
+    "Students with Disabilities %": 0.17,
+    "Students Experiencing Poverty %": 0.45
+  },
+  "2249": {
+    "District ID": 2249,
+    "District Name": "Mitchell SD 55",
+    "Student Enrollment": 1554.0,
+    "Students with Disabilities %": 0.15,
+    "Students Experiencing Poverty %": 0.53
+  },
+  "1925": {
+    "District ID": 1925,
+    "District Name": "Molalla River SD 35",
+    "Student Enrollment": 2464.0,
+    "Students with Disabilities %": 0.17,
+    "Students Experiencing Poverty %": 0.28
+  },
+  "1898": {
+    "District ID": 1898,
+    "District Name": "Monroe SD 1J",
+    "Student Enrollment": 369.0,
+    "Students with Disabilities %": 0.14,
+    "Students Experiencing Poverty %": 0.31
+  },
+  "2010": {
+    "District ID": 2010,
+    "District Name": "Monument SD 8",
+    "Student Enrollment": 55.0,
+    "Students with Disabilities %": 0.14,
+    "Students Experiencing Poverty %": 0.4
+  },
+  "2147": {
+    "District ID": 2147,
+    "District Name": "Morrow SD 1",
+    "Student Enrollment": 2218.0,
+    "Students with Disabilities %": 0.17,
+    "Students Experiencing Poverty %": 0.41
+  },
+  "2145": {
+    "District ID": 2145,
+    "District Name": "Mt Angel SD 91",
+    "Student Enrollment": 639.0,
+    "Students with Disabilities %": 0.14,
+    "Students Experiencing Poverty %": 0.33
+  },
+  "1968": {
+    "District ID": 1968,
+    "District Name": "Myrtle Point SD 41",
+    "Student Enrollment": 546.0,
+    "Students with Disabilities %": 0.2,
+    "Students Experiencing Poverty %": 0.4
+  },
+  "2198": {
+    "District ID": 2198,
+    "District Name": "Neah-Kah-Nie SD 56",
+    "Student Enrollment": 670.0,
+    "Students with Disabilities %": 0.19,
+    "Students Experiencing Poverty %": 0.27
+  },
+  "2199": {
+    "District ID": 2199,
+    "District Name": "Nestucca Valley SD 101J",
+    "Student Enrollment": 506.0,
+    "Students with Disabilities %": 0.12,
+    "Students Experiencing Poverty %": 0.41
+  },
+  "2254": {
+    "District ID": 2254,
+    "District Name": "Newberg SD 29J",
+    "Student Enrollment": 4027.0,
+    "Students with Disabilities %": 0.18,
+    "Students Experiencing Poverty %": 0.27
+  },
+  "1966": {
+    "District ID": 1966,
+    "District Name": "North Bend SD 13",
+    "Student Enrollment": 2940.0,
+    "Students with Disabilities %": 0.18,
+    "Students Experiencing Poverty %": 0.41
+  },
+  "1924": {
+    "District ID": 1924,
+    "District Name": "North Clackamas SD 12",
+    "Student Enrollment": 16730.0,
+    "Students with Disabilities %": 0.18,
+    "Students Experiencing Poverty %": 0.25
+  },
+  "1996": {
+    "District ID": 1996,
+    "District Name": "North Douglas SD 22",
+    "Student Enrollment": 352.0,
+    "Students with Disabilities %": 0.22,
+    "Students Experiencing Poverty %": 0.46
+  },
+  "2061": {
+    "District ID": 2061,
+    "District Name": "North Lake SD 14",
+    "Student Enrollment": 223.0,
+    "Students with Disabilities %": 0.25,
+    "Students Experiencing Poverty %": 0.55
+  },
+  "2141": {
+    "District ID": 2141,
+    "District Name": "North Marion SD 15",
+    "Student Enrollment": 1614.0,
+    "Students with Disabilities %": 0.17,
+    "Students Experiencing Poverty %": 0.34
+  },
+  "2214": {
+    "District ID": 2214,
+    "District Name": "North Powder SD 8J",
+    "Student Enrollment": 253.0,
+    "Students with Disabilities %": 0.19,
+    "Students Experiencing Poverty %": 0.36
+  },
+  "2143": {
+    "District ID": 2143,
+    "District Name": "North Santiam SD 29J",
+    "Student Enrollment": 2004.0,
+    "Students with Disabilities %": 0.17,
+    "Students Experiencing Poverty %": 0.33
+  },
+  "4131": {
+    "District ID": 4131,
+    "District Name": "North Wasco County SD 21",
+    "Student Enrollment": 2764.0,
+    "Students with Disabilities %": 0.16,
+    "Students Experiencing Poverty %": 0.5
+  },
+  "2110": {
+    "District ID": 2110,
+    "District Name": "Nyssa SD 26",
+    "Student Enrollment": 1549.0,
+    "Students with Disabilities %": 0.11,
+    "Students Experiencing Poverty %": 0.47
+  },
+  "1990": {
+    "District ID": 1990,
+    "District Name": "Oakland SD 1",
+    "Student Enrollment": 629.0,
+    "Students with Disabilities %": 0.18,
+    "Students Experiencing Poverty %": 0.36
+  },
+  "2093": {
+    "District ID": 2093,
+    "District Name": "Oakridge SD 76",
+    "Student Enrollment": 484.0,
+    "Students with Disabilities %": 0.17,
+    "Students Experiencing Poverty %": 0.57
+  },
+  "3477": {
+    "District ID": 3477,
+    "District Name": "ODE YCEP District",
+    "Student Enrollment": 228.0,
+    "Students with Disabilities %": 0.43,
+    "Students Experiencing Poverty %": 0.35
+  },
+  "2108": {
+    "District ID": 2108,
+    "District Name": "Ontario SD 8C",
+    "Student Enrollment": 2158.0,
+    "Students with Disabilities %": 0.16,
+    "Students Experiencing Poverty %": 0.65
+  },
+  "1928": {
+    "District ID": 1928,
+    "District Name": "Oregon City SD 62",
+    "Student Enrollment": 7133.0,
+    "Students with Disabilities %": 0.16,
+    "Students Experiencing Poverty %": 0.23
+  },
+  "1926": {
+    "District ID": 1926,
+    "District Name": "Oregon Trail SD 46",
+    "Student Enrollment": 4218.0,
+    "Students with Disabilities %": 0.15,
+    "Students Experiencing Poverty %": 0.25
+  },
+  "2060": {
+    "District ID": 2060,
+    "District Name": "Paisley SD 11",
+    "Student Enrollment": 201.0,
+    "Students with Disabilities %": 0.13,
+    "Students Experiencing Poverty %": 0.24
+  },
+  "2181": {
+    "District ID": 2181,
+    "District Name": "Parkrose SD 3",
+    "Student Enrollment": 2766.0,
+    "Students with Disabilities %": 0.14,
+    "Students Experiencing Poverty %": 0.45
+  },
+  "2207": {
+    "District ID": 2207,
+    "District Name": "Pendleton SD 16",
+    "Student Enrollment": 2881.0,
+    "Students with Disabilities %": 0.17,
+    "Students Experiencing Poverty %": 0.42
+  },
+  "2192": {
+    "District ID": 2192,
+    "District Name": "Perrydale SD 21",
+    "Student Enrollment": 317.0,
+    "Students with Disabilities %": 0.11,
+    "Students Experiencing Poverty %": 0.24
+  },
+  "1900": {
+    "District ID": 1900,
+    "District Name": "Philomath SD 17J",
+    "Student Enrollment": 1662.0,
+    "Students with Disabilities %": 0.16,
+    "Students Experiencing Poverty %": 0.23
+  },
+  "2039": {
+    "District ID": 2039,
+    "District Name": "Phoenix-Talent SD 4",
+    "Student Enrollment": 2230.0,
+    "Students with Disabilities %": 0.17,
+    "Students Experiencing Poverty %": 0.53
+  },
+  "2202": {
+    "District ID": 2202,
+    "District Name": "Pilot Rock SD 2",
+    "Student Enrollment": 284.0,
+    "Students with Disabilities %": 0.14,
+    "Students Experiencing Poverty %": 0.33
+  },
+  "2016": {
+    "District ID": 2016,
+    "District Name": "Pine Creek SD 5",
+    "Student Enrollment": 2.0,
+    "Students with Disabilities %": 0.14,
+    "Students Experiencing Poverty %": 0.33
+  },
+  "1897": {
+    "District ID": 1897,
+    "District Name": "Pine Eagle SD 61",
+    "Student Enrollment": 206.0,
+    "Students with Disabilities %": 0.18,
+    "Students Experiencing Poverty %": 0.29
+  },
+  "2047": {
+    "District ID": 2047,
+    "District Name": "Pinehurst SD 94",
+    "Student Enrollment": 5.0,
+    "Students with Disabilities %": 0.18,
+    "Students Experiencing Poverty %": 0.29
+  },
+  "2081": {
+    "District ID": 2081,
+    "District Name": "Pleasant Hill SD 1",
+    "Student Enrollment": 968.0,
+    "Students with Disabilities %": 0.14,
+    "Students Experiencing Poverty %": 0.24
+  },
+  "2062": {
+    "District ID": 2062,
+    "District Name": "Plush SD 18",
+    "Student Enrollment": 8.0,
+    "Students with Disabilities %": 0.14,
+    "Students Experiencing Poverty %": 0.24
+  },
+  "1973": {
+    "District ID": 1973,
+    "District Name": "Port Orford-Langlois SD 2CJ",
+    "Student Enrollment": 240.0,
+    "Students with Disabilities %": 0.15,
+    "Students Experiencing Poverty %": 0.56
+  },
+  "2180": {
+    "District ID": 2180,
+    "District Name": "Portland SD 1J",
+    "Student Enrollment": 43516.0,
+    "Students with Disabilities %": 0.18,
+    "Students Experiencing Poverty %": 0.24
+  },
+  "1967": {
+    "District ID": 1967,
+    "District Name": "Powers SD 31",
+    "Student Enrollment": 111.0,
+    "Students with Disabilities %": 0.15,
+    "Students Experiencing Poverty %": 0.32
+  },
+  "2009": {
+    "District ID": 2009,
+    "District Name": "Prairie City SD 4",
+    "Student Enrollment": 1343.0,
+    "Students with Disabilities %": 0.18,
+    "Students Experiencing Poverty %": 0.38
+  },
+  "2045": {
+    "District ID": 2045,
+    "District Name": "Prospect SD 59",
+    "Student Enrollment": 215.0,
+    "Students with Disabilities %": 0.17,
+    "Students Experiencing Poverty %": 0.62
+  },
+  "1946": {
+    "District ID": 1946,
+    "District Name": "Rainier SD 13",
+    "Student Enrollment": 801.0,
+    "Students with Disabilities %": 0.18,
+    "Students Experiencing Poverty %": 0.36
+  },
+  "1977": {
+    "District ID": 1977,
+    "District Name": "Redmond SD 2J",
+    "Student Enrollment": 6965.0,
+    "Students with Disabilities %": 0.14,
+    "Students Experiencing Poverty %": 0.32
+  },
+  "2001": {
+    "District ID": 2001,
+    "District Name": "Reedsport SD 105",
+    "Student Enrollment": 570.0,
+    "Students with Disabilities %": 0.21,
+    "Students Experiencing Poverty %": 0.56
+  },
+  "2182": {
+    "District ID": 2182,
+    "District Name": "Reynolds SD 7",
+    "Student Enrollment": 9597.0,
+    "Students with Disabilities %": 0.18,
+    "Students Experiencing Poverty %": 0.51
+  },
+  "1999": {
+    "District ID": 1999,
+    "District Name": "Riddle SD 70",
+    "Student Enrollment": 357.0,
+    "Students with Disabilities %": 0.24,
+    "Students Experiencing Poverty %": 0.5
+  },
+  "2188": {
+    "District ID": 2188,
+    "District Name": "Riverdale SD 51J",
+    "Student Enrollment": 553.0,
+    "Students with Disabilities %": 0.13,
+    "Students Experiencing Poverty %": 0.05
+  },
+  "2044": {
+    "District ID": 2044,
+    "District Name": "Rogue River SD 35",
+    "Student Enrollment": 1080.0,
+    "Students with Disabilities %": 0.15,
+    "Students Experiencing Poverty %": 0.48
+  },
+  "2142": {
+    "District ID": 2142,
+    "District Name": "Salem-Keizer SD 24J",
+    "Student Enrollment": 37851.0,
+    "Students with Disabilities %": 0.18,
+    "Students Experiencing Poverty %": 0.41
+  },
+  "2104": {
+    "District ID": 2104,
+    "District Name": "Santiam Canyon SD 129J",
+    "Student Enrollment": 3185.0,
+    "Students with Disabilities %": 0.21,
+    "Students Experiencing Poverty %": 0.41
+  },
+  "1944": {
+    "District ID": 1944,
+    "District Name": "Scappoose SD 1J",
+    "Student Enrollment": 2241.0,
+    "Students with Disabilities %": 0.17,
+    "Students Experiencing Poverty %": 0.21
+  },
+  "2103": {
+    "District ID": 2103,
+    "District Name": "Scio SD 95",
+    "Student Enrollment": 1946.0,
+    "Students with Disabilities %": 0.14,
+    "Students Experiencing Poverty %": 0.35
+  },
+  "1935": {
+    "District ID": 1935,
+    "District Name": "Seaside SD 10",
+    "Student Enrollment": 1438.0,
+    "Students with Disabilities %": 0.16,
+    "Students Experiencing Poverty %": 0.31
+  },
+  "2257": {
+    "District ID": 2257,
+    "District Name": "Sheridan SD 48J",
+    "Student Enrollment": 991.0,
+    "Students with Disabilities %": 0.15,
+    "Students Experiencing Poverty %": 0.4
+  },
+  "2195": {
+    "District ID": 2195,
+    "District Name": "Sherman County SD",
+    "Student Enrollment": 271.0,
+    "Students with Disabilities %": 0.15,
+    "Students Experiencing Poverty %": 0.27
+  },
+  "2244": {
+    "District ID": 2244,
+    "District Name": "Sherwood SD 88J",
+    "Student Enrollment": 4815.0,
+    "Students with Disabilities %": 0.13,
+    "Students Experiencing Poverty %": 0.09
+  },
+  "2138": {
+    "District ID": 2138,
+    "District Name": "Silver Falls SD 4J",
+    "Student Enrollment": 3727.0,
+    "Students with Disabilities %": 0.15,
+    "Students Experiencing Poverty %": 0.22
+  },
+  "1978": {
+    "District ID": 1978,
+    "District Name": "Sisters SD 6",
+    "Student Enrollment": 1188.0,
+    "Students with Disabilities %": 0.13,
+    "Students Experiencing Poverty %": 0.17
+  },
+  "2096": {
+    "District ID": 2096,
+    "District Name": "Siuslaw SD 97J",
+    "Student Enrollment": 1188.0,
+    "Students with Disabilities %": 0.17,
+    "Students Experiencing Poverty %": 0.38
+  },
+  "2022": {
+    "District ID": 2022,
+    "District Name": "South Harney SD 33",
+    "Student Enrollment": 8.0,
+    "Students with Disabilities %": 0.17,
+    "Students Experiencing Poverty %": 0.38
+  },
+  "2087": {
+    "District ID": 2087,
+    "District Name": "South Lane SD 45J3",
+    "Student Enrollment": 2636.0,
+    "Students with Disabilities %": 0.2,
+    "Students Experiencing Poverty %": 0.39
+  },
+  "1994": {
+    "District ID": 1994,
+    "District Name": "South Umpqua SD 19",
+    "Student Enrollment": 1401.0,
+    "Students with Disabilities %": 0.15,
+    "Students Experiencing Poverty %": 0.51
+  },
+  "2225": {
+    "District ID": 2225,
+    "District Name": "South Wasco County SD 1",
+    "Student Enrollment": 208.0,
+    "Students with Disabilities %": 0.21,
+    "Students Experiencing Poverty %": 0.39
+  },
+  "2247": {
+    "District ID": 2247,
+    "District Name": "Spray SD 1",
+    "Student Enrollment": 59.0,
+    "Students with Disabilities %": 0.21,
+    "Students Experiencing Poverty %": 0.39
+  },
+  "2083": {
+    "District ID": 2083,
+    "District Name": "Springfield SD 19",
+    "Student Enrollment": 9217.0,
+    "Students with Disabilities %": 0.17,
+    "Students Experiencing Poverty %": 0.43
+  },
+  "1948": {
+    "District ID": 1948,
+    "District Name": "St Helens SD 502",
+    "Student Enrollment": 2735.0,
+    "Students with Disabilities %": 0.2,
+    "Students Experiencing Poverty %": 0.34
+  },
+  "2144": {
+    "District ID": 2144,
+    "District Name": "St Paul SD 45",
+    "Student Enrollment": 245.0,
+    "Students with Disabilities %": 0.1,
+    "Students Experiencing Poverty %": 0.31
+  },
+  "2209": {
+    "District ID": 2209,
+    "District Name": "Stanfield SD 61",
+    "Student Enrollment": 497.0,
+    "Students with Disabilities %": 0.17,
+    "Students Experiencing Poverty %": 0.36
+  },
+  "2018": {
+    "District ID": 2018,
+    "District Name": "Suntex SD 10",
+    "Student Enrollment": 3.0,
+    "Students with Disabilities %": 0.17,
+    "Students Experiencing Poverty %": 0.36
+  },
+  "2003": {
+    "District ID": 2003,
+    "District Name": "Sutherlin SD 130",
+    "Student Enrollment": 1326.0,
+    "Students with Disabilities %": 0.2,
+    "Students Experiencing Poverty %": 0.41
+  },
+  "2102": {
+    "District ID": 2102,
+    "District Name": "Sweet Home SD 55",
+    "Student Enrollment": 2251.0,
+    "Students with Disabilities %": 0.19,
+    "Students Experiencing Poverty %": 0.47
+  },
+  "2055": {
+    "District ID": 2055,
+    "District Name": "Three Rivers/Josephine County SD",
+    "Student Enrollment": 4361.0,
+    "Students with Disabilities %": 0.16,
+    "Students Experiencing Poverty %": 0.53
+  },
+  "2242": {
+    "District ID": 2242,
+    "District Name": "Tigard-Tualatin SD 23J",
+    "Student Enrollment": 11496.0,
+    "Students with Disabilities %": 0.13,
+    "Students Experiencing Poverty %": 0.24
+  },
+  "2197": {
+    "District ID": 2197,
+    "District Name": "Tillamook SD 9",
+    "Student Enrollment": 2018.0,
+    "Students with Disabilities %": 0.17,
+    "Students Experiencing Poverty %": 0.38
+  },
+  "2222": {
+    "District ID": 2222,
+    "District Name": "Troy SD 54",
+    "Student Enrollment": 4.0,
+    "Students with Disabilities %": 0.17,
+    "Students Experiencing Poverty %": 0.38
+  },
+  "2210": {
+    "District ID": 2210,
+    "District Name": "Ukiah SD 80R",
+    "Student Enrollment": 31.0,
+    "Students with Disabilities %": 0.17,
+    "Students Experiencing Poverty %": 0.58
+  },
+  "2204": {
+    "District ID": 2204,
+    "District Name": "Umatilla SD 6R",
+    "Student Enrollment": 1399.0,
+    "Students with Disabilities %": 0.12,
+    "Students Experiencing Poverty %": 0.47
+  },
+  "2213": {
+    "District ID": 2213,
+    "District Name": "Union SD 5",
+    "Student Enrollment": 370.0,
+    "Students with Disabilities %": 0.14,
+    "Students Experiencing Poverty %": 0.36
+  },
+  "2116": {
+    "District ID": 2116,
+    "District Name": "Vale SD 84",
+    "Student Enrollment": 916.0,
+    "Students with Disabilities %": 0.16,
+    "Students Experiencing Poverty %": 0.36
+  },
+  "1947": {
+    "District ID": 1947,
+    "District Name": "Vernonia SD 47J",
+    "Student Enrollment": 549.0,
+    "Students with Disabilities %": 0.18,
+    "Students Experiencing Poverty %": 0.3
+  },
+  "2220": {
+    "District ID": 2220,
+    "District Name": "Wallowa SD 12",
+    "Student Enrollment": 201.0,
+    "Students with Disabilities %": 0.17,
+    "Students Experiencing Poverty %": 0.26
+  },
+  "1936": {
+    "District ID": 1936,
+    "District Name": "Warrenton-Hammond SD 30",
+    "Student Enrollment": 969.0,
+    "Students with Disabilities %": 0.17,
+    "Students Experiencing Poverty %": 0.41
+  },
+  "1922": {
+    "District ID": 1922,
+    "District Name": "West Linn-Wilsonville SD 3J",
+    "Student Enrollment": 9029.0,
+    "Students with Disabilities %": 0.14,
+    "Students Experiencing Poverty %": 0.12
+  },
+  "2255": {
+    "District ID": 2255,
+    "District Name": "Willamina SD 30J",
+    "Student Enrollment": 845.0,
+    "Students with Disabilities %": 0.23,
+    "Students Experiencing Poverty %": 0.45
+  },
+  "2002": {
+    "District ID": 2002,
+    "District Name": "Winston-Dillard SD 116",
+    "Student Enrollment": 1268.0,
+    "Students with Disabilities %": 0.18,
+    "Students Experiencing Poverty %": 0.45
+  },
+  "2146": {
+    "District ID": 2146,
+    "District Name": "Woodburn SD 103",
+    "Student Enrollment": 5284.0,
+    "Students with Disabilities %": 0.15,
+    "Students Experiencing Poverty %": 0.47
+  },
+  "2251": {
+    "District ID": 2251,
+    "District Name": "Yamhill Carlton SD 1",
+    "Student Enrollment": 1085.0,
+    "Students with Disabilities %": 0.17,
+    "Students Experiencing Poverty %": 0.22
+  },
+  "1997": {
+    "District ID": 1997,
+    "District Name": "Yoncalla SD 32",
+    "Student Enrollment": 270.0,
+    "Students with Disabilities %": 0.18,
+    "Students Experiencing Poverty %": 0.46
+  }
+}
+```
+
 # src/lib/data/processData.js
 
 ```js
@@ -5944,10 +8117,14 @@ export const index = writable(0)
 export const colors = {
     colorInclusiveDark: '#328F83',
     colorInclusiveGray: '#5e9e96',
-    colorInclusive: 'rgb(70, 181, 166)',
+    //colorInclusive: 'rgb(70, 181, 166)',
+    colorInclusive: '#3EB4A4',
     colorSemiInclusive: 'rgb(248, 170, 22)',
-    colorNonInclusive: 'rgb(247, 134, 68)',
+    //colorSemiInclusive: '#F9B638',
+    //colorNonInclusive: 'rgb(247, 134, 68)',
+    colorNonInclusive: '#F78540',
     colorSeparate: 'rgb(222, 84, 102)',
+    //colorSeparate: '#E95266',
     colorText: '#333131',
     colorDarkGray: '#5A5656',
     colorMediumGray: '#BCB6B6',
@@ -6403,18 +8580,17 @@ export const prerender = true
     import StateMap from "$lib/components/StateMap.svelte"
     import SelectDistricts from "$lib/components/SelectDistricts.svelte"
     import SimpleAccordion from "$lib/components/SimpleAccordion.svelte"
-    //import DistrictsBeeswarm from "$lib/components/DistrictsBeeswarm.svelte"
     import VisualizationToggle from "$lib/components/VisualizationToggle.svelte"
     import TableOfDistricts from "$lib/components/TableOfDistricts.svelte"
     import Sources from "$lib/components/Sources.svelte"
-
-    console.log($data)
+    import ScrollyCard from "$lib/components/ScrollyCard.svelte"
+    import ScrollyProgress from "$lib/components/ScrollyProgress.svelte"
 
     // Scroller variables
     let index, offset, progress
-	let top = 0
-	let threshold = 0.1
-	let bottom = 0.8
+    let top = 0
+    let threshold = 0.5
+    let bottom = 0.8
 
     let isDistrictSelected = false
     $: isDistrictSelected = $selectedDistrict && $selectedDistrict.length > 0
@@ -6423,8 +8599,19 @@ export const prerender = true
             index = 0;
         }
     }
-</script>
 
+    // Total number of scrolly sections
+    $: totalScrollySections = isDistrictSelected ? 8 : 2
+
+    // Function to skip the scrolly experience
+    function skipToEnd() {
+        index = totalScrollySections - 1;
+        // Scroll to the table section
+        document.querySelector('.post-scroll-content').scrollIntoView({ 
+            behavior: 'smooth' 
+        });
+    }
+</script>
 
 <div class="intro">
     <div class="beeswarm-container">
@@ -6442,7 +8629,7 @@ export const prerender = true
     <StateMap />
 
     <p class="text-width">
-        For families of students with disabilities, a common concern is not knowing what supports their child is eligible for from one area to the next. Moving from one place to another can mean drastic changes in services, even though the disability hasn’t changed. These changes can have a huge impact on the well-being and developmental trajectory of a child.
+        For families of students with disabilities, a common concern is not knowing what supports their child is eligible for from one area to the next. Moving from one place to another can mean drastic changes in services, even though the disability hasn't changed. These changes can have a huge impact on the well-being and developmental trajectory of a child.
     </p>
     <p class="text-width">
         Usually, families find that the process of how an agency or district evaluates a student's disability is not transparent, and how those evaluations are used to make decisions about services is even less so. However, data is reported to states and the federal government that helps give a view into how students, as a whole, are supported in different areas.
@@ -6460,6 +8647,7 @@ export const prerender = true
         bind:index 
         bind:offset 
         bind:progress
+        showHelpers={false}
     >
         <div slot="background" class="background">
             <Divider>
@@ -6468,31 +8656,34 @@ export const prerender = true
 
             <SelectDistricts />
 
-            <!-- <DistrictsBeeswarm index={index} /> -->
-            <VisualizationToggle index={index} />
+            <VisualizationToggle {index} />
         </div>
 
         <div slot="foreground">
-            <section>
-            </section>
+            
             {#if isDistrictSelected}
                 <section>
-                    <div class="text-foreground">These circles represent all of the school districts in <strong>Oregon</strong>. Districts farther to the <strong>right</strong> are <strong><em>more inclusive</em></strong>. Districts farther to the <strong>left</strong> are <strong><em>less inclusive</em></strong>.</div>
+                    <ScrollyCard active={index === 0}>
+                        Let's explore how special education services vary across <strong>Oregon</strong> school districts
+                    </ScrollyCard>
                 </section>
                 <section>
-                    <div class="text-foreground"><strong>{$selectedDistrictData[0].properties["Institution Name"]}</strong> is selected. Let's learn more about its inclusion of students with disabilities</div>
+                    <ScrollyCard active={index === 1}>
+                        These circles represent all of the school districts in <strong>Oregon</strong>. Districts farther to the <strong>right</strong> are <strong><em>more inclusive</em></strong>, meaning students with disabilities spend <strong>more time in general education classrooms</strong> with their peers
+                    </ScrollyCard>
                 </section>
                 <section>
-                    <div class="text-foreground">
-                        {$selectedDistrictData[0].properties["Institution Name"]} has <strong>{$selectedDistrictData[0].properties["Total Student Count"].toLocaleString()} students</strong> with IEPs
+                    <ScrollyCard active={index === 2}>
+                        Let's look at Portland Public Schools for example. This district serves <strong>{$selectedDistrictData[0].properties["Total Student Count"]} students with IEPs*</strong> <em>(note: you can select your local district at any time)</em>
                         <br>
                         <br>
-                        <em>(An IEP is a document that outlines what supports a student with a disability will receive at school. It's personalized to each student)</em>
-                    </div>
+                        <em>*An IEP is a document that outlines what supports a student with a disability will receive at school. It's personalized to each student</em>
+                    </ScrollyCard>
                 </section>
                 <section>
-                    <div class="text-foreground">
-                        Based on how much of their day those students spend in regular classrooms, <strong>{$selectedDistrictData[0].properties["Institution Name"]}</strong> has an <strong>inclusion score</strong> of <strong>{$selectedDistrictData[0].properties.quartile} out of 4</strong> and is more inclusive than <strong>{$selectedDistrictData[0].properties.percent_more_inclusive}% of districts</strong> in Oregon.
+                    <ScrollyCard active={index === 3}>
+                        Districts report data on how much time students with IEPs spend in regular classrooms. Based on this, <strong>{$selectedDistrictData[0].properties["Institution Name"]}</strong> has an <strong>inclusion score</strong> of <strong>{$selectedDistrictData[0].properties["quartile"]} out of 4</strong>
+                         has <strong>{$selectedDistrictData[0].properties["Total Student Count"].toLocaleString()} students</strong> with IEPs
                         <br>
                         <br>
                         <SimpleAccordion title="How is the inclusion score calculated?">
@@ -6504,29 +8695,46 @@ export const prerender = true
                             </ul>
                             Or, in a completely separate environment, like a hospital or detention facility.
                         </SimpleAccordion>
-                    </div>
+                    </ScrollyCard>
                 </section>
                 <section>
-                    <div class="text-foreground">This is how inclusive {$selectedDistrictData[0].properties["Institution Name"]} is compared to the <strong>largest districts</strong> in the state</div>
+                    <ScrollyCard active={index === 4}>
+                        Here's how {$selectedDistrictData[0].properties["Institution Name"]} compares to the <strong>largest districts</strong> in the state
+                    </ScrollyCard>
                 </section>
                 <section>
-                    <div class="text-foreground">And to the <strong>districts it touches</strong></div>
+                    <ScrollyCard active={index === 5}>
+                        And to the <strong>districts it touches</strong>
+                    </ScrollyCard>
                 </section>
                 <section>
-                    <div class="text-foreground">
-                        There's a lot more to explore in {$selectedDistrictData[0].properties["Institution Name"]}'s IEP data, including <strong>graduation rates</strong> and <strong>racial representation</strong>. You can find that information by clicking on 'learn more' in the district's <strong>tooltip</strong>, or in the <strong>table below</strong>
-                        <br>
-                        <br>
-                        To <strong>start over</strong> select a new district
-                    </div>
+                    <ScrollyCard active={index === 6}>
+                        You can <strong>select multiple districts</strong> to compare them directly
+                    </ScrollyCard>
+                </section>
+                <section>
+                    <ScrollyCard active={index === 7}>
+                        Now it's your turn! Use the <strong>toggle</strong> to switch between <strong>map and bubble views</strong>. Your selected districts will also appear highlighted in the <strong>table below</strong>
+                    </ScrollyCard>
                 </section>
             {:else}
                 <section>
-                    <div class="text-foreground">Please select a district to view detailed information.</div>
+                    <ScrollyCard active={index === 1}>
+                        Please select a district to view detailed information.
+                    </ScrollyCard>
                 </section>
             {/if}
         </div>
     </Scroller>
+
+    <!-- Progress indicator and Skip button -->
+    {#if index > 0 && index < totalScrollySections - 1}
+        <ScrollyProgress 
+            currentIndex={index} 
+            totalSteps={totalScrollySections}
+            onSkip={skipToEnd}
+        />
+    {/if}
 
     <div class="post-scroll-content">
         <Divider>
@@ -6617,33 +8825,11 @@ export const prerender = true
         pointer-events: none; /* Makes the section transparent to pointer events */
     }
 
-    .text-foreground {
-        display: inline-block;
-        padding: 1rem;
-        color: var(--colorWhite);
-        background-color: var(--colorText);
-        background-color: color-mix(in srgb, var(--colorText) 90%, transparent);
-        border-radius: 0.25rem;
-        font-size: 1.3rem;
-        text-align: center;
-        box-shadow: var(--shadow);
-        max-width: 90%;
-        position: relative;
-        z-index: 100;     
-        pointer-events: auto;
-    }
-
-    .text-foreground * {
-        pointer-events: auto; /* Re-enables pointer events for text-foreground contents */
-    }
-
     .table {
         background-color: var(--colorBackgroundWhite);
         z-index: 5;
     }
 </style>
-
-
 ```
 
 # src/routes/about/+page.svelte
@@ -6752,6 +8938,9 @@ export async function load({ params }) {
 <script>
     import { fade } from 'svelte/transition'
     import SwarmIdentificationSize from '$lib/components/SwarmIdentificationSize.svelte'
+    import Divider from "$lib/components/Divider.svelte"
+    import { Pencil } from 'lucide-svelte'
+    import Sources from "$lib/components/Sources.svelte"
 
     export let data
     console.log('viz test data:', data)
@@ -6787,6 +8976,12 @@ export async function load({ params }) {
     </p>
 </div>
 
+<Divider>
+    <Pencil />
+</Divider>
+
+<Sources />
+
 <style>
     .viz-in-progress {
         margin-bottom: 0;
@@ -6800,7 +8995,7 @@ export async function load({ params }) {
 
     .source {
         text-align: right;
-        margin-top: -5rem;
+        margin-top: -1rem;
         margin-bottom: 2rem;
         margin-right: 2rem;
     }
@@ -6832,18 +9027,17 @@ export async function load({ params }) {
     import StateMap from "$lib/components/StateMap.svelte"
     import SelectDistricts from "$lib/components/SelectDistricts.svelte"
     import SimpleAccordion from "$lib/components/SimpleAccordion.svelte"
-    //import DistrictsBeeswarm from "$lib/components/DistrictsBeeswarm.svelte"
     import VisualizationToggle from "$lib/components/VisualizationToggle.svelte"
     import TableOfDistricts from "$lib/components/TableOfDistricts.svelte"
     import Sources from "$lib/components/Sources.svelte"
-
-    console.log($data)
+    import ScrollyCard from "$lib/components/ScrollyCard.svelte"
+    import ScrollyProgress from "$lib/components/ScrollyProgress.svelte"
 
     // Scroller variables
     let index, offset, progress
-	let top = 0
-	let threshold = 0.1
-	let bottom = 0.8
+    let top = 0
+    let threshold = 0.1
+    let bottom = 0.8
 
     let isDistrictSelected = false
     $: isDistrictSelected = $selectedDistrict && $selectedDistrict.length > 0
@@ -6851,6 +9045,18 @@ export async function load({ params }) {
         if ($selectedDistrict) {
             index = 0;
         }
+    }
+
+    // Total number of scrolly sections
+    $: totalScrollySections = isDistrictSelected ? 8 : 2
+
+    // Function to skip the scrolly experience
+    function skipToEnd() {
+        index = totalScrollySections - 1;
+        // Scroll to the table section
+        document.querySelector('.post-scroll-content').scrollIntoView({ 
+            behavior: 'smooth' 
+        });
     }
 </script>
 
@@ -6871,7 +9077,7 @@ export async function load({ params }) {
     <StateMap />
 
     <p class="text-width">
-        For families of students with disabilities, a common concern is not knowing what supports their child is eligible for from one area to the next. Moving from one place to another can mean drastic changes in services, even though the disability hasn’t changed. These changes can have a huge impact on the well-being and developmental trajectory of a child.
+        For families of students with disabilities, a common concern is not knowing what supports their child is eligible for from one area to the next. Moving from one place to another can mean drastic changes in services, even though the disability hasn't changed. These changes can have a huge impact on the well-being and developmental trajectory of a child.
     </p>
     <p class="text-width">
         Usually, families find that the process of how an agency or district evaluates a student's disability is not transparent, and how those evaluations are used to make decisions about services is even less so. However, data is reported to states and the federal government that helps give a view into how students, as a whole, are supported in different areas.
@@ -6897,30 +9103,34 @@ export async function load({ params }) {
 
             <SelectDistricts />
 
-            <!-- <DistrictsBeeswarm index={index} /> -->
-            <VisualizationToggle index={index} />
+            <VisualizationToggle {index} />
         </div>
 
         <div slot="foreground">
             <section>
+                <!-- Empty first section -->
             </section>
             {#if isDistrictSelected}
                 <section>
-                    <div class="text-foreground">These circles represent all of the school districts in <strong>Oregon</strong>. Districts farther to the <strong>right</strong> are <strong><em>more inclusive</em></strong>. Districts farther to the <strong>left</strong> are <strong><em>less inclusive</em></strong>.</div>
+                    <ScrollyCard active={index === 1}>
+                        These circles represent all of the school districts in <strong>Oregon</strong>. Districts farther to the <strong>right</strong> are <strong><em>more inclusive</em></strong>. Districts farther to the <strong>left</strong> are <strong><em>less inclusive</em></strong>.
+                    </ScrollyCard>
                 </section>
                 <section>
-                    <div class="text-foreground"><strong>{$selectedDistrictData[0].properties["Institution Name"]}</strong> is selected. Let's learn more about its inclusion of students with disabilities</div>
+                    <ScrollyCard active={index === 2}>
+                        <strong>{$selectedDistrictData[0].properties["Institution Name"]}</strong> is selected. Let's learn more about its inclusion of students with disabilities
+                    </ScrollyCard>
                 </section>
                 <section>
-                    <div class="text-foreground">
+                    <ScrollyCard active={index === 3}>
                         {$selectedDistrictData[0].properties["Institution Name"]} has <strong>{$selectedDistrictData[0].properties["Total Student Count"].toLocaleString()} students</strong> with IEPs
                         <br>
                         <br>
                         <em>(An IEP is a document that outlines what supports a student with a disability will receive at school. It's personalized to each student)</em>
-                    </div>
+                    </ScrollyCard>
                 </section>
                 <section>
-                    <div class="text-foreground">
+                    <ScrollyCard active={index === 4}>
                         Based on how much of their day those students spend in regular classrooms, <strong>{$selectedDistrictData[0].properties["Institution Name"]}</strong> has an <strong>inclusion score</strong> of <strong>{$selectedDistrictData[0].properties.quartile} out of 4</strong> and is more inclusive than <strong>{$selectedDistrictData[0].properties.percent_more_inclusive}% of districts</strong> in Oregon.
                         <br>
                         <br>
@@ -6933,29 +9143,44 @@ export async function load({ params }) {
                             </ul>
                             Or, in a completely separate environment, like a hospital or detention facility.
                         </SimpleAccordion>
-                    </div>
+                    </ScrollyCard>
                 </section>
                 <section>
-                    <div class="text-foreground">This is how inclusive {$selectedDistrictData[0].properties["Institution Name"]} is compared to the <strong>largest districts</strong> in the state</div>
+                    <ScrollyCard active={index === 5}>
+                        This is how inclusive {$selectedDistrictData[0].properties["Institution Name"]} is compared to the <strong>largest districts</strong> in the state
+                    </ScrollyCard>
                 </section>
                 <section>
-                    <div class="text-foreground">And to the <strong>districts it touches</strong></div>
+                    <ScrollyCard active={index === 6}>
+                        And to the <strong>districts it touches</strong>
+                    </ScrollyCard>
                 </section>
                 <section>
-                    <div class="text-foreground">
+                    <ScrollyCard active={index === 7}>
                         There's a lot more to explore in {$selectedDistrictData[0].properties["Institution Name"]}'s IEP data, including <strong>graduation rates</strong> and <strong>racial representation</strong>. You can find that information by clicking on 'learn more' in the district's <strong>tooltip</strong>, or in the <strong>table below</strong>
                         <br>
                         <br>
                         To <strong>start over</strong> select a new district
-                    </div>
+                    </ScrollyCard>
                 </section>
             {:else}
                 <section>
-                    <div class="text-foreground">Please select a district to view detailed information.</div>
+                    <ScrollyCard active={index === 1}>
+                        Please select a district to view detailed information.
+                    </ScrollyCard>
                 </section>
             {/if}
         </div>
     </Scroller>
+
+    <!-- Progress indicator and Skip button -->
+    {#if index > 0 && index < totalScrollySections - 1}
+        <ScrollyProgress 
+            currentIndex={index} 
+            totalSteps={totalScrollySections}
+            onSkip={skipToEnd}
+        />
+    {/if}
 
     <div class="post-scroll-content">
         <Divider>
@@ -7046,33 +9271,11 @@ export async function load({ params }) {
         pointer-events: none; /* Makes the section transparent to pointer events */
     }
 
-    .text-foreground {
-        display: inline-block;
-        padding: 1rem;
-        color: var(--colorWhite);
-        background-color: var(--colorText);
-        background-color: color-mix(in srgb, var(--colorText) 90%, transparent);
-        border-radius: 0.25rem;
-        font-size: 1.3rem;
-        text-align: center;
-        box-shadow: var(--shadow);
-        max-width: 90%;
-        position: relative;
-        z-index: 100;     
-        pointer-events: auto;
-    }
-
-    .text-foreground * {
-        pointer-events: auto; /* Re-enables pointer events for text-foreground contents */
-    }
-
     .table {
         background-color: var(--colorBackgroundWhite);
         z-index: 5;
     }
 </style>
-
-
 ```
 
 # src/routes/resources/+page.svelte

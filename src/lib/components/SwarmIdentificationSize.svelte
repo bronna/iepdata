@@ -4,10 +4,26 @@
     import { forceSimulation, forceX, forceY, forceCollide } from 'd3-force'
     import { colors } from '$lib/styles/colorConfig'
     import { data } from '$lib/stores/stores.js'
+    import { Search } from 'lucide-svelte'
+    import { writable, derived } from "svelte/store"
     import SVGChart from './SVGChart.svelte'
 
+    const searchTermStore = writable('')
+    let searchInputValue = ''
+
+    // Update search term store when input changes
+    $: {
+        searchTermStore.set(searchInputValue)
+    }
+
+    // Clear search function
+    function clearSearch() {
+        searchInputValue = ''
+        searchTermStore.set('')
+    }
+
     export let width = 1200
-    export let height = 600
+    export let height = 800
 
     let dimensions = {
         width,
@@ -32,7 +48,7 @@
     // Create scales
     $: xScale = scaleLinear()
         //.domain(extent(filteredData, d => d.properties["Students with Disabilities"]))
-        .domain([10, 23])
+        .domain([8, 22])
         .range([0, dimensions.innerWidth])
         .nice()
 
@@ -85,13 +101,31 @@
     }
 </script>
 
+<!-- Search bar above chart -->
+<div class="search-container">
+    <div class="search-input-container">
+        <div class="search-icon-wrapper">
+            <Search size={20} color="var(--colorMediumGray)" />
+        </div>
+        <input
+            type="text"
+            bind:value={searchInputValue}
+            placeholder="Search for a district..."
+            class="search-input"
+        />
+        {#if searchInputValue}
+            <button class="clear-button" on:click={clearSearch}>✕</button>
+        {/if}
+    </div>
+</div>
+
 <div class="swarmplot" bind:clientWidth={width} bind:clientHeight={height}>
     <SVGChart {dimensions}>
         <!-- X-axis -->
         <g class="x-axis">
             <!-- X-axis ticks and labels -->
             {#each xScale.ticks(5) as tick}
-                <g transform="translate({xScale(tick)}, {dimensions.innerHeight - 100})">
+                <g transform="translate({xScale(tick)}, {dimensions.innerHeight - 20})">
                     <line 
                         y2="6" 
                         stroke={colors.colorLightGray}
@@ -110,14 +144,14 @@
 
             <!-- X-axis label -->
             <text
-                x={dimensions.innerWidth / 2}
-                y={dimensions.innerHeight - 40}
-                text-anchor="middle"
+                x="-10"
+                y={dimensions.innerHeight + 25}
+                text-anchor="start"
                 fill={colors.colorText}
-                font-size="16px"
+                font-size="14px"
                 font-weight="600"
             >
-                % Students with IEPs
+                % students with IEPs
             </text>
         </g>
 
@@ -153,9 +187,10 @@
                     fill="white"
                     stroke="white"
                     stroke-width="4"
+                    opacity="0.75"
                     stroke-linejoin="round"
                     font-size="12px"
-                    font-weight="600"
+                    font-weight="700"
                     pointer-events="none"
                 >
                     {node.properties['Institution Name']}
@@ -168,7 +203,7 @@
                     dominant-baseline="middle"
                     fill={colors.colorText}
                     font-size="12px"
-                    font-weight="600"
+                    font-weight="700"
                     pointer-events="none"
                 >
                     {node.properties['Institution Name']}
@@ -179,58 +214,170 @@
         <!-- Add line at current state funding -->
         <line
             x1={xScale(11)}
-            y1={60}
+            y1={10}
             x2={xScale(11)}
             y2={dimensions.innerHeight - 80}
-            stroke={colors.colorText}
-            stroke-width="1.5"
-            stroke-dasharray="2"
+            stroke={colors.colorBackgroundWhite}
+            stroke-width="6"
+            opacity="0.3"
+        />
+        <line
+            x1={xScale(11)}
+            y1={10}
+            x2={xScale(11)}
+            y2={dimensions.innerHeight - 80}
+            stroke={colors.colorDarkGray}
+            stroke-width="2"
+            stroke-dasharray="4 2"
+        />
+        <rect
+            x={xScale(11) - 120}
+            y={10}
+            width="240"
+            height="84"
+            fill="white"
+            rx="5"
+            ry="5"
         />
         <text
             x={xScale(11)}
-            y={30}
+            y={20}
             text-anchor="middle"
             fill={colors.colorText}
             font-size="16px"
             font-weight="500"
         >
-            current state
-        </text>
-        <text
-            x={xScale(11)}
-            y={48}
-            text-anchor="middle"
-            fill={colors.colorText}
-            font-size="16px"
-            font-weight="500"
-        >
-            funding cap: 11%
+            <tspan x={xScale(11)} dy="0"><tspan font-weight="bold">Oregon</tspan> caps funding for</tspan>
+            <tspan x={xScale(11)} dy="1.3em">students with disabilities at</tspan>
+            <tspan x={xScale(11)} dy="1.3em"><tspan font-weight="bold">11%</tspan> of a district's population</tspan>
+            <tspan x={xScale(11)} dy="1.3em">needing supports</tspan>
         </text>
 
         <!-- Add line at proposed state funding -->
         <line
             x1={xScale(15)}
-            y1={60}
+            y1={10}
             x2={xScale(15)}
             y2={dimensions.innerHeight - 80}
-            stroke={colors.colorText}
-            stroke-width="1.5"
-            stroke-dasharray="2"
+            stroke={colors.colorBackgroundWhite}
+            stroke-width="6"
+            opacity="0.3"
+            />
+        <line
+            x1={xScale(15)}
+            y1={10}
+            x2={xScale(15)}
+            y2={dimensions.innerHeight - 80}
+            stroke={colors.colorDarkGray}
+            stroke-width="2"
+            opacity="0.5"
+            stroke-dasharray="4 2"
+        />
+        <rect
+            x={xScale(15) - 80}
+            y={10}
+            width="160"
+            height="40"
+            fill="white"
+            rx="5"
+            ry="5"
         />
         <text
             x={xScale(15)}
-            y={48}
+            y={20}
             text-anchor="middle"
             fill={colors.colorText}
             font-size="16px"
             font-weight="500"
         >
-            15% cap
+            <tspan x={xScale(15)} dy="0">Some have suggested</tspan>
+            <tspan x={xScale(15)} dy="1.3em">a <tspan font-weight="bold">15%</tspan> cap</tspan>
+        </text>
+
+        <!--Add annotation-->
+        <text
+            x={xScale(19)}
+            y={20}
+            text-anchor="start"
+            fill={colors.colorText}
+            font-size="16px"
+            font-weight="500"
+        >
+            <tspan x={xScale(19)} dy="0">For <tspan font-weight="bold">Portland Public</tspan></tspan>
+            <tspan x={xScale(19)} dy="1.3em">and <tspan font-weight="bold">Salem-Keizer</tspan>,</tspan>
+            <tspan x={xScale(19)} dy="1.3em">two of the largest</tspan>
+            <tspan x={xScale(19)} dy="1.3em">districts in the state,</tspan>
+            <tspan x={xScale(19)} dy="1.3em"><tspan font-weight="bold">18%</tspan> of students</tspan>
+            <tspan x={xScale(19)} dy="1.3em">qualify for special</tspan>
+            <tspan x={xScale(19)} dy="1.3em">education supports</tspan>
         </text>
     </SVGChart>
 </div>
 
 <style>
+    /* search bar styles */
+    .search-container {
+        margin: 2rem auto 0.5rem auto;
+        max-width: 90%;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+
+    .search-input-container {
+        width: 300px;
+    }
+
+    @media (max-width: 768px) {
+        .search-input-container {
+            width: 100%;
+        }
+    }
+
+    .search-input-container {
+        position: relative;
+        display: flex;
+        align-items: center;
+        max-width: 100%;
+    }
+
+    .search-icon-wrapper {
+        position: absolute;
+        left: 1rem;
+        display: flex;
+        align-items: center;
+        pointer-events: none;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 0.8rem 2.5rem;
+        font-size: 1rem;
+        border: 2px solid var(--colorLightGray);
+        border-radius: 8px;
+        transition: border-color 0.3s ease;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: var(--colorInclusive);
+    }
+
+    .clear-button {
+        position: absolute;
+        right: 1rem;
+        background: none;
+        border: none;
+        color: var(--colorMediumGray);
+        cursor: pointer;
+        font-size: 1.2rem;
+        padding: 0.25rem;
+    }
+
+    .clear-button:hover {
+        color: var(--colorText);
+    }
+
     .swarmplot {
         width: 100%;
         height: 600px;
