@@ -1,31 +1,55 @@
 <script>
+    import { onMount, afterUpdate } from 'svelte'
     import { scaleLinear, scaleSqrt, scaleOrdinal } from 'd3-scale'
     import { extent } from 'd3-array'
     import { forceSimulation, forceX, forceY, forceCollide } from 'd3-force'
     import { colors } from '$lib/styles/colorConfig'
-    import { data } from '$lib/stores/stores.js'
+    import { data, selectedDistrict } from '$lib/stores/stores.js'
     import { Search } from 'lucide-svelte'
-    import { writable } from "svelte/store"
+    import { writable, derived } from "svelte/store"
+    import { goto } from '$app/navigation'
     import SVGChart from './SVGChart.svelte'
-    import { onMount } from 'svelte'
 
     const searchTermStore = writable('')
     let searchInputValue = ''
+    let searchResults = []
+    const maxResults = 5
 
     // Update search term store when input changes
     $: {
         searchTermStore.set(searchInputValue)
+        if (searchInputValue.length > 2) {
+            searchResults = $data
+                .filter(d => 
+                    d.properties["Institution Name"] && 
+                    d.properties.GEOID !== '999999' &&
+                    d.properties["Institution Name"].toLowerCase().includes(searchInputValue.toLowerCase())
+                )
+                .slice(0, maxResults)
+        } else {
+            searchResults = []
+        }
     }
 
     // Clear search function
     function clearSearch() {
         searchInputValue = ''
         searchTermStore.set('')
+        searchResults = []
+    }
+
+    // Handle district selection
+    function selectDistrict(districtGEOID) {
+        selectedDistrict.set(districtGEOID)
+        clearSearch()
+        // Navigate to district details if needed
+        // goto(`/${districtGEOID}`)
     }
 
     export let width = 1200
     export let height = 800
     let initialized = false
+    let isMobile = false
 
     // Keep the fixed domain as in the original
     const fixedDomain = [8, 22];
@@ -41,6 +65,8 @@
     $: {
         dimensions.innerWidth = width - dimensions.margin.left - dimensions.margin.right
         dimensions.innerHeight = height - dimensions.margin.top - dimensions.margin.bottom
+        // Detect mobile screen size
+        isMobile = width < 640
     }
 
     // Filter out districts with missing data
@@ -59,7 +85,7 @@
     // Create radius scale (using sqrt scale for accurate circle area representation)
     $: rScale = scaleSqrt()
         .domain(extent(filteredData, d => d.properties['Total Student Count']))
-        .range(width < 768 ? [2, 26] : [3, 50])
+        .range(isMobile ? [2, 20] : [3, 50])
 
     // Create color scale for quartiles
     const colorScale = scaleOrdinal()
@@ -87,6 +113,9 @@
     // Force simulation setup
     let nodes = [];
     let simulation;
+
+    // Get the selected district data 
+    $: selectedDistrictData = $data.find(d => d.properties.GEOID === $selectedDistrict);
 
     function runSimulation() {
         if (!filteredData.length || !dimensions.innerWidth) return;
@@ -137,6 +166,26 @@
         }
     }
 
+    // Watch for changes to selectedDistrict and highlight it
+    $: {
+        if (initialized && $selectedDistrict && nodes.length) {
+            // Update nodes to highlight the selected district
+            nodes = nodes.map(node => ({
+                ...node,
+                isSelected: node.properties.GEOID === $selectedDistrict
+            }));
+        }
+    }
+
+    // Determine which districts should show labels based on screen size
+    $: visibleLabels = isMobile ? 
+        // On mobile, show fewer labels to avoid overlap
+        largestDistricts.slice(0, 2) :
+        // On desktop, show all large districts
+        largestDistricts;
+
+    // No longer needed - using inline expressions instead
+
     onMount(() => {
         initialized = true;
         runSimulation();
@@ -159,6 +208,24 @@
             <button class="clear-button" on:click={clearSearch}>✕</button>
         {/if}
     </div>
+    
+    <!-- Search results dropdown -->
+    {#if searchResults.length > 0}
+        <div class="search-results">
+            {#each searchResults as result}
+                <!-- svelte-ignore a11y-click-events-have-key-events -->
+                <div 
+                    class="search-result-item {$selectedDistrict === result.properties.GEOID ? 'selected' : ''}"
+                    on:click={() => selectDistrict(result.properties.GEOID)}
+                >
+                    <div class="result-name">{result.properties["Institution Name"]}</div>
+                    <div class="result-details">
+                        {result.properties["Students with Disabilities"]}% students with IEPs
+                    </div>
+                </div>
+            {/each}
+        </div>
+    {/if}
 </div>
 
 <div class="swarmplot" bind:clientWidth={width} bind:clientHeight={height}>
@@ -172,7 +239,7 @@
             <!-- X-axis -->
             <g class="x-axis">
                 <!-- X-axis ticks and labels -->
-                {#each xScale.ticks(5) as tick}
+                {#each xScale.ticks(isMobile ? 3 : 5) as tick}
                     <g transform="translate({xScale(tick)}, {dimensions.innerHeight - 20})">
                         <line 
                             y2="6" 
@@ -183,7 +250,7 @@
                             y="20" 
                             text-anchor="middle"
                             fill={colors.colorText}
-                            font-size="14px"
+                            font-size={isMobile ? "12px" : "14px"}
                         >
                             {tick}%
                         </text>
@@ -196,7 +263,7 @@
                     y={dimensions.innerHeight + 25}
                     text-anchor="start"
                     fill={colors.colorText}
-                    font-size="14px"
+                    font-size={isMobile ? "12px" : "14px"}
                     font-weight="600"
                 >
                     % students with IEPs
@@ -206,14 +273,17 @@
             <!-- Plot points -->
             {#if initialized && nodes.length}
                 {#each nodes as node}
+                    <!-- Only show circles (not labels) by default -->
                     <circle
                         cx={node.x}
                         cy={node.y}
                         r={rScale(node.properties['Total Student Count'])}
                         fill={colorScale(node.properties.quartile)}
-                        opacity="0.85"
-                        stroke={colors.colorBackgroundWhite}
-                        stroke-width="1"
+                        opacity={node.isSelected ? 1 : 0.85}
+                        stroke={node.isSelected ? colors.colorText : colors.colorBackgroundWhite}
+                        stroke-width={node.isSelected ? 3 : 1}
+                        on:click={() => selectDistrict(node.properties.GEOID)}
+                        style="cursor: pointer;"
                     >
                         <title>
                             {node.properties['Institution Name']}
@@ -225,10 +295,10 @@
                 {/each}
             {/if}
             
-            <!-- Labels for the 5 largest districts -->
+            <!-- Labels only for selected district or the largest districts - limited based on screen size -->
             {#if initialized && nodes.length}
                 {#each nodes as node}
-                    {#if largestDistricts.includes(node.properties.GEOID)}
+                    {#if (visibleLabels.includes(node.properties.GEOID) || node.isSelected)}
                         <!-- White background for text readability -->
                         <text
                             x={node.x}
@@ -240,11 +310,17 @@
                             stroke-width="4"
                             opacity="0.75"
                             stroke-linejoin="round"
-                            font-size="12px"
+                            font-size={isMobile ? "10px" : "12px"}
                             font-weight="700"
                             pointer-events="none"
                         >
-                            {node.properties['Institution Name']}
+                            {isMobile ? 
+                                // Shorter name on mobile (truncate if needed)
+                                (node.properties['Institution Name'].length > 15 
+                                    ? node.properties['Institution Name'].slice(0, 15) + '...' 
+                                    : node.properties['Institution Name'])
+                                : node.properties['Institution Name']
+                            }
                         </text>
                         <!-- Actual text label -->
                         <text
@@ -253,17 +329,23 @@
                             text-anchor="middle"
                             dominant-baseline="middle"
                             fill={colors.colorText}
-                            font-size="12px"
+                            font-size={isMobile ? "10px" : "12px"}
                             font-weight="700"
                             pointer-events="none"
                         >
-                            {node.properties['Institution Name']}
+                            {isMobile ? 
+                                // Shorter name on mobile (truncate if needed)
+                                (node.properties['Institution Name'].length > 15 
+                                    ? node.properties['Institution Name'].slice(0, 15) + '...' 
+                                    : node.properties['Institution Name'])
+                                : node.properties['Institution Name']
+                            }
                         </text>
                     {/if}
                 {/each}
             {/if}
 
-            <!-- Add line at current state funding -->
+            <!-- Add line at current state funding with responsive layout -->
             <line
                 x1={xScale(11)}
                 y1={10}
@@ -282,11 +364,13 @@
                 stroke-width="2"
                 stroke-dasharray="4 2"
             />
+
+            <!-- Use responsive annotation for current funding line -->
             <rect
-                x={xScale(11) - 120}
+                x={isMobile ? (xScale(11) - 60) : (xScale(11) - 120)}
                 y={10}
-                width="240"
-                height="84"
+                width={isMobile ? 120 : 240}
+                height={isMobile ? 64 : 84}
                 fill="white"
                 rx="5"
                 ry="5"
@@ -296,16 +380,18 @@
                 y={20}
                 text-anchor="middle"
                 fill={colors.colorText}
-                font-size="16px"
+                font-size={isMobile ? "12px" : "16px"}
                 font-weight="500"
             >
                 <tspan x={xScale(11)} dy="0"><tspan font-weight="bold">Oregon</tspan> caps funding for</tspan>
                 <tspan x={xScale(11)} dy="1.3em">students with disabilities at</tspan>
-                <tspan x={xScale(11)} dy="1.3em"><tspan font-weight="bold">11%</tspan> of a district's population</tspan>
-                <tspan x={xScale(11)} dy="1.3em">needing supports</tspan>
+                                    <tspan x={xScale(11)} dy="1.3em"><tspan font-weight="bold">11%</tspan> of a district's population</tspan>
+                {#if !isMobile}
+                    <tspan x={xScale(11)} dy="1.3em">needing supports</tspan>
+                {/if}
             </text>
 
-            <!-- Add line at proposed state funding -->
+            <!-- Add line at proposed state funding - also responsive -->
             <line
                 x1={xScale(15)}
                 y1={10}
@@ -325,44 +411,64 @@
                 opacity="0.5"
                 stroke-dasharray="4 2"
             />
-            <rect
-                x={xScale(15) - 80}
-                y={10}
-                width="160"
-                height="40"
-                fill="white"
-                rx="5"
-                ry="5"
-            />
-            <text
-                x={xScale(15)}
-                y={20}
-                text-anchor="middle"
-                fill={colors.colorText}
-                font-size="16px"
-                font-weight="500"
-            >
-                <tspan x={xScale(15)} dy="0">Some have suggested</tspan>
-                <tspan x={xScale(15)} dy="1.3em">a <tspan font-weight="bold">15%</tspan> cap</tspan>
-            </text>
 
-            <!--Add annotation-->
-            <text
-                x={xScale(19)}
-                y={20}
-                text-anchor="start"
-                fill={colors.colorText}
-                font-size="16px"
-                font-weight="500"
-            >
-                <tspan x={xScale(19)} dy="0">For <tspan font-weight="bold">Portland Public</tspan></tspan>
-                <tspan x={xScale(19)} dy="1.3em">and <tspan font-weight="bold">Salem-Keizer</tspan>,</tspan>
-                <tspan x={xScale(19)} dy="1.3em">two of the largest</tspan>
-                <tspan x={xScale(19)} dy="1.3em">districts in the state,</tspan>
-                <tspan x={xScale(19)} dy="1.3em"><tspan font-weight="bold">18%</tspan> of students</tspan>
-                <tspan x={xScale(19)} dy="1.3em">qualify for special</tspan>
-                <tspan x={xScale(19)} dy="1.3em">education supports</tspan>
-            </text>
+            {#if !isMobile}
+                <!-- Only show this on desktop -->
+                <rect
+                    x={xScale(15) - 80}
+                    y={10}
+                    width="160"
+                    height="40"
+                    fill="white"
+                    rx="5"
+                    ry="5"
+                />
+                <text
+                    x={xScale(15)}
+                    y={20}
+                    text-anchor="middle"
+                    fill={colors.colorText}
+                    font-size="16px"
+                    font-weight="500"
+                >
+                    <tspan x={xScale(15)} dy="0">Some have suggested</tspan>
+                    <tspan x={xScale(15)} dy="1.3em">a <tspan font-weight="bold">15%</tspan> cap</tspan>
+                </text>
+            {/if}
+
+            <!-- Portland/Salem annotation - more compact on mobile -->
+            {#if isMobile}
+                <!-- Mobile version - stacked and simplified -->
+                <text
+                    x={xScale(18)}
+                    y={20}
+                    text-anchor="start"
+                    fill={colors.colorText}
+                    font-size="12px"
+                    font-weight="500"
+                >
+                    <tspan x={xScale(18)} dy="0">Portland and</tspan>
+                    <tspan x={xScale(18)} dy="1.3em">Salem-Keizer: <tspan font-weight="bold">18%</tspan></tspan>
+                </text>
+            {:else}
+                <!-- Desktop version - full annotation -->
+                <text
+                    x={xScale(19)}
+                    y={20}
+                    text-anchor="start"
+                    fill={colors.colorText}
+                    font-size="16px"
+                    font-weight="500"
+                >
+                    <tspan x={xScale(19)} dy="0">For <tspan font-weight="bold">Portland Public</tspan></tspan>
+                    <tspan x={xScale(19)} dy="1.3em">and <tspan font-weight="bold">Salem-Keizer</tspan>,</tspan>
+                    <tspan x={xScale(19)} dy="1.3em">two of the largest</tspan>
+                    <tspan x={xScale(19)} dy="1.3em">districts in the state,</tspan>
+                    <tspan x={xScale(19)} dy="1.3em"><tspan font-weight="bold">18%</tspan> of students</tspan>
+                    <tspan x={xScale(19)} dy="1.3em">qualify for special</tspan>
+                    <tspan x={xScale(19)} dy="1.3em">education supports</tspan>
+                </text>
+            {/if}
         </g>
     </svg>
 </div>
@@ -374,11 +480,14 @@
         max-width: 90%;
         width: 100%;
         display: flex;
+        flex-direction: column;
         justify-content: center;
+        position: relative;
     }
 
     .search-input-container {
         width: 300px;
+        margin: 0 auto;
     }
 
     @media (max-width: 768px) {
@@ -431,6 +540,49 @@
         color: var(--colorText);
     }
 
+    /* Search results dropdown */
+    .search-results {
+        position: absolute;
+        top: 100%;
+        width: 300px;
+        margin: 0 auto;
+        left: 0;
+        right: 0;
+        background-color: white;
+        border: 1px solid var(--colorLightGray);
+        border-radius: 0 0 8px 8px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        z-index: 10;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .search-result-item {
+        padding: 0.75rem 1rem;
+        cursor: pointer;
+        border-bottom: 1px solid var(--colorLightGray);
+        transition: background-color 0.2s ease;
+    }
+
+    .search-result-item:last-child {
+        border-bottom: none;
+    }
+
+    .search-result-item:hover,
+    .search-result-item.selected {
+        background-color: var(--colorLightLightGray);
+    }
+
+    .result-name {
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+
+    .result-details {
+        font-size: 0.85rem;
+        color: var(--colorDarkGray);
+    }
+
     .swarmplot {
         width: 100%;
         height: 600px;
@@ -444,11 +596,19 @@
     }
 
     circle {
-        transition: opacity 0.2s;
+        transition: opacity 0.2s, stroke-width 0.2s;
     }
 
     circle:hover {
         opacity: 1;
-        cursor: pointer;
+        stroke-width: 2px;
+        stroke: var(--colorText);
+    }
+
+    /* Mobile-specific styles */
+    @media (max-width: 640px) {
+        .swarmplot {
+            height: 400px; /* Smaller height on mobile */
+        }
     }
 </style>

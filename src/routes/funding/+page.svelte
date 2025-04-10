@@ -4,11 +4,6 @@
     import Divider from "$lib/components/Divider.svelte"
     import { Pencil } from 'lucide-svelte'
     import Sources from "$lib/components/Sources.svelte"
-
-    export let data
-    console.log('viz test data:', data)
-
-    let currentView = 'map'
 </script>
 
 <h1 class="text-width">Oregon's special education funding gap: the 11% cap problem</h1>
