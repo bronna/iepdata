@@ -15,6 +15,8 @@
     let searchResults = []
     const maxResults = 5
 
+    let labelLineHeight = "1.2em"
+
     // Update search term store when input changes
     $: {
         searchTermStore.set(searchInputValue)
@@ -265,8 +267,9 @@
                     fill={colors.colorText}
                     font-size={isMobile ? "12px" : "14px"}
                     font-weight="600"
+                    letter-spacing="0.01rem"
                 >
-                    % students with IEPs
+                    % Students with IEPs
                 </text>
             </g>
 
@@ -279,7 +282,7 @@
                         cy={node.y}
                         r={rScale(node.properties['Total Student Count'])}
                         fill={colorScale(node.properties.quartile)}
-                        opacity={node.isSelected ? 1 : 0.85}
+                        opacity={node.isSelected ? 1 : 0.9}
                         stroke={node.isSelected ? colors.colorText : colors.colorBackgroundWhite}
                         stroke-width={node.isSelected ? 3 : 1}
                         on:click={() => selectDistrict(node.properties.GEOID)}
@@ -289,7 +292,6 @@
                             {node.properties['Institution Name']}
                             Students with IEPs: {formatNumber(node.properties['Total Student Count'])}
                             Percent Students with IEPs: {node.properties["Students with Disabilities"]}%
-                            Quartile: {node.properties.quartile} of 4
                         </title>
                     </circle>
                 {/each}
@@ -384,10 +386,10 @@
                 font-weight="500"
             >
                 <tspan x={xScale(11)} dy="0"><tspan font-weight="bold">Oregon</tspan> caps funding for</tspan>
-                <tspan x={xScale(11)} dy="1.3em">students with disabilities at</tspan>
+                <tspan x={xScale(11)} dy={labelLineHeight}>students with disabilities at</tspan>
                                     <tspan x={xScale(11)} dy="1.3em"><tspan font-weight="bold">11%</tspan> of a district's population</tspan>
                 {#if !isMobile}
-                    <tspan x={xScale(11)} dy="1.3em">needing supports</tspan>
+                    <tspan x={xScale(11)} dy={labelLineHeight}>needing supports</tspan>
                 {/if}
             </text>
 
@@ -432,7 +434,7 @@
                     font-weight="500"
                 >
                     <tspan x={xScale(15)} dy="0">Some have suggested</tspan>
-                    <tspan x={xScale(15)} dy="1.3em">a <tspan font-weight="bold">15%</tspan> cap</tspan>
+                    <tspan x={xScale(15)} dy={labelLineHeight}>a <tspan font-weight="bold">15%</tspan> cap</tspan>
                 </text>
             {/if}
 
@@ -448,7 +450,7 @@
                     font-weight="500"
                 >
                     <tspan x={xScale(18)} dy="0">Portland and</tspan>
-                    <tspan x={xScale(18)} dy="1.3em">Salem-Keizer: <tspan font-weight="bold">18%</tspan></tspan>
+                    <tspan x={xScale(18)} dy={labelLineHeight}>Salem-Keizer: <tspan font-weight="bold">18%</tspan></tspan>
                 </text>
             {:else}
                 <!-- Desktop version - full annotation -->
@@ -461,12 +463,29 @@
                     font-weight="500"
                 >
                     <tspan x={xScale(19)} dy="0">For <tspan font-weight="bold">Portland Public</tspan></tspan>
-                    <tspan x={xScale(19)} dy="1.3em">and <tspan font-weight="bold">Salem-Keizer</tspan>,</tspan>
-                    <tspan x={xScale(19)} dy="1.3em">two of the largest</tspan>
-                    <tspan x={xScale(19)} dy="1.3em">districts in the state,</tspan>
-                    <tspan x={xScale(19)} dy="1.3em"><tspan font-weight="bold">18%</tspan> of students</tspan>
-                    <tspan x={xScale(19)} dy="1.3em">qualify for special</tspan>
-                    <tspan x={xScale(19)} dy="1.3em">education supports</tspan>
+                    <tspan x={xScale(19)} dy={labelLineHeight}>and <tspan font-weight="bold">Salem-Keizer</tspan>,</tspan>
+                    <tspan x={xScale(19)} dy={labelLineHeight}>two of the largest</tspan>
+                    <tspan x={xScale(19)} dy={labelLineHeight}>districts in the state,</tspan>
+                    <tspan x={xScale(19)} dy={labelLineHeight}><tspan font-weight="bold">18%</tspan> of students</tspan>
+                    <tspan x={xScale(19)} dy={labelLineHeight}>qualify for special</tspan>
+                    <tspan x={xScale(19)} dy={labelLineHeight}>education supports</tspan>
+                </text>
+            {/if}
+
+            <!-- Note for districts not picture -->
+            {#if !isMobile}
+                <text
+                    x={xScale(19)}
+                    y={380}
+                    text-anchor="start"
+                    fill={colors.colorText}
+                    font-size="16px"
+                    font-weight="500"
+                >
+                    <tspan x={xScale(19)} dy="0"><tspan font-weight="700">Riddle:</tspan> 25% students with IEPs &#x2192;</tspan>
+                    <tspan x={xScale(19)} dy={labelLineHeight}><tspan font-weight="700">North Lake:</tspan> 27% &#x2192;</tspan>
+                    <tspan x={xScale(19)} dy={labelLineHeight}><tspan font-weight="700">Butte Falls:</tspan> 32% &#x2192;</tspan>
+                    <tspan x={xScale(19)} dy={labelLineHeight}><tspan font-weight="700">ODE YCEP:</tspan> 49% &#x2192;</tspan>
                 </text>
             {/if}
         </g>
@@ -476,7 +495,7 @@
 <style>
     /* search bar styles */
     .search-container {
-        margin: 2rem auto 0.5rem auto;
+        margin: 2rem 0 0.5rem 0;
         max-width: 90%;
         width: 100%;
         display: flex;
@@ -487,12 +506,13 @@
 
     .search-input-container {
         width: 300px;
-        margin: 0 auto;
+        margin: 0 3rem;
     }
 
     @media (max-width: 768px) {
         .search-input-container {
             width: 100%;
+            margin: 0 1rem;
         }
     }
 

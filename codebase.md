@@ -2859,6 +2859,112 @@ You can preview the production build with `npm run preview`.
 </style>
 ```
 
+# src/lib/components/Header2.svelte
+
+```svelte
+<script>
+  import NavLinks from "./NavLinks.svelte";
+  import Logo from "./Logo.svelte"
+  import { colors } from "$lib/styles/colorConfig.js"
+
+  let menuOpen = false
+
+  function slideAndFade(node, { delay = 0, duration = 300 }) {
+    return {
+      delay,
+      duration,
+      css: t => `
+        transform: translateX(${(1 - t) * 100}%);
+        opacity: ${t};
+      `
+    };
+  }
+</script>
+
+<header>
+  <div class="spacer"></div>
+
+  <div class="logo-container">
+    <Logo color={colors.colorInclusiveGray} textColor={colors.colorBackgroundWhite} />
+  </div>
+
+  <div class="menu-container">
+    <button
+      on:click={() => menuOpen = !menuOpen}
+      class="menu-toggle"
+      aria-label="Toggle navigation menu"
+    >
+      {menuOpen ? '✕' : '☰'}
+    </button>
+  </div>
+
+  {#if menuOpen}
+    <nav class="mobile-nav" transition:slideAndFade>
+      <NavLinks direction="vertical" />
+    </nav>
+  {/if}
+</header>
+
+<style>
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start; /* Changed from center to align at the top */
+    padding: 2rem 2rem;
+    background-color: var(--colorBackgroundWhite);
+    position: relative;
+  }
+
+  @media (max-width: 768px) {
+    header {
+      padding: 1rem 1rem;
+    }
+  }
+
+  .spacer {
+    flex: 1;
+  }
+
+  .menu-container {
+    display: flex;
+    align-items: flex-start;
+  }
+
+  .menu-toggle {
+    display: block; /* Always show the menu toggle */
+    background: none;
+    border: none;
+    font-size: 2rem;
+    cursor: pointer;
+    color: var(--colorText);
+    z-index: 20;
+    padding: 0;
+    margin: 0;
+    line-height: 1;
+  }
+
+  .mobile-nav {
+    position: fixed;
+    top: 0;
+    right: 0; /* Changed back to right side */
+    bottom: 0;
+    width: 80%;
+    max-width: 300px;
+    background-color: rgba(244, 241, 240, 0.94);
+    padding: 5rem 1rem 1rem;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Removed desktop navigation styles since we want to always use the mobile menu */
+  .nav-links {
+    display: none;
+  }
+</style>
+```
+
 # src/lib/components/InclusionLegend.svelte
 
 ```svelte
@@ -5020,6 +5126,8 @@ You can preview the production build with `npm run preview`.
     let searchResults = []
     const maxResults = 5
 
+    let labelLineHeight = "1.2em"
+
     // Update search term store when input changes
     $: {
         searchTermStore.set(searchInputValue)
@@ -5054,6 +5162,7 @@ You can preview the production build with `npm run preview`.
     export let width = 1200
     export let height = 800
     let initialized = false
+    let isMobile = false
 
     // Keep the fixed domain as in the original
     const fixedDomain = [8, 22];
@@ -5069,6 +5178,8 @@ You can preview the production build with `npm run preview`.
     $: {
         dimensions.innerWidth = width - dimensions.margin.left - dimensions.margin.right
         dimensions.innerHeight = height - dimensions.margin.top - dimensions.margin.bottom
+        // Detect mobile screen size
+        isMobile = width < 640
     }
 
     // Filter out districts with missing data
@@ -5087,7 +5198,7 @@ You can preview the production build with `npm run preview`.
     // Create radius scale (using sqrt scale for accurate circle area representation)
     $: rScale = scaleSqrt()
         .domain(extent(filteredData, d => d.properties['Total Student Count']))
-        .range(width < 768 ? [2, 26] : [3, 50])
+        .range(isMobile ? [2, 20] : [3, 50])
 
     // Create color scale for quartiles
     const colorScale = scaleOrdinal()
@@ -5179,6 +5290,15 @@ You can preview the production build with `npm run preview`.
         }
     }
 
+    // Determine which districts should show labels based on screen size
+    $: visibleLabels = isMobile ? 
+        // On mobile, show fewer labels to avoid overlap
+        largestDistricts.slice(0, 2) :
+        // On desktop, show all large districts
+        largestDistricts;
+
+    // No longer needed - using inline expressions instead
+
     onMount(() => {
         initialized = true;
         runSimulation();
@@ -5232,7 +5352,7 @@ You can preview the production build with `npm run preview`.
             <!-- X-axis -->
             <g class="x-axis">
                 <!-- X-axis ticks and labels -->
-                {#each xScale.ticks(5) as tick}
+                {#each xScale.ticks(isMobile ? 3 : 5) as tick}
                     <g transform="translate({xScale(tick)}, {dimensions.innerHeight - 20})">
                         <line 
                             y2="6" 
@@ -5243,7 +5363,7 @@ You can preview the production build with `npm run preview`.
                             y="20" 
                             text-anchor="middle"
                             fill={colors.colorText}
-                            font-size="14px"
+                            font-size={isMobile ? "12px" : "14px"}
                         >
                             {tick}%
                         </text>
@@ -5256,22 +5376,24 @@ You can preview the production build with `npm run preview`.
                     y={dimensions.innerHeight + 25}
                     text-anchor="start"
                     fill={colors.colorText}
-                    font-size="14px"
+                    font-size={isMobile ? "12px" : "14px"}
                     font-weight="600"
+                    letter-spacing="0.01rem"
                 >
-                    % students with IEPs
+                    % Students with IEPs
                 </text>
             </g>
 
             <!-- Plot points -->
             {#if initialized && nodes.length}
                 {#each nodes as node}
+                    <!-- Only show circles (not labels) by default -->
                     <circle
                         cx={node.x}
                         cy={node.y}
                         r={rScale(node.properties['Total Student Count'])}
                         fill={colorScale(node.properties.quartile)}
-                        opacity={node.isSelected ? 1 : 0.85}
+                        opacity={node.isSelected ? 1 : 0.9}
                         stroke={node.isSelected ? colors.colorText : colors.colorBackgroundWhite}
                         stroke-width={node.isSelected ? 3 : 1}
                         on:click={() => selectDistrict(node.properties.GEOID)}
@@ -5281,16 +5403,15 @@ You can preview the production build with `npm run preview`.
                             {node.properties['Institution Name']}
                             Students with IEPs: {formatNumber(node.properties['Total Student Count'])}
                             Percent Students with IEPs: {node.properties["Students with Disabilities"]}%
-                            Quartile: {node.properties.quartile} of 4
                         </title>
                     </circle>
                 {/each}
             {/if}
             
-            <!-- Labels for the 5 largest districts and the selected district -->
+            <!-- Labels only for selected district or the largest districts - limited based on screen size -->
             {#if initialized && nodes.length}
                 {#each nodes as node}
-                    {#if largestDistricts.includes(node.properties.GEOID) || node.isSelected}
+                    {#if (visibleLabels.includes(node.properties.GEOID) || node.isSelected)}
                         <!-- White background for text readability -->
                         <text
                             x={node.x}
@@ -5302,11 +5423,17 @@ You can preview the production build with `npm run preview`.
                             stroke-width="4"
                             opacity="0.75"
                             stroke-linejoin="round"
-                            font-size="12px"
+                            font-size={isMobile ? "10px" : "12px"}
                             font-weight="700"
                             pointer-events="none"
                         >
-                            {node.properties['Institution Name']}
+                            {isMobile ? 
+                                // Shorter name on mobile (truncate if needed)
+                                (node.properties['Institution Name'].length > 15 
+                                    ? node.properties['Institution Name'].slice(0, 15) + '...' 
+                                    : node.properties['Institution Name'])
+                                : node.properties['Institution Name']
+                            }
                         </text>
                         <!-- Actual text label -->
                         <text
@@ -5315,17 +5442,23 @@ You can preview the production build with `npm run preview`.
                             text-anchor="middle"
                             dominant-baseline="middle"
                             fill={colors.colorText}
-                            font-size="12px"
+                            font-size={isMobile ? "10px" : "12px"}
                             font-weight="700"
                             pointer-events="none"
                         >
-                            {node.properties['Institution Name']}
+                            {isMobile ? 
+                                // Shorter name on mobile (truncate if needed)
+                                (node.properties['Institution Name'].length > 15 
+                                    ? node.properties['Institution Name'].slice(0, 15) + '...' 
+                                    : node.properties['Institution Name'])
+                                : node.properties['Institution Name']
+                            }
                         </text>
                     {/if}
                 {/each}
             {/if}
 
-            <!-- Add line at current state funding -->
+            <!-- Add line at current state funding with responsive layout -->
             <line
                 x1={xScale(11)}
                 y1={10}
@@ -5344,11 +5477,13 @@ You can preview the production build with `npm run preview`.
                 stroke-width="2"
                 stroke-dasharray="4 2"
             />
+
+            <!-- Use responsive annotation for current funding line -->
             <rect
-                x={xScale(11) - 120}
+                x={isMobile ? (xScale(11) - 60) : (xScale(11) - 120)}
                 y={10}
-                width="240"
-                height="84"
+                width={isMobile ? 120 : 240}
+                height={isMobile ? 64 : 84}
                 fill="white"
                 rx="5"
                 ry="5"
@@ -5358,16 +5493,18 @@ You can preview the production build with `npm run preview`.
                 y={20}
                 text-anchor="middle"
                 fill={colors.colorText}
-                font-size="16px"
+                font-size={isMobile ? "12px" : "16px"}
                 font-weight="500"
             >
                 <tspan x={xScale(11)} dy="0"><tspan font-weight="bold">Oregon</tspan> caps funding for</tspan>
-                <tspan x={xScale(11)} dy="1.3em">students with disabilities at</tspan>
-                <tspan x={xScale(11)} dy="1.3em"><tspan font-weight="bold">11%</tspan> of a district's population</tspan>
-                <tspan x={xScale(11)} dy="1.3em">needing supports</tspan>
+                <tspan x={xScale(11)} dy={labelLineHeight}>students with disabilities at</tspan>
+                                    <tspan x={xScale(11)} dy="1.3em"><tspan font-weight="bold">11%</tspan> of a district's population</tspan>
+                {#if !isMobile}
+                    <tspan x={xScale(11)} dy={labelLineHeight}>needing supports</tspan>
+                {/if}
             </text>
 
-            <!-- Add line at proposed state funding -->
+            <!-- Add line at proposed state funding - also responsive -->
             <line
                 x1={xScale(15)}
                 y1={10}
@@ -5387,44 +5524,64 @@ You can preview the production build with `npm run preview`.
                 opacity="0.5"
                 stroke-dasharray="4 2"
             />
-            <rect
-                x={xScale(15) - 80}
-                y={10}
-                width="160"
-                height="40"
-                fill="white"
-                rx="5"
-                ry="5"
-            />
-            <text
-                x={xScale(15)}
-                y={20}
-                text-anchor="middle"
-                fill={colors.colorText}
-                font-size="16px"
-                font-weight="500"
-            >
-                <tspan x={xScale(15)} dy="0">Some have suggested</tspan>
-                <tspan x={xScale(15)} dy="1.3em">a <tspan font-weight="bold">15%</tspan> cap</tspan>
-            </text>
 
-            <!--Add annotation-->
-            <text
-                x={xScale(19)}
-                y={20}
-                text-anchor="start"
-                fill={colors.colorText}
-                font-size="16px"
-                font-weight="500"
-            >
-                <tspan x={xScale(19)} dy="0">For <tspan font-weight="bold">Portland Public</tspan></tspan>
-                <tspan x={xScale(19)} dy="1.3em">and <tspan font-weight="bold">Salem-Keizer</tspan>,</tspan>
-                <tspan x={xScale(19)} dy="1.3em">two of the largest</tspan>
-                <tspan x={xScale(19)} dy="1.3em">districts in the state,</tspan>
-                <tspan x={xScale(19)} dy="1.3em"><tspan font-weight="bold">18%</tspan> of students</tspan>
-                <tspan x={xScale(19)} dy="1.3em">qualify for special</tspan>
-                <tspan x={xScale(19)} dy="1.3em">education supports</tspan>
-            </text>
+            {#if !isMobile}
+                <!-- Only show this on desktop -->
+                <rect
+                    x={xScale(15) - 80}
+                    y={10}
+                    width="160"
+                    height="40"
+                    fill="white"
+                    rx="5"
+                    ry="5"
+                />
+                <text
+                    x={xScale(15)}
+                    y={20}
+                    text-anchor="middle"
+                    fill={colors.colorText}
+                    font-size="16px"
+                    font-weight="500"
+                >
+                    <tspan x={xScale(15)} dy="0">Some have suggested</tspan>
+                    <tspan x={xScale(15)} dy={labelLineHeight}>a <tspan font-weight="bold">15%</tspan> cap</tspan>
+                </text>
+            {/if}
+
+            <!-- Portland/Salem annotation - more compact on mobile -->
+            {#if isMobile}
+                <!-- Mobile version - stacked and simplified -->
+                <text
+                    x={xScale(18)}
+                    y={20}
+                    text-anchor="start"
+                    fill={colors.colorText}
+                    font-size="12px"
+                    font-weight="500"
+                >
+                    <tspan x={xScale(18)} dy="0">Portland and</tspan>
+                    <tspan x={xScale(18)} dy={labelLineHeight}>Salem-Keizer: <tspan font-weight="bold">18%</tspan></tspan>
+                </text>
+            {:else}
+                <!-- Desktop version - full annotation -->
+                <text
+                    x={xScale(19)}
+                    y={20}
+                    text-anchor="start"
+                    fill={colors.colorText}
+                    font-size="16px"
+                    font-weight="500"
+                >
+                    <tspan x={xScale(19)} dy="0">For <tspan font-weight="bold">Portland Public</tspan></tspan>
+                    <tspan x={xScale(19)} dy={labelLineHeight}>and <tspan font-weight="bold">Salem-Keizer</tspan>,</tspan>
+                    <tspan x={xScale(19)} dy={labelLineHeight}>two of the largest</tspan>
+                    <tspan x={xScale(19)} dy={labelLineHeight}>districts in the state,</tspan>
+                    <tspan x={xScale(19)} dy={labelLineHeight}><tspan font-weight="bold">18%</tspan> of students</tspan>
+                    <tspan x={xScale(19)} dy={labelLineHeight}>qualify for special</tspan>
+                    <tspan x={xScale(19)} dy={labelLineHeight}>education supports</tspan>
+                </text>
+            {/if}
         </g>
     </svg>
 </div>
@@ -5432,7 +5589,7 @@ You can preview the production build with `npm run preview`.
 <style>
     /* search bar styles */
     .search-container {
-        margin: 2rem auto 0.5rem auto;
+        margin: 2rem 0 0.5rem 0;
         max-width: 90%;
         width: 100%;
         display: flex;
@@ -5443,7 +5600,7 @@ You can preview the production build with `npm run preview`.
 
     .search-input-container {
         width: 300px;
-        margin: 0 auto;
+        margin: 0 2.5rem;
     }
 
     @media (max-width: 768px) {
@@ -5507,7 +5664,7 @@ You can preview the production build with `npm run preview`.
         background-color: white;
         border: 1px solid var(--colorLightGray);
         border-radius: 0 0 8px 8px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         z-index: 10;
         max-height: 300px;
         overflow-y: auto;
@@ -5559,6 +5716,13 @@ You can preview the production build with `npm run preview`.
         opacity: 1;
         stroke-width: 2px;
         stroke: var(--colorText);
+    }
+
+    /* Mobile-specific styles */
+    @media (max-width: 640px) {
+        .swarmplot {
+            height: 400px; /* Smaller height on mobile */
+        }
     }
 </style>
 ```
@@ -8283,11 +8447,11 @@ export const colors = {
     colorInclusiveGray: '#5e9e96',
     //colorInclusive: 'rgb(70, 181, 166)',
     colorInclusive: '#3EB4A4',
-    colorSemiInclusive: 'rgb(248, 170, 22)',
+    colorSemiInclusive: 'rgb(255, 172, 17)',
     //colorSemiInclusive: '#F9B638',
-    //colorNonInclusive: 'rgb(247, 134, 68)',
-    colorNonInclusive: '#F78540',
-    colorSeparate: 'rgb(222, 84, 102)',
+    colorNonInclusive: 'rgb(249, 124, 52)',
+    //colorNonInclusive: '#F78540',
+    colorSeparate: 'rgb(236, 67, 90)',
     //colorSeparate: '#E95266',
     colorText: '#333131',
     colorDarkGray: '#5A5656',
@@ -8615,9 +8779,9 @@ export const arrowRight = `
     import '$lib/styles/styles.css'
     import { colors } from '$lib/styles/colorConfig.js'
 
-    import Header from '$lib/components/Header.svelte'
+    import Header2 from '$lib/components/Header2.svelte'
     import Footer from '$lib/components/Footer.svelte'
-    import FeedbackComponent from '$lib/components/FeedbackComponent.svelte'
+    // import FeedbackComponent from '$lib/components/FeedbackComponent.svelte'
 
     let cssColors = `
         --colorInclusiveDark: ${colors.colorInclusiveDark};
@@ -8641,13 +8805,13 @@ export const arrowRight = `
 
 
 <div class="app" style="{cssColors}">
-    <Header />
+    <Header2 />
 
     <main>
         <slot />
     </main>
 
-    <FeedbackComponent />
+    <!-- <FeedbackComponent /> -->
 
     <Footer />
 </div>
@@ -9107,7 +9271,7 @@ export async function load({ params }) {
     import Sources from "$lib/components/Sources.svelte"
 </script>
 
-<h1 class="text-width">Oregon's special education funding gap: the 11% cap problem</h1>
+<h1 class="headline">Oregon's special education funding gap: the 11% cap problem</h1>
 
 <div class="text-width first-text">
     <p> 
@@ -9120,7 +9284,8 @@ export async function load({ params }) {
         <SwarmIdentificationSize />
     </div>
     <div class="source">
-        Data: Oregon Dept of Education, 2022-23 school year
+        Graphic: Brianna Wilson, Disability + Education Data <br />
+        Data: Oregon Dept of Education
     </div>
 </div>
 
@@ -9142,6 +9307,14 @@ export async function load({ params }) {
 <Sources />
 
 <style>
+    .headline {
+        padding-top: 0;
+        padding-bottom: 2rem;
+        text-align: left;
+        margin-left: 2rem;
+        max-width: 54rem;
+    }
+
     .viz-in-progress {
         margin-bottom: 0;
     }
@@ -9153,6 +9326,8 @@ export async function load({ params }) {
     }
 
     .source {
+        font-size: 0.8rem;
+        line-height: 1rem;
         text-align: right;
         margin-top: -1rem;
         margin-bottom: 2rem;
