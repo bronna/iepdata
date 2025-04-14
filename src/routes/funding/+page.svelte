@@ -3,7 +3,7 @@
     import SwarmIdentificationSize from '$lib/components/SwarmIdentificationSize.svelte'
     import Divider from "$lib/components/Divider.svelte"
     import { Pencil } from 'lucide-svelte'
-    import Sources from "$lib/components/Sources.svelte"
+    import SourcesFunding from "$lib/components/SourcesFunding.svelte"
     import FundingHeader from '$lib/components/FundingHeader.svelte'
     
     let windowWidth = 0;
@@ -35,7 +35,7 @@
     <div class="content-container">
         <div class="text-width first-text">
             <p> 
-                Oregon's current special education funding cap of 11% falls significantly short of meeting the actual needs of school districts across the state. Many of Oregon's largest districts identify well above this threshold, with the largest districts serving student populations where 18% of students have Individualized Education Plans (IEPs).
+                Oregon's special education funding cap falls significantly short of meeting the needs of school districts across the state. Many of Oregon's largest districts identify well above the 11% threshold, with some of the largest districts finding that 18% of their students need Individualized Education Plans (IEPs). Those additional services go unfunded by the state.
             </p>
         </div>
 
@@ -50,13 +50,23 @@
         </div>
 
         <div class="text-width last-text">
-            <h3>The current landscape</h3>
-            <p>Major districts like Portland Public Schools (18% students with IEPs), Salem-Keizer (18%), and Medford (17%) are operating well beyond the funding cap. Even districts like Beaverton (13%) and Eugene 4J (14%) exceed the arbitrary 11% threshold that determines state funding allocation.</p>
             <h3>
-                Financial implications
+                What does this mean?
             </h3>
             <p>
-                This funding structure creates a problematic disincentive for districts to identify students with disabilities. When districts identify students beyond the 11% cap, they must absorb those additional costs without corresponding state support.
+                This funding structure creates a problematic disincentive for districts to identify students with disabilities. When districts identify students beyond the 11% cap, they must absorb those additional costs without corresponding state support. Despite the disincentive, districts are still identifying many more than 11% of their students needing supports. And if students don't get those supports there can be devastating, and even more expensive, effects down the road.
+            </p>
+            <h3>
+                How does this compare to other states?
+            </h3>
+            <p>
+                Only seven other states have a cap on special education funding. None of them are as low as Oregon's 11%.
+            </p>
+            <h3>
+                Next steps
+            </h3>
+            <p>
+                Talk to your legislators (find them <a href="https://geo.maps.arcgis.com/apps/instant/lookup/index.html?appid=fd070b56c975456ea2a25f7e3f4289d1" target="_blank">here</a>). There are a couple of bills moving through the state legislature right now, one to <a href="https://olis.oregonlegislature.gov/liz/2025R1/Measures/Overview/HB2953" target="_blank">remove the special education funding cap</a>, and one to <a href="https://olis.oregonlegislature.gov/liz/2025R1/Measures/Overview/HB2448" target="_blank">increase funds to the High Cost Disabilities Account</a>. Tell your legislators that you support these bills and want to see them passed.
             </p>
         </div>
 
@@ -64,11 +74,16 @@
             <Pencil />
         </Divider>
 
-        <Sources />
+        <SourcesFunding />
     </div>
 </div>
 
 <style>
+    a {
+        color: var(--colorInclusiveDark);
+        font-weight: 600;
+    }
+
     .page-container {
         display: flex;
         flex-direction: column;
