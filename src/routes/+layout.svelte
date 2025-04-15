@@ -2,9 +2,7 @@
     import '$lib/styles/styles.css'
     import { colors } from '$lib/styles/colorConfig.js'
 
-    import Header2 from '$lib/components/Header2.svelte'
     import Footer from '$lib/components/Footer.svelte'
-    // import FeedbackComponent from '$lib/components/FeedbackComponent.svelte'
 
     let cssColors = `
         --colorInclusiveDark: ${colors.colorInclusiveDark};
@@ -28,15 +26,11 @@
 
 
 <div class="app" style="{cssColors}">
-    <!-- <Header2 /> -->
-
     <main>
         <slot />
     </main>
 
-    <!-- <FeedbackComponent /> -->
-
-    <!-- <Footer /> -->
+    <Footer />
 </div>
 
 

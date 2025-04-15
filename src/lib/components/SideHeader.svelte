@@ -20,7 +20,7 @@
   
   <svelte:window bind:innerWidth={windowWidth} />
   
-  <header class="funding-header">
+  <header class="side-header">
     <div class="header-content">
       <div class="logo-container">
         <Logo color={colors.colorInclusiveGray} textColor={colors.colorBackgroundWhite} />
@@ -45,7 +45,7 @@
   </header>
   
   <style>
-    .funding-header {
+    .side-header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
@@ -105,7 +105,7 @@
   
     /* Mobile view adjustments */
     @media (max-width: 768px) {
-      .funding-header {
+      .side-header {
         padding: 1rem 1rem;
         width: 100%;
       }

@@ -1926,84 +1926,6 @@ You can preview the production build with `npm run preview`.
             More inclusive &#8594;
           </text>
         </g>
-
-        {#if showOverlay}
-          <rect
-            x={-dimensions.margin.left}
-            y={0}
-            width={selectedDistrictX}
-            height={height}
-            fill={colors.colorText}
-            opacity={0.1}
-            transition:fade={{duration: fadeDuration}}
-          />
-
-          <!-- Dashed line at right side of box -->
-          <line
-            x1={selectedDistrictX - dimensions.margin.left}
-            x2={selectedDistrictX - dimensions.margin.left}
-            y1={0}
-            y2={height}
-            stroke={colors.colorMediumGray}
-            stroke-width={3}
-            stroke-dasharray="3,6"
-            transition:fade={{duration: fadeDuration}}
-          />
-
-          <!-- arrow originating at dashed line and pointing left -->
-          <line
-            x1={selectedDistrictX - dimensions.margin.left - 6}
-            x2={selectedDistrictX - dimensions.margin.left - 60}
-            y1={22}
-            y2={22}
-            stroke={colors.colorMediumGray}
-            stroke-width={3}
-            transition:fade={{duration: fadeDuration}}
-          />
-          <line
-            x1={selectedDistrictX - dimensions.margin.left - 44}
-            x2={selectedDistrictX - dimensions.margin.left - 60}
-            y1={17}
-            y2={22}
-            stroke={colors.colorMediumGray}
-            stroke-width={3}
-            transition:fade={{duration: fadeDuration}}
-          />
-          <line
-            x1={selectedDistrictX - dimensions.margin.left - 44}
-            x2={selectedDistrictX - dimensions.margin.left - 60}
-            y1={27}
-            y2={22}
-            stroke={colors.colorMediumGray}
-            stroke-width={3}
-            transition:fade={{duration: fadeDuration}}
-          />
-          <!-- text showing % of districts -->
-          <text
-            x={selectedDistrictX - dimensions.margin.left - 70}
-            y={30}
-            text-anchor="end"
-            font-size="24px"
-            font-weight="700"
-            stroke={colors.colorWhite}
-            stroke-width="5"
-            fill={colors.colorWhite}
-            transition:fade={{duration: fadeDuration}}
-          >
-            {$selectedDistrictData[0].properties.percent_more_inclusive.toFixed(0)}% of districts
-          </text>
-          <text
-            x={selectedDistrictX - dimensions.margin.left - 70}
-            y={30}
-            text-anchor="end"
-            font-size="24px"
-            font-weight="700"
-            fill={colors.colorMediumGray}
-            transition:fade={{duration: fadeDuration}}
-          >
-            {$selectedDistrictData[0].properties.percent_more_inclusive.toFixed(0)}% of districts
-          </text>
-        {/if}
   
         {#if index > 1}
           <g class="legend" transform="translate({dimensions.width - legendWidth}, {dimensions.height - legendHeight})" transition:fade="{{ duration: fadeDuration}}">
@@ -2108,6 +2030,13 @@ You can preview the production build with `npm run preview`.
       text-decoration: underline;
     }
 </style>
+
+
+<!--
+
+
+
+-->
 ```
 
 # src/lib/components/Divider.svelte
@@ -2117,7 +2046,7 @@ You can preview the production build with `npm run preview`.
     import { colors } from "$lib/styles/colorConfig"
   
     export let color = colors.colorText
-    export let width = "97%"
+    export let width = "90%"
     export let iconSize = 24
     export let iconStrokeWidth = 2.5
   </script>
@@ -2153,7 +2082,8 @@ You can preview the production build with `npm run preview`.
     hr {
       flex-grow: 1;
       border: none;
-      border-top: 2.5px solid var(--color);
+      border-top: 1.5px solid var(--color);
+      opacity: 50%;
       margin: 0;
     }
   
@@ -2760,6 +2690,124 @@ You can preview the production build with `npm run preview`.
     }
   }
 </style>
+```
+
+# src/lib/components/FundingHeader.svelte
+
+```svelte
+<script>
+    import NavLinks from "./NavLinks.svelte";
+    import Logo from "./Logo.svelte"
+    import { colors } from "$lib/styles/colorConfig.js"
+  
+    let menuOpen = false
+    let windowWidth = 0;
+  
+    function slideAndFade(node, { delay = 0, duration = 300 }) {
+      return {
+        delay,
+        duration,
+        css: t => `
+          transform: translateX(${(1 - t) * 100}%);
+          opacity: ${t};
+        `
+      };
+    }
+  </script>
+  
+  <svelte:window bind:innerWidth={windowWidth} />
+  
+  <header class="funding-header">
+    <div class="header-content">
+      <div class="logo-container">
+        <Logo color={colors.colorInclusiveGray} textColor={colors.colorBackgroundWhite} />
+      </div>
+  
+      <div class="menu-container">
+        <button
+          on:click={() => menuOpen = !menuOpen}
+          class="menu-toggle"
+          aria-label="Toggle navigation menu"
+        >
+          {menuOpen ? '✕' : '☰'}
+        </button>
+      </div>
+    </div>
+  
+    {#if menuOpen}
+      <nav class="mobile-nav" transition:slideAndFade>
+        <NavLinks direction="vertical" />
+      </nav>
+    {/if}
+  </header>
+  
+  <style>
+    .funding-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-top: 2rem 3rem;
+      padding: 2rem 2rem;
+      background-color: var(--colorBackgroundWhite);
+      position: relative;
+      z-index: 100;
+    }
+  
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+    }
+  
+    .logo-container {
+      display: flex;
+      align-items: center;
+      padding-top: 0.4rem;
+    }
+  
+    .menu-container {
+      display: flex;
+      align-items: center;
+      margin-top: -2.4rem
+    }
+  
+    .menu-toggle {
+      display: block;
+      background: none;
+      border: none;
+      font-size: 2rem;
+      cursor: pointer;
+      color: var(--colorText);
+      z-index: 20;
+      padding: 0;
+      margin: 0;
+      line-height: 1;
+    }
+  
+    .mobile-nav {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 80%;
+      max-width: 300px;
+      background-color: rgba(244, 241, 240, 0.94);
+      padding: 5rem 1rem 1rem;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+    }
+  
+    /* Mobile view adjustments */
+    @media (max-width: 768px) {
+      .funding-header {
+        padding: 1rem 1rem;
+        width: 100%;
+      }
+    }
+  </style>
 ```
 
 # src/lib/components/Header.svelte
@@ -4911,13 +4959,51 @@ You can preview the production build with `npm run preview`.
 ```svelte
 <div class="sources-container">
     <div class="data-source text-width">
-        <p><strong>* Inclusion scores are less accurate for small districts (less than 500 students with IEPs)</strong></p>
+        <p><strong>* Inclusion scores</strong> are more accurate for large districts (more than 500 students with IEPs)</p>
 
         <!-- <p><strong>Inclusion scores</strong> are based on reported rates of how much time students with disabilities spend in regular classrooms, compared to other districts in the state.</p> -->
 
         <!-- <p><strong>Small districts</strong> have less than 500 students with IEPs. <strong>Large districts</strong> have 500 or more.</p> -->
 
         <p>Data is from the <strong>2022-23 school year</strong> and comes from the <a href="https://www.ode.state.or.us/data/ReportCard/Media" target="_blank">Oregon Department of Education</a>. Map data comes from the <a href="https://www.census.gov/cgi-bin/geo/shapefiles/index.php?year=2023&layergroup=School+Districts" target="_blank">US Census</a>.</p>
+
+        <!-- <p><a href="https://github.com/bronna/inclusion/tree/main/src/data" target="_blank">Methodology</a></p> -->
+    </div>
+</div>
+
+
+<style>
+    p {
+        font-size: 1rem;
+        line-height: 1.4rem;
+    }
+
+    a {
+        color: var(--colorInclusiveDark);
+        font-weight: 600;
+    }
+
+    .data-source {
+        margin-top: 1rem;
+        margin-bottom: 3rem;
+    }
+</style>
+```
+
+# src/lib/components/SourcesFunding.svelte
+
+```svelte
+<div class="sources-container">
+    <div class="data-source text-width">
+        <!-- <p><strong>* Inclusion scores</strong> are less accurate for small districts (less than 500 students with IEPs)</p> -->
+
+        <!-- <p><strong>Inclusion scores</strong> are based on reported rates of how much time students with disabilities spend in regular classrooms, compared to other districts in the state.</p> -->
+
+        <!-- <p><strong>Small districts</strong> have less than 500 students with IEPs. <strong>Large districts</strong> have 500 or more.</p> -->
+
+        <p>Data is from the <strong>2021-22 school year</strong> and comes from the <a href="https://www.ode.state.or.us/data/ReportCard/Media" target="_blank">Oregon Department of Education</a>.</p>
+
+        <!-- Map data comes from the <a href="https://www.census.gov/cgi-bin/geo/shapefiles/index.php?year=2023&layergroup=School+Districts" target="_blank">US Census</a> -->
 
         <!-- <p><a href="https://github.com/bronna/inclusion/tree/main/src/data" target="_blank">Methodology</a></p> -->
     </div>
@@ -5582,6 +5668,23 @@ You can preview the production build with `npm run preview`.
                     <tspan x={xScale(19)} dy={labelLineHeight}>education supports</tspan>
                 </text>
             {/if}
+
+            <!-- Note for districts not picture -->
+            {#if !isMobile}
+                <text
+                    x={xScale(19)}
+                    y={380}
+                    text-anchor="start"
+                    fill={colors.colorText}
+                    font-size="16px"
+                    font-weight="500"
+                >
+                    <tspan x={xScale(19)} dy="0"><tspan font-weight="700">Riddle:</tspan> 25% students with IEPs &#x2192;</tspan>
+                    <tspan x={xScale(19)} dy={labelLineHeight}><tspan font-weight="700">North Lake:</tspan> 27% &#x2192;</tspan>
+                    <tspan x={xScale(19)} dy={labelLineHeight}><tspan font-weight="700">Butte Falls:</tspan> 32% &#x2192;</tspan>
+                    <tspan x={xScale(19)} dy={labelLineHeight}><tspan font-weight="700">ODE YCEP:</tspan> 49% &#x2192;</tspan>
+                </text>
+            {/if}
         </g>
     </svg>
 </div>
@@ -5600,12 +5703,13 @@ You can preview the production build with `npm run preview`.
 
     .search-input-container {
         width: 300px;
-        margin: 0 2.5rem;
+        margin: 0 3rem;
     }
 
     @media (max-width: 768px) {
         .search-input-container {
             width: 100%;
+            margin: 0 1rem;
         }
     }
 
@@ -8805,7 +8909,7 @@ export const arrowRight = `
 
 
 <div class="app" style="{cssColors}">
-    <Header2 />
+    <!-- <Header2 /> -->
 
     <main>
         <slot />
@@ -8813,7 +8917,7 @@ export const arrowRight = `
 
     <!-- <FeedbackComponent /> -->
 
-    <Footer />
+    <!-- <Footer /> -->
 </div>
 
 
@@ -8987,31 +9091,30 @@ export const prerender = true
             <VisualizationToggle {index} />
         </div>
 
-        <div slot="foreground">
+        <div slot="foreground" class="foreground-content">
             
             {#if isDistrictSelected}
                 <section>
                     <ScrollyCard active={index === 0}>
-                        Let's explore how special education services vary across <strong>Oregon</strong> school districts
+                        Let's explore how special education services vary across <strong>Oregon</strong>'s school districts
                     </ScrollyCard>
                 </section>
                 <section>
                     <ScrollyCard active={index === 1}>
-                        These circles represent all of the school districts in <strong>Oregon</strong>. Districts farther to the <strong>right</strong> are <strong><em>more inclusive</em></strong>, meaning students with disabilities spend <strong>more time in general education classrooms</strong> with their peers
+                        These circles represent all of the school districts in <strong>Oregon</strong>. Districts farther to the <strong>right</strong> are <strong><em>more inclusive</em></strong>, meaning that students with disabilities spend <strong>more time in general education classrooms</strong> with their peers
                     </ScrollyCard>
                 </section>
                 <section>
                     <ScrollyCard active={index === 2}>
-                        Let's look at Portland Public Schools for example. This district serves <strong>{$selectedDistrictData[0].properties["Total Student Count"]} students with IEPs*</strong> <em>(note: you can select your local district at any time)</em>
+                        As an example, let's look at Portland Public Schools. This district serves <strong>{$selectedDistrictData[0].properties["Total Student Count"]} students with IEPs*</strong> <em>(note: you can select your local district at any time)</em>
                         <br>
                         <br>
-                        <em>*An IEP is a document that outlines what supports a student with a disability will receive at school. It's personalized to each student</em>
+                        <em>*An IEP is a document that outlines what supports a student with a disability will receive at school. It's personalized to each student who needs it</em>
                     </ScrollyCard>
                 </section>
                 <section>
                     <ScrollyCard active={index === 3}>
                         Districts report data on how much time students with IEPs spend in regular classrooms. Based on this, <strong>{$selectedDistrictData[0].properties["Institution Name"]}</strong> has an <strong>inclusion score</strong> of <strong>{$selectedDistrictData[0].properties["quartile"]} out of 4</strong>
-                         has <strong>{$selectedDistrictData[0].properties["Total Student Count"].toLocaleString()} students</strong> with IEPs
                         <br>
                         <br>
                         <SimpleAccordion title="How is the inclusion score calculated?">
@@ -9037,12 +9140,12 @@ export const prerender = true
                 </section>
                 <section>
                     <ScrollyCard active={index === 6}>
-                        You can <strong>select multiple districts</strong> to compare them directly
+                        You can also <strong>select multiple districts</strong> to compare them directly
                     </ScrollyCard>
                 </section>
                 <section>
                     <ScrollyCard active={index === 7}>
-                        Now it's your turn! Use the <strong>toggle</strong> to switch between <strong>map and bubble views</strong>. Your selected districts will also appear highlighted in the <strong>table below</strong>
+                        Now it's your turn! Use the <strong>toggle</strong> to switch between <strong>map and bubble views</strong>. You can also find districts in the <strong>table below</strong>
                     </ScrollyCard>
                 </section>
             {:else}
@@ -9132,6 +9235,11 @@ export const prerender = true
     .content-wrapper {
         position: relative;
         z-index: 1;
+    }
+
+    .foreground-content {
+        padding: 30rem 1rem 0 1rem;
+        z-index: 2;
     }
 
     .background {
@@ -9242,6 +9350,63 @@ export async function POST({ request }) {
 
 ```
 
+# src/routes/funding/+layout.svelte
+
+```svelte
+<script>
+    import '$lib/styles/styles.css'
+    import { colors } from '$lib/styles/colorConfig.js'
+    import Footer from '$lib/components/Footer.svelte'
+
+    let cssColors = `
+        --colorInclusiveDark: ${colors.colorInclusiveDark};
+        --colorInclusiveGray: ${colors.colorInclusiveGray};
+        --colorInclusive: ${colors.colorInclusive};
+        --colorSemiInclusive: ${colors.colorSemiInclusive};
+        --colorNonInclusive: ${colors.colorNonInclusive};
+        --colorSeparate: ${colors.colorSeparate};
+        --colorText: ${colors.colorText};
+        --colorDarkGray: ${colors.colorDarkGray};
+        --colorMediumGray: ${colors.colorMediumGray};
+        --colorLightGray: ${colors.colorLightGray};
+        --colorLightLightGray: ${colors.colorLightLightGray};
+        --colorWhite: ${colors.colorWhite};
+        --colorBackgroundWhite: ${colors.colorBackgroundWhite};
+        --colorBackgroundLightGray: ${colors.colorBackgroundLightGray};
+        --colorBackgroundLightOrange: ${colors.colorBackgroundLightOrange};
+    `
+</script>
+
+<div class="app funding-layout" style="{cssColors}">
+    <main>
+        <slot />
+    </main>
+
+    <Footer />
+</div>
+
+<style>
+    .app {
+        width: 100%;
+        min-height: 100vh;
+        font-family: var(--font-body);
+        color: var(--color-text);
+    }
+
+    main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        margin: 0 auto;
+        background-color: var(--colorBackgroundWhite);
+    }
+
+    .funding-layout {
+        /* Any specific styles for funding page layout */
+    }
+</style>
+```
+
 # src/routes/funding/+page.js
 
 ```js
@@ -9268,51 +9433,130 @@ export async function load({ params }) {
     import SwarmIdentificationSize from '$lib/components/SwarmIdentificationSize.svelte'
     import Divider from "$lib/components/Divider.svelte"
     import { Pencil } from 'lucide-svelte'
-    import Sources from "$lib/components/Sources.svelte"
+    import SourcesFunding from "$lib/components/SourcesFunding.svelte"
+    import FundingHeader from '$lib/components/FundingHeader.svelte'
+    
+    let windowWidth = 0;
 </script>
 
-<h1 class="headline">Oregon's special education funding gap: the 11% cap problem</h1>
+<svelte:window bind:innerWidth={windowWidth} />
 
-<div class="text-width first-text">
-    <p> 
-        Oregon's current special education funding cap of 11% falls significantly short of meeting the actual needs of school districts across the state. Many of Oregon's largest districts identify well above this threshold, with the largest districts serving student populations where 18% of students have Individualized Education Plans (IEPs).
-    </p>
-</div>
-
-<div class="map-container">
-    <div class="viz-in-progress">
-        <SwarmIdentificationSize />
+<div class="page-container">
+    {#if windowWidth <= 768}
+        <!-- Mobile: Header above the headline -->
+        <div class="header-container-mobile">
+            <FundingHeader />
+        </div>
+    {/if}
+    
+    <div class="header-headline-container">
+        <div class="headline-container">
+            <h1 class="headline">Oregon's special education funding problem: the 11% cap</h1>
+        </div>
+        
+        {#if windowWidth > 768}
+            <!-- Desktop: Header to the right of the headline -->
+            <div class="header-container-desktop">
+                <FundingHeader />
+            </div>
+        {/if}
     </div>
-    <div class="source">
-        Graphic: Brianna Wilson, Disability + Education Data <br />
-        Data: Oregon Dept of Education
+
+    <div class="content-container">
+        <div class="text-width first-text">
+            <p> 
+                Oregon's special education funding cap falls significantly short of meeting the needs of school districts across the state. Many of Oregon's largest districts identify well above the 11% threshold, with some of the largest districts finding that 18% of their students need Individualized Education Plans (IEPs). Those additional services go unfunded by the state.
+            </p>
+        </div>
+
+        <div class="map-container">
+            <div class="viz-in-progress">
+                <SwarmIdentificationSize />
+            </div>
+            <div class="source">
+                Graphic: Brianna Wilson, Disability + Education Data <br />
+                Data: Oregon Dept of Education
+            </div>
+        </div>
+
+        <div class="text-width last-text">
+            <h3>
+                What does this mean?
+            </h3>
+            <p>
+                This funding structure creates a problematic disincentive for districts to identify students with disabilities. When districts identify students beyond the 11% cap, they must absorb those additional costs without corresponding state support. Despite the disincentive, districts are still identifying many more than 11% of their students needing supports. And if students don't get those supports there can be devastating, and even more expensive, effects down the road.
+            </p>
+            <h3>
+                How does this compare to other states?
+            </h3>
+            <p>
+                Only seven other states have a cap on special education funding. None of them are as low as Oregon's 11%.
+            </p>
+            <h3>
+                Next steps
+            </h3>
+            <p>
+                Talk to your legislators (find them <a href="https://geo.maps.arcgis.com/apps/instant/lookup/index.html?appid=fd070b56c975456ea2a25f7e3f4289d1" target="_blank">here</a>). There are a couple of bills moving through the state legislature right now, one to <a href="https://olis.oregonlegislature.gov/liz/2025R1/Measures/Overview/HB2953" target="_blank">remove the special education funding cap</a>, and one to <a href="https://olis.oregonlegislature.gov/liz/2025R1/Measures/Overview/HB2448" target="_blank">increase funds to the High Cost Disabilities Account</a>. Tell your legislators that you support these bills and want to see them passed.
+            </p>
+        </div>
+
+        <Divider>
+            <Pencil />
+        </Divider>
+
+        <SourcesFunding />
     </div>
 </div>
-
-<div class="text-width last-text">
-    <h3>The current landscape</h3>
-    <p>Major districts like Portland Public Schools (18% students with IEPs), Salem-Keizer (18%), and Medford (17%) are operating well beyond the funding cap. Even districts like Beaverton (13%) and Eugene 4J (14%) exceed the arbitrary 11% threshold that determines state funding allocation.</p>
-    <h3>
-        Financial implications
-    </h3>
-    <p>
-        This funding structure creates a problematic disincentive for districts to identify students with disabilities. When districts identify students beyond the 11% cap, they must absorb those additional costs without corresponding state support.
-    </p>
-</div>
-
-<Divider>
-    <Pencil />
-</Divider>
-
-<Sources />
 
 <style>
+    a {
+        color: var(--colorInclusiveDark);
+        font-weight: 600;
+    }
+
+    .page-container {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .header-headline-container {
+        display: flex;
+        flex-direction: row;
+        width: 100%;
+        align-items: flex-start;
+        justify-content: space-between;
+    }
+
+    .headline-container {
+        z-index: 5;
+        padding-top: 0;
+        flex: 1;
+    }
+
+    .header-container-desktop {
+        width: auto;
+        z-index: 10;
+    }
+
+    .header-container-mobile {
+        width: 100%;
+        z-index: 10;
+        margin-bottom: 0.5rem;
+    }
+
     .headline {
         padding-top: 0;
-        padding-bottom: 2rem;
+        margin: 2rem 3rem;
         text-align: left;
-        margin-left: 2rem;
         max-width: 54rem;
+    }
+
+    .content-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
     }
 
     .viz-in-progress {
@@ -9340,6 +9584,22 @@ export async function load({ params }) {
 
     .last-text {
         margin-bottom: 4rem;
+    }
+
+    /* Mobile responsive adjustments */
+    @media (max-width: 768px) {
+        .header-headline-container {
+            flex-direction: column;
+            position: relative;
+        }
+
+        .headline {
+            margin-left: 1rem;
+            margin-right: 1rem;
+            font-size: 1.8rem;
+            line-height: 2.2rem;
+            margin-top: 0.5rem;
+        }
     }
 </style>
 ```

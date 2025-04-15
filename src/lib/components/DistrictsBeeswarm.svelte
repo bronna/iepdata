@@ -314,84 +314,6 @@
             More inclusive &#8594;
           </text>
         </g>
-
-        {#if showOverlay}
-          <rect
-            x={-dimensions.margin.left}
-            y={0}
-            width={selectedDistrictX}
-            height={height}
-            fill={colors.colorText}
-            opacity={0.1}
-            transition:fade={{duration: fadeDuration}}
-          />
-
-          <!-- Dashed line at right side of box -->
-          <line
-            x1={selectedDistrictX - dimensions.margin.left}
-            x2={selectedDistrictX - dimensions.margin.left}
-            y1={0}
-            y2={height}
-            stroke={colors.colorMediumGray}
-            stroke-width={3}
-            stroke-dasharray="3,6"
-            transition:fade={{duration: fadeDuration}}
-          />
-
-          <!-- arrow originating at dashed line and pointing left -->
-          <line
-            x1={selectedDistrictX - dimensions.margin.left - 6}
-            x2={selectedDistrictX - dimensions.margin.left - 60}
-            y1={22}
-            y2={22}
-            stroke={colors.colorMediumGray}
-            stroke-width={3}
-            transition:fade={{duration: fadeDuration}}
-          />
-          <line
-            x1={selectedDistrictX - dimensions.margin.left - 44}
-            x2={selectedDistrictX - dimensions.margin.left - 60}
-            y1={17}
-            y2={22}
-            stroke={colors.colorMediumGray}
-            stroke-width={3}
-            transition:fade={{duration: fadeDuration}}
-          />
-          <line
-            x1={selectedDistrictX - dimensions.margin.left - 44}
-            x2={selectedDistrictX - dimensions.margin.left - 60}
-            y1={27}
-            y2={22}
-            stroke={colors.colorMediumGray}
-            stroke-width={3}
-            transition:fade={{duration: fadeDuration}}
-          />
-          <!-- text showing % of districts -->
-          <text
-            x={selectedDistrictX - dimensions.margin.left - 70}
-            y={30}
-            text-anchor="end"
-            font-size="24px"
-            font-weight="700"
-            stroke={colors.colorWhite}
-            stroke-width="5"
-            fill={colors.colorWhite}
-            transition:fade={{duration: fadeDuration}}
-          >
-            {$selectedDistrictData[0].properties.percent_more_inclusive.toFixed(0)}% of districts
-          </text>
-          <text
-            x={selectedDistrictX - dimensions.margin.left - 70}
-            y={30}
-            text-anchor="end"
-            font-size="24px"
-            font-weight="700"
-            fill={colors.colorMediumGray}
-            transition:fade={{duration: fadeDuration}}
-          >
-            {$selectedDistrictData[0].properties.percent_more_inclusive.toFixed(0)}% of districts
-          </text>
-        {/if}
   
         {#if index > 1}
           <g class="legend" transform="translate({dimensions.width - legendWidth}, {dimensions.height - legendHeight})" transition:fade="{{ duration: fadeDuration}}">
@@ -496,3 +418,10 @@
       text-decoration: underline;
     }
 </style>
+
+
+<!--
+
+
+
+-->

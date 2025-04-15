@@ -1,12 +1,12 @@
 <script>
+    import SideHeader from '$lib/components/SideHeader.svelte'
     import { fade } from 'svelte/transition'
     import SwarmIdentificationSize from '$lib/components/SwarmIdentificationSize.svelte'
     import Divider from "$lib/components/Divider.svelte"
     import { Pencil } from 'lucide-svelte'
     import SourcesFunding from "$lib/components/SourcesFunding.svelte"
-    import FundingHeader from '$lib/components/FundingHeader.svelte'
     
-    let windowWidth = 0;
+    let windowWidth = 0
 </script>
 
 <svelte:window bind:innerWidth={windowWidth} />
@@ -15,7 +15,7 @@
     {#if windowWidth <= 768}
         <!-- Mobile: Header above the headline -->
         <div class="header-container-mobile">
-            <FundingHeader />
+            <SideHeader />
         </div>
     {/if}
     
@@ -27,7 +27,7 @@
         {#if windowWidth > 768}
             <!-- Desktop: Header to the right of the headline -->
             <div class="header-container-desktop">
-                <FundingHeader />
+                <SideHeader />
             </div>
         {/if}
     </div>
@@ -54,7 +54,7 @@
                 What does this mean?
             </h3>
             <p>
-                This funding structure creates a problematic disincentive for districts to identify students with disabilities. When districts identify students beyond the 11% cap, they must absorb those additional costs without corresponding state support. Despite the disincentive, districts are still identifying many more than 11% of their students needing supports. And if students don't get those supports there can be devastating, and even more expensive, effects down the road.
+                This funding structure creates a problematic disincentive for districts to identify students with disabilities. When districts identify students beyond the 11% cap, they must absorb those additional costs without corresponding state support. Despite the disincentive, districts are still identifying many more than 11% of their students needing supports. And if students don't get the supports they need early-on there can be devastating (and even more expensive) effects down the road.
             </p>
             <h3>
                 How does this compare to other states?

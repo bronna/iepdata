@@ -565,7 +565,7 @@
         position: absolute;
         top: 100%;
         width: 300px;
-        margin: 0 auto;
+        margin: 0 3rem;
         left: 0;
         right: 0;
         background-color: white;
