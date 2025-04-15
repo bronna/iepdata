@@ -40,7 +40,7 @@
         </div>
 
         <div class="map-container">
-            <div class="viz-in-progress">
+            <div>
                 <SwarmIdentificationSize />
             </div>
             <div class="source">
@@ -84,51 +84,6 @@
         font-weight: 600;
     }
 
-    .page-container {
-        display: flex;
-        flex-direction: column;
-        width: 100%;
-    }
-
-    .header-headline-container {
-        display: flex;
-        flex-direction: row;
-        width: 100%;
-        align-items: flex-start;
-        justify-content: space-between;
-    }
-
-    .headline-container {
-        z-index: 5;
-        padding-top: 0;
-        flex: 1;
-    }
-
-    .header-container-desktop {
-        width: auto;
-        z-index: 10;
-    }
-
-    .header-container-mobile {
-        width: 100%;
-        z-index: 10;
-        margin-bottom: 0.5rem;
-    }
-
-    .headline {
-        padding-top: 0;
-        margin: 2rem 3rem;
-        text-align: left;
-        max-width: 54rem;
-    }
-
-    .content-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        width: 100%;
-    }
-
     .viz-in-progress {
         margin-bottom: 0;
     }
@@ -154,21 +109,5 @@
 
     .last-text {
         margin-bottom: 4rem;
-    }
-
-    /* Mobile responsive adjustments */
-    @media (max-width: 768px) {
-        .header-headline-container {
-            flex-direction: column;
-            position: relative;
-        }
-
-        .headline {
-            margin-left: 1rem;
-            margin-right: 1rem;
-            font-size: 1.8rem;
-            line-height: 2.2rem;
-            margin-top: 0.5rem;
-        }
     }
 </style>

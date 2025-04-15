@@ -17,7 +17,7 @@
 
     <div class="header-headline-container">
         <div class="headline-container">
-            <h1>About</h1>
+            <h1 class="headline">About</h1>
         </div>
 
         {#if windowWidth > 768}

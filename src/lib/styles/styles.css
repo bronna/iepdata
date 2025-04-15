@@ -79,15 +79,12 @@ hr {
 
 .headline {
     padding-top: 0;
-    margin: 2rem 3rem;
+    margin: 2.5rem 3rem;
     text-align: left;
     max-width: 54rem;
 }
 
 .content-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
     width: 100%;
 }
 

@@ -1,6 +1,5 @@
 <script>
     import { fade } from 'svelte/transition'
-    import SwarmIdentificationSize from '$lib/components/SwarmIdentificationSize.svelte'
     import ScatterplotIdentificationSize from '$lib/components/ScatterplotIdentificationSize.svelte'
     import ScatterplotInclSize from '$lib/components/ScatterplotInclSize.svelte'
     import BubbleMap from '$lib/components/BubbleMap.svelte'
@@ -15,9 +14,6 @@
 <h1>Visualization Tests</h1>
 
 <div class="map-container">
-    <div class="viz-in-progress">
-        <SwarmIdentificationSize />
-    </div>
     
     <div class="viz-in-progress">
         <ScatterplotIdentificationSize />

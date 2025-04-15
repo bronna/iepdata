@@ -60,7 +60,7 @@
     <div class="header-headline-container">
         <div class="headline-container">
             <h1 class="headline">
-                Find rates of inclusion, discipline, graduation and more for disabled students in Oregon
+                Find rates of inclusion, discipline, graduation and more for students with disabilities in Oregon
             </h1>
         </div>
 
@@ -207,30 +207,8 @@
 
 <style>
     .intro {
-        margin-top: -4rem;
         margin-bottom: 1rem;
         position: relative;
-    }
-
-    .headline {
-        text-align: left;
-        position: relative;
-        z-index: 2;
-        margin-top: 14rem;
-        margin-bottom: 2.5rem;
-        background: linear-gradient(to bottom, transparent 0%, var(--colorBackgroundWhite) 30%);
-        padding: 3rem 0 0rem 0;
-        font-size: 2.4rem;
-        line-height: 3rem;
-    }
-
-    @media (max-width: 768px) {
-        .headline {
-            width: 100%;
-            margin-left: auto;
-            margin-right: auto;
-            padding: 1rem 1rem;
-        }
     }
 
     .byline {
