@@ -370,31 +370,29 @@
             <!-- Use responsive annotation for current funding line -->
             <rect
                 x={isMobile ? (xScale(11) - 60) : (xScale(11) - 120)}
-                y={10}
+                y={0}
                 width={isMobile ? 120 : 240}
                 height={isMobile ? 64 : 84}
                 fill="white"
-                rx="5"
-                ry="5"
             />
             <text
                 x={xScale(11)}
-                y={20}
+                y={10}
                 text-anchor="middle"
                 fill={colors.colorText}
                 font-size={isMobile ? "12px" : "16px"}
                 font-weight="500"
             >
-                <tspan x={xScale(11)} dy="0"><tspan font-weight="bold">Oregon</tspan> caps funding for</tspan>
-                <tspan x={xScale(11)} dy={labelLineHeight}>students with disabilities at</tspan>
-                                    <tspan x={xScale(11)} dy="1.3em"><tspan font-weight="bold">11%</tspan> of a district's population</tspan>
+                <tspan x={xScale(11)} dy="0"><tspan font-weight="bold">Oregon</tspan> limits special</tspan>
+                <tspan x={xScale(11)} dy={labelLineHeight}>education funding to</tspan>
+                <tspan x={xScale(11)} dy={labelLineHeight}><tspan font-weight="bold">11%</tspan> of students</tspan>
                 {#if !isMobile}
-                    <tspan x={xScale(11)} dy={labelLineHeight}>needing supports</tspan>
+                <tspan x={xScale(11)} dy={labelLineHeight}>qualifying for supports</tspan>
                 {/if}
             </text>
 
             <!-- Add line at proposed state funding - also responsive -->
-            <line
+            <!-- <line
                 x1={xScale(15)}
                 y1={10}
                 x2={xScale(15)}
@@ -412,29 +410,21 @@
                 stroke-width="2"
                 opacity="0.5"
                 stroke-dasharray="4 2"
-            />
+            /> -->
 
             {#if !isMobile}
                 <!-- Only show this on desktop -->
-                <rect
-                    x={xScale(15) - 80}
-                    y={10}
-                    width="160"
-                    height="40"
-                    fill="white"
-                    rx="5"
-                    ry="5"
-                />
                 <text
                     x={xScale(15)}
-                    y={20}
+                    y={10}
                     text-anchor="middle"
                     fill={colors.colorText}
                     font-size="16px"
                     font-weight="500"
                 >
-                    <tspan x={xScale(15)} dy="0">Some have suggested</tspan>
-                    <tspan x={xScale(15)} dy={labelLineHeight}>a <tspan font-weight="bold">15%</tspan> cap</tspan>
+                    <tspan x={xScale(15.5)} dy="0">For most districts,</tspan>
+                    <tspan x={xScale(15.5)} dy={labelLineHeight}>many more than <tspan font-weight="bold">11%</tspan></tspan>
+                    <tspan x={xScale(15.5)} dy={labelLineHeight}>of students qualify</tspan>
                 </text>
             {/if}
 
@@ -456,23 +446,23 @@
                 <!-- Desktop version - full annotation -->
                 <text
                     x={xScale(19)}
-                    y={20}
+                    y={10}
                     text-anchor="start"
                     fill={colors.colorText}
                     font-size="16px"
                     font-weight="500"
                 >
-                    <tspan x={xScale(19)} dy="0">For <tspan font-weight="bold">Portland Public</tspan></tspan>
-                    <tspan x={xScale(19)} dy={labelLineHeight}>and <tspan font-weight="bold">Salem-Keizer</tspan>,</tspan>
-                    <tspan x={xScale(19)} dy={labelLineHeight}>two of the largest</tspan>
-                    <tspan x={xScale(19)} dy={labelLineHeight}>districts in the state,</tspan>
-                    <tspan x={xScale(19)} dy={labelLineHeight}><tspan font-weight="bold">18%</tspan> of students</tspan>
-                    <tspan x={xScale(19)} dy={labelLineHeight}>qualify for special</tspan>
-                    <tspan x={xScale(19)} dy={labelLineHeight}>education supports</tspan>
+                    <tspan x={xScale(19.25)} dy="0">For example,</tspan>
+                    <tspan x={xScale(19.25)} dy={labelLineHeight}>in <tspan font-weight="bold">Portland</tspan> and</tspan>
+                    <tspan x={xScale(19.25)} dy={labelLineHeight}><tspan font-weight="bold">Salem-Keizer</tspan>, two</tspan>
+                    <tspan x={xScale(19.25)} dy={labelLineHeight}>of the largest</tspan>
+                    <tspan x={xScale(19.25)} dy={labelLineHeight}>districts in the</tspan>
+                    <tspan x={xScale(19.25)} dy={labelLineHeight}>state, <tspan font-weight="bold">18%</tspan> of</tspan>
+                    <tspan x={xScale(19.25)} dy={labelLineHeight}>students qualify</tspan>
                 </text>
             {/if}
 
-            <!-- Note for districts not picture -->
+            <!-- Note for districts not pictured -->
             {#if !isMobile}
                 <text
                     x={xScale(19)}

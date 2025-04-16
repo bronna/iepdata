@@ -53,13 +53,13 @@
                 What does this mean?
             </h3>
             <p>
-                This funding structure creates a disincentive for districts to identify students with disabilities. When districts identify students beyond the 11% cap, they must absorb costs not funded by the state. Despite this disincentive, districts are still identifying many more students as needing supports.
+                This funding structure creates a disincentive for districts to identify students with disabilities. When districts identify students beyond the 11% cap, they must absorb costs not funded by the state. Despite this disincentive, districts are still identifying many more students as needing supports. When a student receives supports sooner rather than later, their trajectory improves dramatically.
             </p>
             <h3>
                 How does this compare to other states?
             </h3>
             <p>
-                Only seven other states have a cap on special education funding. None of them are as low as Oregon's 11%.
+                Only seven other states have a cap on special education funding. None of them are as low as Oregon's 11%. This cap was set in the early 1990s and hasn't changed since.
             </p>
             <h3>
                 Next steps
