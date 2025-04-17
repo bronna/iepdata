@@ -79,10 +79,7 @@
             </h3>
         
             <p class="text-width">
-                For families of students with disabilities, a common concern is not knowing what supports their child is eligible for from one area to the next. Moving from one place to another can mean drastic changes in services, even though the disability hasn't changed. These changes can have a huge impact on the well-being and developmental trajectory of a child.
-            </p>
-            <p class="text-width">
-                Usually, families find that the process of how an agency or district evaluates a student's disability is not transparent, and how those evaluations are used to make decisions about services is even less so. However, data is reported to states and the federal government that helps give a view into how students, as a whole, are supported in different areas.
+                For families of students with disabilities, moving from one place to another can mean drastic changes in services, even though the disability hasn't changed. These changes can have a large impact on the well-being and developmental trajectory of a child. Although the processes for how a district determines services for a child is not transparent, data is reported to the state that gives a view into how students are supported differently.
             </p>
             <p class="text-width">
                 Below, you can explore that data.
@@ -127,12 +124,12 @@
                                 As an example, let's look at Portland Public Schools. This district serves <strong>{$selectedDistrictData[0].properties["Total Student Count"]} students with IEPs*</strong> <em>(note: you can select your local district at any time)</em>
                                 <br>
                                 <br>
-                                <em>*An IEP is a document that outlines what supports a student with a disability will receive at school. It's personalized to each student who needs it</em>
+                                <em>*An IEP is a document that outlines what supports a student with a disability will receive at school. It's personalized to each student</em>
                             </ScrollyCard>
                         </section>
                         <section>
                             <ScrollyCard active={index === 3}>
-                                Districts report data on how much time students with IEPs spend in regular classrooms. Based on this, <strong>{$selectedDistrictData[0].properties["Institution Name"]}</strong> has an <strong>inclusion score</strong> of <strong>{$selectedDistrictData[0].properties["quartile"]} out of 4</strong>
+                                Districts report on how much time students with IEPs spend in regular classrooms. Based on this, <strong>{$selectedDistrictData[0].properties["Institution Name"]}</strong> has an <strong>inclusion score</strong> of <strong>{$selectedDistrictData[0].properties["quartile"]} out of 4</strong>
                                 <br>
                                 <br>
                                 <SimpleAccordion title="How is the inclusion score calculated?">
@@ -158,7 +155,7 @@
                         </section>
                         <section>
                             <ScrollyCard active={index === 6}>
-                                You can also <strong>select multiple districts</strong> to compare them directly
+                                You can also <strong>select multiple districts</strong> to compare
                             </ScrollyCard>
                         </section>
                         <section>
