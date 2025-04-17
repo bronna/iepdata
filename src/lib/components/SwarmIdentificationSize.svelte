@@ -387,7 +387,7 @@
                 <tspan x={xScale(11)} dy={labelLineHeight}>education funding to</tspan>
                 <tspan x={xScale(11)} dy={labelLineHeight}><tspan font-weight="bold">11%</tspan> of students</tspan>
                 {#if !isMobile}
-                <tspan x={xScale(11)} dy={labelLineHeight}>qualifying for supports</tspan>
+                <tspan x={xScale(11)} dy={labelLineHeight}>needing services</tspan>
                 {/if}
             </text>
 
@@ -422,9 +422,9 @@
                     font-size="16px"
                     font-weight="500"
                 >
-                    <tspan x={xScale(15.5)} dy="0">For most districts,</tspan>
-                    <tspan x={xScale(15.5)} dy={labelLineHeight}>many more than <tspan font-weight="bold">11%</tspan></tspan>
-                    <tspan x={xScale(15.5)} dy={labelLineHeight}>of students qualify</tspan>
+                    <tspan x={xScale(15.5)} dy="0">For most school</tspan>
+                    <tspan x={xScale(15.5)} dy={labelLineHeight}>districts, many more</tspan>
+                    <tspan x={xScale(15.5)} dy={labelLineHeight}>than <tspan font-weight="bold">11%</tspan> qualify</tspan>
                 </text>
             {/if}
 
@@ -452,13 +452,14 @@
                     font-size="16px"
                     font-weight="500"
                 >
-                    <tspan x={xScale(19.25)} dy="0">For example,</tspan>
-                    <tspan x={xScale(19.25)} dy={labelLineHeight}>in <tspan font-weight="bold">Portland</tspan> and</tspan>
-                    <tspan x={xScale(19.25)} dy={labelLineHeight}><tspan font-weight="bold">Salem-Keizer</tspan>, two</tspan>
-                    <tspan x={xScale(19.25)} dy={labelLineHeight}>of the largest</tspan>
-                    <tspan x={xScale(19.25)} dy={labelLineHeight}>districts in the</tspan>
-                    <tspan x={xScale(19.25)} dy={labelLineHeight}>state, <tspan font-weight="bold">18%</tspan> of</tspan>
-                    <tspan x={xScale(19.25)} dy={labelLineHeight}>students qualify</tspan>
+                    <tspan x={xScale(19.25)} dy="0">In <tspan font-weight="bold">Portland</tspan> and</tspan>
+                    <tspan x={xScale(19.25)} dy={labelLineHeight}><tspan font-weight="bold">Salem-Keizer</tspan>, two of</tspan>
+                    <tspan x={xScale(19.25)} dy={labelLineHeight}>the largest districts,</tspan>
+                    <tspan x={xScale(19.25)} dy={labelLineHeight}><tspan font-weight="bold">18%</tspan> of students</tspan>
+                    <tspan x={xScale(19.25)} dy={labelLineHeight}>require services.</tspan>
+                    <tspan x={xScale(19.25)} dy={labelLineHeight}>Those districts don't</tspan>
+                    <tspan x={xScale(19.25)} dy={labelLineHeight}>receive funding for</tspan>
+                    <tspan x={xScale(19.25)} dy={labelLineHeight}>the remaining 7%</tspan>
                 </text>
             {/if}
 
