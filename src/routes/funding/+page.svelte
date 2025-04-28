@@ -65,7 +65,7 @@
                 Next steps
             </h3>
             <p>
-                Talk to your legislators (find them <a href="https://geo.maps.arcgis.com/apps/instant/lookup/index.html?appid=fd070b56c975456ea2a25f7e3f4289d1" target="_blank">here</a>). There is a bill moving through the state legislature to <a href="https://olis.oregonlegislature.gov/liz/2025R1/Measures/Overview/HB2953" target="_blank">remove the special education funding cap</a>. Another one would <a href="https://olis.oregonlegislature.gov/liz/2025R1/Measures/Overview/HB2448" target="_blank">increase funds to the High Cost Disabilities Account</a>. Tell your legislators that you support these bills and want to see them passed.
+                Talk to your legislators (find them <a href="https://geo.maps.arcgis.com/apps/instant/lookup/index.html?appid=fd070b56c975456ea2a25f7e3f4289d1" target="_blank">here</a>). There is a bill moving through the state legislature to <a href="https://olis.oregonlegislature.gov/liz/2025R1/Measures/Overview/HB2953" target="_blank">remove the special education funding cap</a>. Another one would <a href="https://olis.oregonlegislature.gov/liz/2025R1/Measures/Overview/HB2448" target="_blank">increase funds to the High Cost Disabilities Account</a>. <a href="https://www.myactionalerts.com/action/specialeducationfunding" target="_blank">Tell your legislators</a> that you support these bills and want to see them passed.
             </p>
         </div>
 

@@ -28,7 +28,7 @@
     let isDistrictSelected = false
     $: isDistrictSelected = $selectedDistrict && $selectedDistrict.length > 0
     $: {
-        if ($selectedDistrict) {
+        if ($selectedDistrict && $selectedDistrict.length > 0) {
             index = 0;
         }
     }

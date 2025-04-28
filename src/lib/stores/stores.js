@@ -1,3 +1,4 @@
+// src/lib/stores/stores.js
 import { readable, writable, derived } from 'svelte/store'
 import { getData } from "$lib/data/processData.js"
 
@@ -10,13 +11,12 @@ export const stateData = derived(data, $data => $data.filter(d => d.properties.G
 export const minWeightedInclusion = derived(stateData, $stateData => $stateData[0].properties.minWeightedInclusion)
 export const maxWeightedInclusion = derived(stateData, $stateData => $stateData[0].properties.maxWeightedInclusion)
 
-// possibly move to context within beeswarm
-//export const selectedDistricts = writable(["4110040", "4110820", "4101920"])
-export const selectedDistrict = writable("4110040")
-//export const selectedDistrict = writable(null)
+// Change to array for multiple selection
+export const selectedDistrict = writable(["4110040"])
 
 export const selectedDistrictData = derived([selectedDistrict, data], ([$selectedDistrict, $data]) => {
-    return $data.filter(d => d.properties.GEOID === $selectedDistrict)
+    // Filter for all selected districts
+    return $data.filter(d => $selectedDistrict.includes(d.properties.GEOID))
 })
 
 export const highlightedDistricts = writable(null)

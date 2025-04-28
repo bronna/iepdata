@@ -20,9 +20,6 @@
             percentage of students achieving proficient and above scores plotted against 
             per pupil spending.
         </p>
-        <p>
-            Circle size represents the percentage of students with disabilities at each school.
-        </p>
     </div>
     
     <Divider>
@@ -34,15 +31,22 @@
     </div>
     
     <div class="text-width findings">
-        <h3>Key Observations</h3>
+        <h3>Findings</h3>
         <ul>
-            <li>Schools with higher per pupil spending tend to show higher proficiency rates.</li>
-            <li>Schools with larger percentages of students with disabilities often have higher per pupil spending.</li>
-            <li>The data suggests allocating resources may help improve outcomes for all students.</li>
+            <li>x</li>
+            <li>y</li>
+            <li>z</li>
         </ul>
         
         <div class="source">
-            <p><strong>Source:</strong> Oregon Department of Education, 2022-23 school year</p>
+            <p>
+                <strong>Source:</strong> 
+                Oregon Department of Education, 
+                Edunomics Lab at Georgetown
+                <a href="https://public.tableau.com/app/profile/edunomicslab/viz/OregonFY21SpendingvsOutcomes/OregonFY21?publish=yes">1</a>
+                <a href="https://public.tableau.com/app/profile/edunomicslab/viz/OregonFY22SpendingvsSY23Outcomes/ORFY22SpendingvsSY23Outcomes#1">2</a>
+                <a href="https://public.tableau.com/app/profile/edunomicslab/viz/OregonFY23SpendingvsSY24Outcomes-updated3_24/ORFY23SpendingvsSY24Outcomes">3</a>
+            </p>
         </div>
     </div>
 </div>

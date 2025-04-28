@@ -2692,124 +2692,6 @@ You can preview the production build with `npm run preview`.
 </style>
 ```
 
-# src/lib/components/FundingHeader.svelte
-
-```svelte
-<script>
-    import NavLinks from "./NavLinks.svelte";
-    import Logo from "./Logo.svelte"
-    import { colors } from "$lib/styles/colorConfig.js"
-  
-    let menuOpen = false
-    let windowWidth = 0;
-  
-    function slideAndFade(node, { delay = 0, duration = 300 }) {
-      return {
-        delay,
-        duration,
-        css: t => `
-          transform: translateX(${(1 - t) * 100}%);
-          opacity: ${t};
-        `
-      };
-    }
-  </script>
-  
-  <svelte:window bind:innerWidth={windowWidth} />
-  
-  <header class="funding-header">
-    <div class="header-content">
-      <div class="logo-container">
-        <Logo color={colors.colorInclusiveGray} textColor={colors.colorBackgroundWhite} />
-      </div>
-  
-      <div class="menu-container">
-        <button
-          on:click={() => menuOpen = !menuOpen}
-          class="menu-toggle"
-          aria-label="Toggle navigation menu"
-        >
-          {menuOpen ? '✕' : '☰'}
-        </button>
-      </div>
-    </div>
-  
-    {#if menuOpen}
-      <nav class="mobile-nav" transition:slideAndFade>
-        <NavLinks direction="vertical" />
-      </nav>
-    {/if}
-  </header>
-  
-  <style>
-    .funding-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-top: 2rem 3rem;
-      padding: 2rem 2rem;
-      background-color: var(--colorBackgroundWhite);
-      position: relative;
-      z-index: 100;
-    }
-  
-    .header-content {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      width: 100%;
-    }
-  
-    .logo-container {
-      display: flex;
-      align-items: center;
-      padding-top: 0.4rem;
-    }
-  
-    .menu-container {
-      display: flex;
-      align-items: center;
-      margin-top: -2.4rem
-    }
-  
-    .menu-toggle {
-      display: block;
-      background: none;
-      border: none;
-      font-size: 2rem;
-      cursor: pointer;
-      color: var(--colorText);
-      z-index: 20;
-      padding: 0;
-      margin: 0;
-      line-height: 1;
-    }
-  
-    .mobile-nav {
-      position: fixed;
-      top: 0;
-      right: 0;
-      bottom: 0;
-      width: 80%;
-      max-width: 300px;
-      background-color: rgba(244, 241, 240, 0.94);
-      padding: 5rem 1rem 1rem;
-      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-      z-index: 10;
-      display: flex;
-      flex-direction: column;
-    }
-  
-    /* Mobile view adjustments */
-    @media (max-width: 768px) {
-      .funding-header {
-        padding: 1rem 1rem;
-        width: 100%;
-      }
-    }
-  </style>
-```
-
 # src/lib/components/Header.svelte
 
 ```svelte
@@ -4224,7 +4106,7 @@ You can preview the production build with `npm run preview`.
 	}
 
     function clearSelectedDistricts() {
-		selectedDistrict.set()
+		selectedDistrict.set([])
 		minSize = 0;
 		maxSize = 9000
 		values = [minSize, maxSize]
@@ -4240,7 +4122,7 @@ You can preview the production build with `npm run preview`.
         <Svelecte 
             options={districtNames} 
             bind:value={$selectedDistrict} 
-            multiple={false} 
+            multiple={true} 
             placeholder={"find a school district"}
             closeAfterSelect={true}
         />
@@ -4356,6 +4238,124 @@ You can preview the production build with `npm run preview`.
 </style>
 ```
 
+# src/lib/components/SideHeader.svelte
+
+```svelte
+<script>
+    import NavLinks from "./NavLinks.svelte";
+    import Logo from "./Logo.svelte"
+    import { colors } from "$lib/styles/colorConfig.js"
+  
+    let menuOpen = false
+    let windowWidth = 0;
+  
+    function slideAndFade(node, { delay = 0, duration = 300 }) {
+      return {
+        delay,
+        duration,
+        css: t => `
+          transform: translateX(${(1 - t) * 100}%);
+          opacity: ${t};
+        `
+      };
+    }
+  </script>
+  
+  <svelte:window bind:innerWidth={windowWidth} />
+  
+  <header class="side-header">
+    <div class="header-content">
+      <div class="logo-container">
+        <Logo color={colors.colorInclusiveGray} textColor={colors.colorBackgroundWhite} />
+      </div>
+  
+      <div class="menu-container">
+        <button
+          on:click={() => menuOpen = !menuOpen}
+          class="menu-toggle"
+          aria-label="Toggle navigation menu"
+        >
+          {menuOpen ? '✕' : '☰'}
+        </button>
+      </div>
+    </div>
+  
+    {#if menuOpen}
+      <nav class="mobile-nav" transition:slideAndFade>
+        <NavLinks direction="vertical" />
+      </nav>
+    {/if}
+  </header>
+  
+  <style>
+    .side-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-top: 2rem 3rem;
+      padding: 2rem 2rem;
+      background-color: var(--colorBackgroundWhite);
+      position: relative;
+      z-index: 100;
+    }
+  
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+    }
+  
+    .logo-container {
+      display: flex;
+      align-items: center;
+      padding-top: 0.4rem;
+    }
+  
+    .menu-container {
+      display: flex;
+      align-items: center;
+      margin-top: -2.4rem
+    }
+  
+    .menu-toggle {
+      display: block;
+      background: none;
+      border: none;
+      font-size: 2rem;
+      cursor: pointer;
+      color: var(--colorText);
+      z-index: 20;
+      padding: 0;
+      margin: 0;
+      line-height: 1;
+    }
+  
+    .mobile-nav {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 80%;
+      max-width: 300px;
+      background-color: rgba(244, 241, 240, 0.94);
+      padding: 5rem 1rem 1rem;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+    }
+  
+    /* Mobile view adjustments */
+    @media (max-width: 768px) {
+      .side-header {
+        padding: 1rem 1rem;
+        width: 100%;
+      }
+    }
+  </style>
+```
+
 # src/lib/components/SimpleAccordion.svelte
 
 ```svelte
@@ -4439,6 +4439,7 @@ You can preview the production build with `npm run preview`.
 
 ```svelte
 <script>
+    import { onMount, afterUpdate } from 'svelte'
     import { scaleLinear, scaleSqrt, scaleThreshold } from 'd3-scale'
     import { extent } from 'd3-array'
     import { colors } from '$lib/styles/colorConfig'
@@ -4449,6 +4450,22 @@ You can preview the production build with `npm run preview`.
 
     export let width = 1200
     export let height = 800
+
+    // Add school year selector with default value
+    let selectedYear = "2023-2024" // Default to newest year
+    
+    // Add subject selector with default value
+    let selectedSubject = "ELA" // Default to ELA
+    
+    // Get unique school years from the data
+    let availableYears = [...new Set(smallSchoolsData.map(school => school["School Year"]))].sort().reverse()
+
+    const globalExtents = {
+        // Fixed domains based on analysis of all data
+        expenditure: { min: 14000, max: 22000 },  // Per Pupil Spending
+        proficiency: { min: 35, max: 85 },       // Combined ELA/Math ranges
+        enrollment: { min: 0, max: 500 }         // School enrollment
+    }
 
     let dimensions = {
         width,
@@ -4530,17 +4547,29 @@ You can preview the production build with `npm run preview`.
         return `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`;
     }
 
+    // Filter data by selected year
+    $: filteredYearData = smallSchoolsData.filter(school => 
+        school["School Year"] === selectedYear
+    );
+
     // Process the data to parse numeric values
-    $: processedData = smallSchoolsData.map(school => {
+    $: processedData = filteredYearData.map(school => {
         // Create a derived name field for display that's more compact
         const shortName = school.School.replace(" Primary School", "");
 
         // Parse individual metrics
         const expenditure = parseInt(school["Per Pupil Spending"].replace(/\$|,/g, ''));
-        const performance = parseInt(school["Proficient & Above %"].replace(/%/g, ''));
-        const disabilityPercent = parseInt(school["Students w/Disabilities %"].replace(/%/g, ''));
-        const economicDisadvantagePercent = parseInt(school["Economically Disadvantaged %"].replace(/%/g, ''));
-        const enrollment = parseFloat(school["Total School Enrollment"]);
+        
+        // Use selected subject proficiency
+        const performanceField = selectedSubject === "ELA" 
+            ? "ELA Proficient & Above %" 
+            : "Math Proficient & Above %";
+            
+        const performance = parseInt(school[performanceField]?.replace(/%/g, '') || "0");
+        
+        const disabilityPercent = parseInt(school["Students w/Disabilities %"]?.replace(/%/g, '') || "0");
+        const economicDisadvantagePercent = parseInt(school["Economically Disadvantaged %"]?.replace(/%/g, '') || "0");
+        const enrollment = parseFloat(school["Total School Enrollment"] || 0);
 
         // Calculate total disadvantaged percentage (sum of economic disadvantage and disability)
         const totalDisadvantagedPercent = economicDisadvantagePercent + disabilityPercent;
@@ -4555,11 +4584,11 @@ You can preview the production build with `npm run preview`.
             totalDisadvantagedPercent,
             enrollment
         }
-    })
+    });
 
     // Create a scale for circle radius based on enrollment (uses sqrt to scale by area not radius)
     $: rScale = scaleSqrt()
-        .domain(extent(processedData, d => d.enrollment))
+        .domain([globalExtents.enrollment.min, globalExtents.enrollment.max])
         .range([10, 26])
 
     // Calculate the average per pupil spending
@@ -4570,12 +4599,12 @@ You can preview the production build with `npm run preview`.
 
     // Create scales with fixed domains to ensure all schools are visible
     $: xScale = scaleLinear()
-        .domain([16000, 22000]) // Fixed domain to include all schools
+        .domain([globalExtents.expenditure.min, globalExtents.expenditure.max])
         .range([0, dimensions.innerWidth])
         .nice()
 
     $: yScale = scaleLinear()
-        .domain([40, 75]) // Fixed domain to include all schools' performance values
+        .domain([globalExtents.proficiency.min, globalExtents.proficiency.max])
         .range([dimensions.innerHeight, 0])
         .nice()
 
@@ -4675,245 +4704,273 @@ You can preview the production build with `npm run preview`.
 
 
 <div class="scatterplot-container" bind:clientWidth={width} bind:clientHeight={height}>
-<h2 class="text-width">School Performance vs. Per Pupil Spending</h2>
-<div class="scatterplot">
-<SVGChart {dimensions}>
-    <!-- Dot grid background -->
-    <g class="dot-grid">
-        {#each dots as dot}
-            <circle 
-                cx={dot.x}
-                cy={dot.y}
-                r={dotSize}
-                fill={colors.colorLightGray}
-                opacity="0.6"
-            />
-        {/each}
-    </g>
+    <div class="controls">
+        <h2 class="text-width">School Performance vs. Per Pupil Spending</h2>
+        
+        <div class="selectors">
+            <div class="year-selector">
+                <label for="year-select">School Year:</label>
+                <select id="year-select" bind:value={selectedYear}>
+                    {#each availableYears as year}
+                        <option value={year}>{year}</option>
+                    {/each}
+                </select>
+            </div>
+            
+            <div class="subject-selector">
+                <label>Subject:</label>
+                <div class="radio-group">
+                    <label class="radio-label">
+                        <input type="radio" bind:group={selectedSubject} value="ELA" name="subject">
+                        <span>ELA</span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" bind:group={selectedSubject} value="Math" name="subject">
+                        <span>Math</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="scatterplot">
+        <SVGChart {dimensions}>
+            <!-- Dot grid background -->
+            <g class="dot-grid">
+                {#each dots as dot}
+                    <circle 
+                        cx={dot.x}
+                        cy={dot.y}
+                        r={dotSize}
+                        fill={colors.colorLightGray}
+                        opacity="0.6"
+                    />
+                {/each}
+            </g>
 
-    <!-- X-axis -->
-    <g class="x-axis">
-        <!-- X-axis ticks and labels -->
-        {#each xScale.ticks(5) as tick}
-            <g transform="translate({xScale(tick)}, {dimensions.innerHeight})">
-                <line 
-                    y2="6" 
-                    stroke={colors.colorLightGray}
-                    stroke-width="1"
-                />
-                <text 
-                    y="20" 
+            <!-- X-axis -->
+            <g class="x-axis">
+                <!-- X-axis ticks and labels -->
+                {#each xScale.ticks(5) as tick}
+                    <g transform="translate({xScale(tick)}, {dimensions.innerHeight})">
+                        <line 
+                            y2="6" 
+                            stroke={colors.colorLightGray}
+                            stroke-width="1"
+                        />
+                        <text 
+                            y="20" 
+                            text-anchor="middle"
+                            fill={colors.colorText}
+                            font-size="12px"
+                        >
+                            {formatMoney(tick)}
+                        </text>
+                    </g>
+                {/each}
+
+                <!-- X-axis label -->
+                <text
+                    x={dimensions.innerWidth / 2}
+                    y={dimensions.innerHeight + 45}
                     text-anchor="middle"
                     fill={colors.colorText}
-                    font-size="12px"
+                    font-size="14px"
+                    font-weight="600"
                 >
-                    {formatMoney(tick)}
+                    Per Pupil Spending
                 </text>
             </g>
-        {/each}
 
-        <!-- X-axis label -->
-        <text
-            x={dimensions.innerWidth / 2}
-            y={dimensions.innerHeight + 45}
-            text-anchor="middle"
-            fill={colors.colorText}
-            font-size="14px"
-            font-weight="600"
-        >
-            Per Pupil Spending
-        </text>
-    </g>
+            <!-- Y-axis -->
+            <g class="y-axis">
+                <!-- Y-axis ticks and labels -->
+                {#each yScale.ticks(5) as tick}
+                    <g transform="translate(0, {yScale(tick)})">
+                        <line 
+                            x2="-6" 
+                            stroke={colors.colorLightGray}
+                            stroke-width="1"
+                        />
+                        <text 
+                            x="-12" 
+                            dy="0.32em" 
+                            text-anchor="end"
+                            fill={colors.colorText}
+                            font-size="12px"
+                        >
+                            {tick}%
+                        </text>
+                    </g>
+                {/each}
 
-    <!-- Y-axis -->
-    <g class="y-axis">
-        <!-- Y-axis ticks and labels -->
-        {#each yScale.ticks(5) as tick}
-            <g transform="translate(0, {yScale(tick)})">
-                <line 
-                    x2="-6" 
-                    stroke={colors.colorLightGray}
-                    stroke-width="1"
-                />
-                <text 
-                    x="-12" 
-                    dy="0.32em" 
-                    text-anchor="end"
+                <!-- Y-axis label -->
+                <text
+                    transform="rotate(-90)"
+                    x={-dimensions.innerHeight / 2}
+                    y={-60}
+                    text-anchor="middle"
                     fill={colors.colorText}
-                    font-size="12px"
+                    font-size="14px"
+                    font-weight="600"
                 >
-                    {tick}%
+                    {selectedSubject} Proficient & Above
                 </text>
             </g>
-        {/each}
 
-        <!-- Y-axis label -->
-        <text
-            transform="rotate(-90)"
-            x={-dimensions.innerHeight / 2}
-            y={-60}
-            text-anchor="middle"
-            fill={colors.colorText}
-            font-size="14px"
-            font-weight="600"
-        >
-            Proficient & Above
-        </text>
-    </g>
+            <!-- Average lines -->
+            <g class="average-lines">
+                <!-- Avg per pupil spending line -->
+                <line 
+                    x1={xScale(avgSpending)}
+                    y1={0}
+                    x2={xScale(avgSpending)}
+                    y2={dimensions.innerHeight + 20}
+                    stroke={colors.colorMediumGray}
+                    stroke-width="1"
+                    stroke-dasharray="4"
+                />
 
-    <!-- Average lines -->
-    <g class="average-lines">
-        <!-- Avg per pupil spending line -->
-        <line 
-            x1={xScale(avgSpending)}
-            y1={0}
-            x2={xScale(avgSpending)}
-            y2={dimensions.innerHeight + 20}
-            stroke={colors.colorMediumGray}
-            stroke-width="1"
-            stroke-dasharray="4"
-        />
+                <!-- Avg per pupil spending label -->
+                <text 
+                    x={xScale(avgSpending) - 75}
+                    y={dimensions.innerHeight - 10}
+                    font-size="12px"
+                    fill={colors.colorDarkGray}
+                >
+                    Avg Spending
+                </text>
 
-        <!-- Avg per pupil spending label -->
-        <text 
-            x={xScale(avgSpending) - 75}
-            y={dimensions.innerHeight - 10}
-            font-size="12px"
-            fill={colors.colorDarkGray}
-        >
-            Avg Spending
-        </text>
+                <!-- Avg performance line -->
+                <line 
+                    x1={-30}
+                    y1={yScale(avgPerformance)}
+                    x2={dimensions.innerWidth + 19}
+                    y2={yScale(avgPerformance)}
+                    stroke={colors.colorMediumGray}
+                    stroke-width="1"
+                    stroke-dasharray="4"
+                />
+                
+                <!-- Avg performance label -->
+                <text 
+                    x={dimensions.innerWidth - 102}
+                    y={yScale(avgPerformance) - 10}
+                    font-size="12px"
+                    fill={colors.colorDarkGray}
+                >
+                    Avg {selectedSubject} Performance
+                </text>
+            </g>
 
-        <!-- Avg performance line -->
-        <line 
-            x1={-30}
-            y1={yScale(avgPerformance)}
-            x2={dimensions.innerWidth + 19}
-            y2={yScale(avgPerformance)}
-            stroke={colors.colorMediumGray}
-            stroke-width="1"
-            stroke-dasharray="4"
-        />
-        
-        <!-- Avg performance label -->
-        <text 
-            x={dimensions.innerWidth - 102}
-            y={yScale(avgPerformance) - 10}
-            font-size="12px"
-            fill={colors.colorDarkGray}
-        >
-            Avg School Performance
-        </text>
-    </g>
-
-    <!-- Plot points -->
-    {#each processedData as school}
-        <g class="data-point">
-            <!-- Pie chart showing disadvantaged percentage -->
-            <g>
-                {#if school.totalDisadvantagedPercent}
-                    {@const segments = createPieSegments(
-                        rScale(school.enrollment), 
-                        xScale(school.expenditure),
-                        yScale(school.performance),
-                        school.totalDisadvantagedPercent
-                    )}
+            <!-- Plot points -->
+            {#each processedData as school}
+                <g class="data-point">
+                    <!-- Pie chart showing disadvantaged percentage -->
+                    <g>
+                        {#if school.totalDisadvantagedPercent}
+                            {@const segments = createPieSegments(
+                                rScale(school.enrollment), 
+                                xScale(school.expenditure),
+                                yScale(school.performance),
+                                school.totalDisadvantagedPercent
+                            )}
+                            
+                            <!-- Regular portion slice -->
+                            <path 
+                                d={segments.remainingSlice}
+                                fill={getSchoolColors(school.School).fill}
+                                opacity="0.9"
+                            />
+                            
+                            <!-- Disadvantaged portion slice (slightly more opaque) -->
+                            <path 
+                                d={segments.disadvantagedSlice}
+                                fill={getSchoolColors(school.School).fill}
+                                opacity="0.65"
+                                stroke={getSchoolColors(school.School).stroke}
+                                stroke-width="1"
+                            />
+                        {/if}
+                    </g>
                     
-                    <!-- Regular portion slice -->
-                    <path 
-                        d={segments.remainingSlice}
-                        fill={getSchoolColors(school.School).fill}
-                        opacity="0.9"
-                    />
-                    
-                    <!-- Disadvantaged portion slice (slightly more opaque) -->
-                    <path 
-                        d={segments.disadvantagedSlice}
-                        fill={getSchoolColors(school.School).fill}
-                        opacity="0.65"
-                        stroke={getSchoolColors(school.School).stroke}
+                    <!-- Circle outline around the whole pie for consistency -->
+                    <circle
+                        cx={xScale(school.expenditure)}
+                        cy={yScale(school.performance)}
+                        r={rScale(school.enrollment)}
+                        fill="none"
+                        stroke={colors.colorBackgroundWhite}
                         stroke-width="1"
-                    />
-                {/if}
+                    >
+                        <title>
+                            {school.School}
+                            Per Pupil Spending: {formatMoney(school.expenditure)}
+                            {selectedSubject} Proficient & Above: {school.performance}%
+                            Students with Disabilities: {school.disabilityPercent}%
+                            Economically Disadvantaged: {school.economicDisadvantagePercent}%
+                            Total Disadvantaged: {school.totalDisadvantagedPercent}%
+                            Total Enrollment: {school.enrollment} students
+                        </title>
+                    </circle>
+                    
+                    {#if needsLeaderLine(school.shortName)}
+                        <!-- Leader line -->
+                        <line 
+                            x1={xScale(school.expenditure) + leaderLineLabels[school.shortName].lineStartX}
+                            y1={yScale(school.performance) + leaderLineLabels[school.shortName].lineStartY}
+                            x2={xScale(school.expenditure) + leaderLineLabels[school.shortName].lineEndX}
+                            y2={yScale(school.performance) + leaderLineLabels[school.shortName].lineEndY}
+                            stroke={colors.colorDarkGray}
+                            stroke-width="0.5"
+                            stroke-dasharray="2,1"
+                        />
+                        <!-- Offset label with leader line -->
+                        <text
+                            x={xScale(school.expenditure) + leaderLineLabels[school.shortName].offsetX}
+                            y={yScale(school.performance) + leaderLineLabels[school.shortName].offsetY}
+                            text-anchor={leaderLineLabels[school.shortName].offsetX < 0 ? "end" : "start"}
+                            font-size="11px"
+                            fill={colors.colorText}
+                        >
+                            <tspan font-weight="600">{school.shortName}</tspan>
+                            <tspan> ({school.totalDisadvantagedPercent}% disadv)</tspan>
+                        </text>
+                    {:else}
+                        <!-- Regular inline label -->
+                        <text
+                            x={xScale(school.expenditure)}
+                            y={yScale(school.performance) - rScale(school.enrollment) - 8}
+                            text-anchor="middle"
+                            font-size="11px"
+                            fill={colors.colorText}
+                        >
+                            <tspan font-weight="600">{school.shortName}</tspan>
+                            <tspan> ({school.totalDisadvantagedPercent}% disadv)</tspan>
+                        </text>
+                    {/if}
+                </g>
+            {/each}
+
+            <!-- School Size legend - restored to original position -->
+            <g class="legend" transform="translate({dimensions.innerWidth - 57}, 220)">
+                <text font-size="12px" font-weight="600" fill={colors.colorDarkGray}>School Size:</text>
+                
+                <!-- Calculate legend circle sizes based on actual enrollment values -->
+                <circle cx="28" cy={36 + rScale(500) - rScale(200)} r={rScale(200)} fill="none" stroke={colors.colorMediumGray} stroke-width=1/>
+                <text x="60" y="53" font-size="10px">200</text>
+
+                <circle cx="28" cy={36 + rScale(500) - rScale(300)} r={rScale(300)} fill="none" stroke={colors.colorMediumGray} stroke-width=1/>
+                <text x="60" y="41" font-size="10px">300</text>
+                
+                <circle cx="28" cy={36 + rScale(500) - rScale(400)} r={rScale(400)} fill="none" stroke={colors.colorMediumGray} stroke-width=1/>
+                <text x="60" y="29" font-size="10px">400</text>
+                
+                <circle cx="28" cy="36" r={rScale(500)} fill="none" stroke={colors.colorMediumGray} stroke-width=1/>
+                <text x="60" y="17" font-size="10px">500 students</text>
             </g>
-            
-            <!-- Circle outline around the whole pie for consistency -->
-            <circle
-                cx={xScale(school.expenditure)}
-                cy={yScale(school.performance)}
-                r={rScale(school.enrollment)}
-                fill="none"
-                stroke={colors.colorBackgroundWhite}
-                stroke-width="1"
-            >
-                <title>
-                    {school.School}
-                    Per Pupil Spending: {formatMoney(school.expenditure)}
-                    Proficient & Above: {school.performance}%
-                    Students with Disabilities: {school.disabilityPercent}%
-                    Economically Disadvantaged: {school.economicDisadvantagePercent}%
-                    Total Disadvantaged: {school.totalDisadvantagedPercent}%
-                    Total Enrollment: {school.enrollment} students
-                </title>
-            </circle>
-            
-            {#if needsLeaderLine(school.shortName)}
-                <!-- Leader line -->
-                <line 
-                    x1={xScale(school.expenditure) + leaderLineLabels[school.shortName].lineStartX}
-                    y1={yScale(school.performance) + leaderLineLabels[school.shortName].lineStartY}
-                    x2={xScale(school.expenditure) + leaderLineLabels[school.shortName].lineEndX}
-                    y2={yScale(school.performance) + leaderLineLabels[school.shortName].lineEndY}
-                    stroke={colors.colorDarkGray}
-                    stroke-width="0.5"
-                    stroke-dasharray="2,1"
-                />
-                <!-- Offset label with leader line -->
-                <text
-                    x={xScale(school.expenditure) + leaderLineLabels[school.shortName].offsetX}
-                    y={yScale(school.performance) + leaderLineLabels[school.shortName].offsetY}
-                    text-anchor={leaderLineLabels[school.shortName].offsetX < 0 ? "end" : "start"}
-                    font-size="11px"
-                    fill={colors.colorText}
-                >
-                    <tspan font-weight="600">{school.shortName}</tspan>
-                    <tspan> ({school.totalDisadvantagedPercent}% disadv)</tspan>
-                </text>
-            {:else}
-                <!-- Regular inline label -->
-                <text
-                    x={xScale(school.expenditure)}
-                    y={yScale(school.performance) - rScale(school.enrollment) - 8}
-                    text-anchor="middle"
-                    font-size="11px"
-                    fill={colors.colorText}
-                >
-                    <tspan font-weight="600">{school.shortName}</tspan>
-                    <tspan> ({school.totalDisadvantagedPercent}% disadv)</tspan>
-                </text>
-            {/if}
-        </g>
-    {/each}
-
-    <!-- School Size legend - restored to original position -->
-    <g class="legend" transform="translate({dimensions.innerWidth - 57}, 220)">
-        <text font-size="12px" font-weight="600" fill={colors.colorDarkGray}>School Size:</text>
-        
-        <!-- Calculate legend circle sizes based on actual enrollment values -->
-        <circle cx="28" cy={36 + rScale(500) - rScale(200)} r={rScale(200)} fill="none" stroke={colors.colorMediumGray} stroke-width=1/>
-        <text x="60" y="53" font-size="10px">200</text>
-
-        <circle cx="28" cy={36 + rScale(500) - rScale(300)} r={rScale(300)} fill="none" stroke={colors.colorMediumGray} stroke-width=1/>
-        <text x="60" y="41" font-size="10px">300</text>
-        
-        <circle cx="28" cy={36 + rScale(500) - rScale(400)} r={rScale(400)} fill="none" stroke={colors.colorMediumGray} stroke-width=1/>
-        <text x="60" y="29" font-size="10px">400</text>
-        
-        <circle cx="28" cy="36" r={rScale(500)} fill="none" stroke={colors.colorMediumGray} stroke-width=1/>
-        <text x="60" y="17" font-size="10px">500 students</text>
-    </g>
-</SVGChart>
-</div>
+        </SVGChart>
+    </div>
 </div>
 
 <style>
@@ -4922,9 +4979,62 @@ You can preview the production build with `npm run preview`.
         margin-bottom: 2rem;
     }
 
+    .controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 1.5rem;
+    }
+
+    .selectors {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+    }
+
+    .year-selector, .subject-selector {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .year-selector label, .subject-selector label {
+        font-weight: 600;
+        color: var(--colorText);
+        white-space: nowrap;
+    }
+
+    .year-selector select {
+        padding: 0.5rem;
+        border-radius: 4px;
+        border: 1px solid var(--colorMediumGray);
+        font-size: 1rem;
+        background-color: white;
+        cursor: pointer;
+    }
+
+    .radio-group {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .radio-label {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        cursor: pointer;
+    }
+
+    .radio-label input {
+        cursor: pointer;
+    }
+
+    .radio-label span {
+        font-size: 1rem;
+    }
+
     h2 {
-        text-align: center;
-        margin-bottom: 1rem;
+        margin: 0;
         color: var(--colorText);
         font-family: var(--font-headers);
     }
@@ -4950,6 +5060,30 @@ You can preview the production build with `npm run preview`.
     
     .dot-grid circle {
         pointer-events: none; /* Ensure dots don't interfere with hover interactions */
+    }
+
+    @media (max-width: 768px) {
+        .controls {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .selectors {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+            width: 100%;
+        }
+
+        .year-selector, .subject-selector {
+            width: 100%;
+        }
+
+        .radio-group {
+            flex: 1;
+            justify-content: flex-start;
+        }
     }
 </style>
 ```
@@ -5567,31 +5701,29 @@ You can preview the production build with `npm run preview`.
             <!-- Use responsive annotation for current funding line -->
             <rect
                 x={isMobile ? (xScale(11) - 60) : (xScale(11) - 120)}
-                y={10}
+                y={0}
                 width={isMobile ? 120 : 240}
                 height={isMobile ? 64 : 84}
                 fill="white"
-                rx="5"
-                ry="5"
             />
             <text
                 x={xScale(11)}
-                y={20}
+                y={10}
                 text-anchor="middle"
                 fill={colors.colorText}
                 font-size={isMobile ? "12px" : "16px"}
                 font-weight="500"
             >
-                <tspan x={xScale(11)} dy="0"><tspan font-weight="bold">Oregon</tspan> caps funding for</tspan>
-                <tspan x={xScale(11)} dy={labelLineHeight}>students with disabilities at</tspan>
-                                    <tspan x={xScale(11)} dy="1.3em"><tspan font-weight="bold">11%</tspan> of a district's population</tspan>
+                <tspan x={xScale(11)} dy="0"><tspan font-weight="bold">Oregon</tspan> limits special</tspan>
+                <tspan x={xScale(11)} dy={labelLineHeight}>education funding to</tspan>
+                <tspan x={xScale(11)} dy={labelLineHeight}><tspan font-weight="bold">11%</tspan> of students</tspan>
                 {#if !isMobile}
-                    <tspan x={xScale(11)} dy={labelLineHeight}>needing supports</tspan>
+                <tspan x={xScale(11)} dy={labelLineHeight}>needing services</tspan>
                 {/if}
             </text>
 
             <!-- Add line at proposed state funding - also responsive -->
-            <line
+            <!-- <line
                 x1={xScale(15)}
                 y1={10}
                 x2={xScale(15)}
@@ -5609,29 +5741,21 @@ You can preview the production build with `npm run preview`.
                 stroke-width="2"
                 opacity="0.5"
                 stroke-dasharray="4 2"
-            />
+            /> -->
 
             {#if !isMobile}
                 <!-- Only show this on desktop -->
-                <rect
-                    x={xScale(15) - 80}
-                    y={10}
-                    width="160"
-                    height="40"
-                    fill="white"
-                    rx="5"
-                    ry="5"
-                />
                 <text
                     x={xScale(15)}
-                    y={20}
+                    y={10}
                     text-anchor="middle"
                     fill={colors.colorText}
                     font-size="16px"
                     font-weight="500"
                 >
-                    <tspan x={xScale(15)} dy="0">Some have suggested</tspan>
-                    <tspan x={xScale(15)} dy={labelLineHeight}>a <tspan font-weight="bold">15%</tspan> cap</tspan>
+                    <tspan x={xScale(15.5)} dy="0">For most school</tspan>
+                    <tspan x={xScale(15.5)} dy={labelLineHeight}>districts, many more</tspan>
+                    <tspan x={xScale(15.5)} dy={labelLineHeight}>than <tspan font-weight="bold">11%</tspan> qualify</tspan>
                 </text>
             {/if}
 
@@ -5653,23 +5777,24 @@ You can preview the production build with `npm run preview`.
                 <!-- Desktop version - full annotation -->
                 <text
                     x={xScale(19)}
-                    y={20}
+                    y={10}
                     text-anchor="start"
                     fill={colors.colorText}
                     font-size="16px"
                     font-weight="500"
                 >
-                    <tspan x={xScale(19)} dy="0">For <tspan font-weight="bold">Portland Public</tspan></tspan>
-                    <tspan x={xScale(19)} dy={labelLineHeight}>and <tspan font-weight="bold">Salem-Keizer</tspan>,</tspan>
-                    <tspan x={xScale(19)} dy={labelLineHeight}>two of the largest</tspan>
-                    <tspan x={xScale(19)} dy={labelLineHeight}>districts in the state,</tspan>
-                    <tspan x={xScale(19)} dy={labelLineHeight}><tspan font-weight="bold">18%</tspan> of students</tspan>
-                    <tspan x={xScale(19)} dy={labelLineHeight}>qualify for special</tspan>
-                    <tspan x={xScale(19)} dy={labelLineHeight}>education supports</tspan>
+                    <tspan x={xScale(19.25)} dy="0">In <tspan font-weight="bold">Portland</tspan> and</tspan>
+                    <tspan x={xScale(19.25)} dy={labelLineHeight}><tspan font-weight="bold">Salem-Keizer</tspan>, two of</tspan>
+                    <tspan x={xScale(19.25)} dy={labelLineHeight}>the largest districts,</tspan>
+                    <tspan x={xScale(19.25)} dy={labelLineHeight}><tspan font-weight="bold">18%</tspan> of students</tspan>
+                    <tspan x={xScale(19.25)} dy={labelLineHeight}>require services.</tspan>
+                    <tspan x={xScale(19.25)} dy={labelLineHeight}>Those districts don't</tspan>
+                    <tspan x={xScale(19.25)} dy={labelLineHeight}>receive funding for</tspan>
+                    <tspan x={xScale(19.25)} dy={labelLineHeight}>the remaining 7%</tspan>
                 </text>
             {/if}
 
-            <!-- Note for districts not picture -->
+            <!-- Note for districts not pictured -->
             {#if !isMobile}
                 <text
                     x={xScale(19)}
@@ -5762,7 +5887,7 @@ You can preview the production build with `npm run preview`.
         position: absolute;
         top: 100%;
         width: 300px;
-        margin: 0 auto;
+        margin: 0 3rem;
         left: 0;
         right: 0;
         background-color: white;
@@ -8388,79 +8513,267 @@ export const getData = () => {
 
 ```json
 [
-    {
-      "School": "Bolton Primary School",
-      "Total School Enrollment": 216.0,
-      "Per Pupil Spending": "$21306",
-      "Economically Disadvantaged %": "12%",
-      "Students w/Disabilities %": "18%",
-      "Proficient & Above %": "73%"
-    },
-    {
-      "School": "Boones Ferry Primary School",
-      "Total School Enrollment": 497.0,
-      "Per Pupil Spending": "$18367",
-      "Economically Disadvantaged %": "35%",
-      "Students w/Disabilities %": "16%",
-      "Proficient & Above %": "46%"
-    },
-    {
-      "School": "Cedaroak Park Primary School",
-      "Total School Enrollment": 339.0,
-      "Per Pupil Spending": "$17304",
-      "Economically Disadvantaged %": "11%",
-      "Students w/Disabilities %": "16%",
-      "Proficient & Above %": "68%"
-    },
-    {
-      "School": "Sunset Primary School",
-      "Total School Enrollment": 367.0,
-      "Per Pupil Spending": "$16951",
-      "Economically Disadvantaged %": "12%",
-      "Students w/Disabilities %": "19%",
-      "Proficient & Above %": "66%"
-    },
-    {
-      "School": "Boeckman Creek Primary School",
-      "Total School Enrollment": 468.0,
-      "Per Pupil Spending": "$16935",
-      "Economically Disadvantaged %": "31%",
-      "Students w/Disabilities %": "16%",
-      "Proficient & Above %": "49%"
-    },
-    {
-      "School": "Willamette Primary School",
-      "Total School Enrollment": 424.0,
-      "Per Pupil Spending": "$16786",
-      "Economically Disadvantaged %": "17%",
-      "Students w/Disabilities %": "18%",
-      "Proficient & Above %": "62%"
-    },
-    {
-      "School": "Stafford Primary School",
-      "Total School Enrollment": 352.0,
-      "Per Pupil Spending": "$16759",
-      "Economically Disadvantaged %": "8%",
-      "Students w/Disabilities %": "15%",
-      "Proficient & Above %": "64%"
-    },
-    {
-      "School": "Lowrie Primary School",
-      "Total School Enrollment": 476.0,
-      "Per Pupil Spending": "$16388",
-      "Economically Disadvantaged %": "22%",
-      "Students w/Disabilities %": "10%",
-      "Proficient & Above %": "59%"
-    },
-    {
-      "School": "Trillium Creek Primary School",
-      "Total School Enrollment": 465.0,
-      "Per Pupil Spending": "$16018",
-      "Economically Disadvantaged %": "7%",
-      "Students w/Disabilities %": "12%",
-      "Proficient & Above %": "68%"
-    }
-  ]
+  {
+    "School": "Boeckman Creek Primary School",
+    "School Year": "2023-2024",
+    "Total School Enrollment": 468.0,
+    "Per Pupil Spending": "$16935",
+    "Economically Disadvantaged %": "22%",
+    "Students w/Disabilities %": "16%",
+    "ELA Proficient & Above %": "53%",
+    "Math Proficient & Above %": "46%"
+  },
+  {
+    "School": "Bolton Primary School",
+    "School Year": "2023-2024",
+    "Total School Enrollment": 216.0,
+    "Per Pupil Spending": "$21306",
+    "Economically Disadvantaged %": "8%",
+    "Students w/Disabilities %": "18%",
+    "ELA Proficient & Above %": "80%",
+    "Math Proficient & Above %": "75%"
+  },
+  {
+    "School": "Boones Ferry Primary School",
+    "School Year": "2023-2024",
+    "Total School Enrollment": 497.0,
+    "Per Pupil Spending": "$18367",
+    "Economically Disadvantaged %": "26%",
+    "Students w/Disabilities %": "16%",
+    "ELA Proficient & Above %": "40%",
+    "Math Proficient & Above %": "37%"
+  },
+  {
+    "School": "Cedaroak Park Primary School",
+    "School Year": "2023-2024",
+    "Total School Enrollment": 339.0,
+    "Per Pupil Spending": "$17304",
+    "Economically Disadvantaged %": "14%",
+    "Students w/Disabilities %": "16%",
+    "ELA Proficient & Above %": "66%",
+    "Math Proficient & Above %": "72%"
+  },
+  {
+    "School": "Lowrie Primary School",
+    "School Year": "2023-2024",
+    "Total School Enrollment": 476.0,
+    "Per Pupil Spending": "$16388",
+    "Economically Disadvantaged %": "16%",
+    "Students w/Disabilities %": "10%",
+    "ELA Proficient & Above %": "56%",
+    "Math Proficient & Above %": "54%"
+  },
+  {
+    "School": "Stafford Primary School",
+    "School Year": "2023-2024",
+    "Total School Enrollment": 352.0,
+    "Per Pupil Spending": "$16759",
+    "Economically Disadvantaged %": "5%",
+    "Students w/Disabilities %": "15%",
+    "ELA Proficient & Above %": "67%",
+    "Math Proficient & Above %": "68%"
+  },
+  {
+    "School": "Sunset Primary School",
+    "School Year": "2023-2024",
+    "Total School Enrollment": 367.0,
+    "Per Pupil Spending": "$16951",
+    "Economically Disadvantaged %": "9%",
+    "Students w/Disabilities %": "19%",
+    "ELA Proficient & Above %": "64%",
+    "Math Proficient & Above %": "59%"
+  },
+  {
+    "School": "Trillium Creek Primary School",
+    "School Year": "2023-2024",
+    "Total School Enrollment": 465.0,
+    "Per Pupil Spending": "$16018",
+    "Economically Disadvantaged %": "5%",
+    "Students w/Disabilities %": "12%",
+    "ELA Proficient & Above %": "64%",
+    "Math Proficient & Above %": "62%"
+  },
+  {
+    "School": "Willamette Primary School",
+    "School Year": "2023-2024",
+    "Total School Enrollment": 424.0,
+    "Per Pupil Spending": "$16786",
+    "Economically Disadvantaged %": "11%",
+    "Students w/Disabilities %": "18%",
+    "ELA Proficient & Above %": "70%",
+    "Math Proficient & Above %": "68%"
+  },
+  {
+    "School": "Boeckman Creek Primary School",
+    "School Year": "2022-2023",
+    "Total School Enrollment": 468.0,
+    "Per Pupil Spending": "$16935",
+    "Economically Disadvantaged %": "31%",
+    "Students w/Disabilities %": "16%",
+    "ELA Proficient & Above %": "49%",
+    "Math Proficient & Above %": "41%"
+  },
+  {
+    "School": "Bolton Primary School",
+    "School Year": "2022-2023",
+    "Total School Enrollment": 216.0,
+    "Per Pupil Spending": "$21306",
+    "Economically Disadvantaged %": "12%",
+    "Students w/Disabilities %": "18%",
+    "ELA Proficient & Above %": "73%",
+    "Math Proficient & Above %": "69%"
+  },
+  {
+    "School": "Boones Ferry Primary School",
+    "School Year": "2022-2023",
+    "Total School Enrollment": 497.0,
+    "Per Pupil Spending": "$18367",
+    "Economically Disadvantaged %": "35%",
+    "Students w/Disabilities %": "16%",
+    "ELA Proficient & Above %": "46%",
+    "Math Proficient & Above %": "42%"
+  },
+  {
+    "School": "Cedaroak Park Primary School",
+    "School Year": "2022-2023",
+    "Total School Enrollment": 339.0,
+    "Per Pupil Spending": "$17304",
+    "Economically Disadvantaged %": "11%",
+    "Students w/Disabilities %": "16%",
+    "ELA Proficient & Above %": "68%",
+    "Math Proficient & Above %": "62%"
+  },
+  {
+    "School": "Lowrie Primary School",
+    "School Year": "2022-2023",
+    "Total School Enrollment": 476.0,
+    "Per Pupil Spending": "$16388",
+    "Economically Disadvantaged %": "22%",
+    "Students w/Disabilities %": "10%",
+    "ELA Proficient & Above %": "59%",
+    "Math Proficient & Above %": "54%"
+  },
+  {
+    "School": "Stafford Primary School",
+    "School Year": "2022-2023",
+    "Total School Enrollment": 352.0,
+    "Per Pupil Spending": "$16759",
+    "Economically Disadvantaged %": "8%",
+    "Students w/Disabilities %": "15%",
+    "ELA Proficient & Above %": "64%",
+    "Math Proficient & Above %": "70%"
+  },
+  {
+    "School": "Sunset Primary School",
+    "School Year": "2022-2023",
+    "Total School Enrollment": 367.0,
+    "Per Pupil Spending": "$16951",
+    "Economically Disadvantaged %": "12%",
+    "Students w/Disabilities %": "19%",
+    "ELA Proficient & Above %": "66%",
+    "Math Proficient & Above %": "57%"
+  },
+  {
+    "School": "Trillium Creek Primary School",
+    "School Year": "2022-2023",
+    "Total School Enrollment": 465.0,
+    "Per Pupil Spending": "$16018",
+    "Economically Disadvantaged %": "7%",
+    "Students w/Disabilities %": "12%",
+    "ELA Proficient & Above %": "68%",
+    "Math Proficient & Above %": "61%"
+  },
+  {
+    "School": "Willamette Primary School",
+    "School Year": "2022-2023",
+    "Total School Enrollment": 424.0,
+    "Per Pupil Spending": "$16786",
+    "Economically Disadvantaged %": "17%",
+    "Students w/Disabilities %": "18%",
+    "ELA Proficient & Above %": "62%",
+    "Math Proficient & Above %": "47%"
+  },
+  {
+    "School": "Boeckman Creek Primary School",
+    "School Year": "2021-2022",
+    "Total School Enrollment": 461,
+    "Per Pupil Spending": "$16406",
+    "Economically Disadvantaged %": "31%",
+    "Students w/Disabilities %": "16%",
+    "ELA Proficient & Above %": "45%",
+    "Math Proficient & Above %": "40%"
+  },
+  {
+    "School": "Bolton Primary School",
+    "School Year": "2021-2022",
+    "Total School Enrollment": 294,
+    "Per Pupil Spending": "$17681",
+    "Economically Disadvantaged %": "12%",
+    "Students w/Disabilities %": "18%",
+    "ELA Proficient & Above %": "79%",
+    "Math Proficient & Above %": "67%"
+  },
+  {
+    "School": "Boones Ferry Primary School",
+    "School Year": "2021-2022",
+    "Total School Enrollment": 520,
+    "Per Pupil Spending": "$17258",
+    "Economically Disadvantaged %": "35%",
+    "Students w/Disabilities %": "16%",
+    "ELA Proficient & Above %": "38%",
+    "Math Proficient & Above %": "34%"
+  },
+  {
+    "School": "Cedaroak Park Primary School",
+    "School Year": "2021-2022",
+    "Total School Enrollment": 268,
+    "Per Pupil Spending": "$16172",
+    "Economically Disadvantaged %": "11%",
+    "Students w/Disabilities %": "16%",
+    "ELA Proficient & Above %": "66%",
+    "Math Proficient & Above %": "61%"
+  },
+  {
+    "School": "Lowrie Primary School",
+    "School Year": "2021-2022",
+    "Total School Enrollment": 488,
+    "Per Pupil Spending": "$16203",
+    "Economically Disadvantaged %": "22%",
+    "Students w/Disabilities %": "10%",
+    "ELA Proficient & Above %": "58%",
+    "Math Proficient & Above %": "52%"
+  },
+  {
+    "School": "Stafford Primary School",
+    "School Year": "2021-2022",
+    "Total School Enrollment": 350,
+    "Per Pupil Spending": "$14915",
+    "Economically Disadvantaged %": "8%",
+    "Students w/Disabilities %": "15%",
+    "ELA Proficient & Above %": "63%",
+    "Math Proficient & Above %": "66%"
+  },
+  {
+    "School": "Sunset Primary School",
+    "School Year": "2021-2022",
+    "Total School Enrollment": 351,
+    "Per Pupil Spending": "$16031",
+    "Economically Disadvantaged %": "12%",
+    "Students w/Disabilities %": "19%",
+    "ELA Proficient & Above %": "68%",
+    "Math Proficient & Above %": "63%"
+  },
+  {
+    "School": "Willamette Primary School",
+    "School Year": "2021-2022",
+    "Total School Enrollment": 468,
+    "Per Pupil Spending": "$14181",
+    "Economically Disadvantaged %": "17%",
+    "Students w/Disabilities %": "18%",
+    "ELA Proficient & Above %": "56%",
+    "Math Proficient & Above %": "49%"
+  }
+]
 ```
 
 # src/lib/images/about.jpg
@@ -8517,6 +8830,7 @@ export const quartileRanges = derived(data, $data => calculateQuartileRanges($da
 # src/lib/stores/stores.js
 
 ```js
+// src/lib/stores/stores.js
 import { readable, writable, derived } from 'svelte/store'
 import { getData } from "$lib/data/processData.js"
 
@@ -8529,13 +8843,12 @@ export const stateData = derived(data, $data => $data.filter(d => d.properties.G
 export const minWeightedInclusion = derived(stateData, $stateData => $stateData[0].properties.minWeightedInclusion)
 export const maxWeightedInclusion = derived(stateData, $stateData => $stateData[0].properties.maxWeightedInclusion)
 
-// possibly move to context within beeswarm
-//export const selectedDistricts = writable(["4110040", "4110820", "4101920"])
-export const selectedDistrict = writable("4110040")
-//export const selectedDistrict = writable(null)
+// Change to array for multiple selection
+export const selectedDistrict = writable(["4110040"])
 
 export const selectedDistrictData = derived([selectedDistrict, data], ([$selectedDistrict, $data]) => {
-    return $data.filter(d => d.properties.GEOID === $selectedDistrict)
+    // Filter for all selected districts
+    return $data.filter(d => $selectedDistrict.includes(d.properties.GEOID))
 })
 
 export const highlightedDistricts = writable(null)
@@ -8619,6 +8932,64 @@ hr {
     height: 0px;
     box-shadow: none;
 }
+
+.page-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.header-headline-container {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    align-items: flex-start;
+    justify-content: space-between;
+}
+
+.headline-container {
+    z-index: 5;
+    padding-top: 0;
+    flex: 1;
+}
+
+.header-container-desktop {
+    width: auto;
+    z-index: 10;
+}
+
+.header-container-mobile {
+    width: 100%;
+    z-index: 10;
+    margin-bottom: 0.5rem;
+}
+
+.headline {
+    padding-top: 0;
+    margin: 2.5rem 3rem;
+    text-align: left;
+    max-width: 54rem;
+}
+
+.content-container {
+    width: 100%;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+    .header-headline-container {
+        flex-direction: column;
+        position: relative;
+    }
+
+    .headline {
+        margin-left: 1rem;
+        margin-right: 1rem;
+        font-size: 1.8rem;
+        line-height: 2.2rem;
+        margin-top: 0.5rem;
+    }
+}
 ```
 
 # src/lib/utils/arrows.js
@@ -8653,6 +9024,7 @@ export const arrowRight = `
     import { page } from '$app/stores'
     import { colors } from "$lib/styles/colorConfig"
     import { Pencil } from 'lucide-svelte'
+    import SideHeader from '$lib/components/SideHeader.svelte'
     import InclusionRing from '$lib/components/InclusionRing.svelte'
     import StateMap from "$lib/components/StateMap.svelte"
     import DonutChart from '$lib/components/DonutChart.svelte'
@@ -8661,6 +9033,8 @@ export const arrowRight = `
     import AlertsCards from '$lib/components/AlertsCards.svelte'
     import Divider from "$lib/components/Divider.svelte"
     import Sources from "$lib/components/Sources.svelte"
+
+    let windowWidth = 0
 
     $: districtID = $page.params.districtID
     // $: districtData = $data.filter(d => d.properties.GEOID === districtID)[0].properties
@@ -8706,103 +9080,123 @@ export const arrowRight = `
 </script>
 
 
-{#if districtData}
-  <div class="district-info">
-    
-    <div class="text-width metric" id="header">
-        <h1 class="district-name text-width">{districtData["Institution Name"]}</h1>
-        <div class="map-container" style="--map-width: {mapWidth}px; --map-height: {mapHeight}px;">
-            <StateMap districtData={districtData} />
+<svelte:window bind:innerWidth={windowWidth} />
+
+<div class="page-container">
+    {#if windowWidth <= 768}
+        <!-- Mobile: Header above the headline -->
+        <div class="header-container-mobile">
+            <SideHeader />
         </div>
-        <div>
-            <div class="inclusion-ring-container">
-                <InclusionRing 
-                    data={districtData}
-                />
-                {#if districtData["Total Student Count"] < 500 && districtData.weighted_inclusion}
-                    <span class="uncertainty">*</span>
-                {/if}
+    {/if}
+
+    <div class="header-headline-container">
+        <div class="headline-container" id="header">
+            <h1 class="headline">{districtData["Institution Name"]}</h1>
+        </div>
+
+        {#if windowWidth > 768}
+            <!-- Desktop: Header to the right of the headline -->
+            <div class="header-container-desktop">
+                <SideHeader />
             </div>
-            <p class="inclusion-score">out of 4</p>
-        </div>
-    </div>
-
-    <div class="text-width metric iep-percent">
-        <p><strong>{districtData["Students with Disabilities"]}% </strong>of students in this district have an IEP</p>
-    </div>
-
-    <div class="text-width metric">
-        <h3 class="header">Inclusion Breakdown</h3>
-        <div class="inclusion-breakdown">
-            <DonutChart
-                data={inclusionCategories}
-                chartColors = {[colors.colorInclusive, colors.colorSemiInclusive, colors.colorNonInclusive, colors.colorSeparate]}
-                centerText={districtData["Total Student Count"] ? districtData["Total Student Count"].toLocaleString() : "-"}
-                centerText2="students"
-                centerText3="with IEPs"
-            />
-            <InclusionLegend data={inclusionCategories} />
-        </div>
-    </div>
-
-    <div class="text-width metric">
-        <h3 class="header">Alerts</h3>
-        <!-- <p class="asterisk">*discipline rates lower than usual due to remote learning</p> -->
-        {#if districtData["Total Student Count"] && alerts}
-            <AlertsCards alertsData={alerts} />
-        {:else}
-            <p>No data available</p>
         {/if}
     </div>
 
-    <div class="text-width metric">
-        <h3 class="header">4-Year Graduation Rate for Students with IEPs</h3>
-        <!-- <p class="asterisk">*school year 2018-19</p> -->
-        <div class="grad-donut">
-            {#if districtData["Total Student Count"]}
-                <DonutChart 
-                    height = {160}
-                    width = {160}
-                    outerRadius = {80}
-                    innerRadius = {55}
-                    barSpacing = {0.7}
-                    data = {gradRates} 
-                    chartColors = {[colors.colorInclusive, colors.colorLightGray]}
-                    centerText={gradDonutCenterText}
-                    indicator={[{group: "gradRate", value: stateAvgGradRate}, {group: "notGradRate", value: 100 - stateAvgGradRate}]}
-                    indicatorLabel={`State Avg: ${Math.round(stateAvgGradRate)}%`}
-                />
-            {:else}
-                <p>No data available</p>
-            {/if}
-        </div>
-    </div>
-
-    <div class="text-width metric">
+    <div class="content-container">
         {#if districtData}
-            <CardCarousel districtData={districtData} data={$data} />
-        {/if}
-    </div>
-  </div>
+            <div class="district-info">
     
-{/if}
+                <div class="district-stats text-width">
+                    <div class="map-container" style="--map-width: {mapWidth}px; --map-height: {mapHeight}px;">
+                        <StateMap districtData={districtData} />
+                    </div>
+                    <div>
+                        <div class="inclusion-ring-container">
+                            <InclusionRing 
+                                data={districtData}
+                            />
+                            {#if districtData["Total Student Count"] < 500 && districtData.weighted_inclusion}
+                                <span class="uncertainty">*</span>
+                            {/if}
+                        </div>
+                        <p class="inclusion-score">out of 4</p>
+                    </div>
+                </div>
 
-<Divider>
-    <Pencil />
-</Divider>
-
-<Sources />
+                <div class="text-width metric iep-percent">
+                    <p><strong>{districtData["Students with Disabilities"]}% </strong>of students in this district have an IEP</p>
+                </div>
+    
+                <div class="text-width metric">
+                    <h3 class="header">Inclusion Breakdown</h3>
+                    <div class="inclusion-breakdown">
+                        <DonutChart
+                            data={inclusionCategories}
+                            chartColors = {[colors.colorInclusive, colors.colorSemiInclusive, colors.colorNonInclusive, colors.colorSeparate]}
+                            centerText={districtData["Total Student Count"] ? districtData["Total Student Count"].toLocaleString() : "-"}
+                            centerText2="students"
+                            centerText3="with IEPs"
+                        />
+                        <InclusionLegend data={inclusionCategories} />
+                    </div>
+                </div>
+    
+                <div class="text-width metric">
+                    <h3 class="header">Alerts</h3>
+                    <!-- <p class="asterisk">*discipline rates lower than usual due to remote learning</p> -->
+                    {#if districtData["Total Student Count"] && alerts}
+                        <AlertsCards alertsData={alerts} />
+                    {:else}
+                        <p>No data available</p>
+                    {/if}
+                </div>
+    
+                <div class="text-width metric">
+                    <h3 class="header">4-Year Graduation Rate for Students with IEPs</h3>
+                    <!-- <p class="asterisk">*school year 2018-19</p> -->
+                    <div class="grad-donut">
+                        {#if districtData["Total Student Count"]}
+                            <DonutChart 
+                                height = {160}
+                                width = {160}
+                                outerRadius = {80}
+                                innerRadius = {55}
+                                barSpacing = {0.7}
+                                data = {gradRates} 
+                                chartColors = {[colors.colorInclusive, colors.colorLightGray]}
+                                centerText={gradDonutCenterText}
+                                indicator={[{group: "gradRate", value: stateAvgGradRate}, {group: "notGradRate", value: 100 - stateAvgGradRate}]}
+                                indicatorLabel={`State Avg: ${Math.round(stateAvgGradRate)}%`}
+                            />
+                        {:else}
+                            <p>No data available</p>
+                        {/if}
+                    </div>
+                </div>
+    
+                <div class="text-width metric">
+                    {#if districtData}
+                        <CardCarousel districtData={districtData} data={$data} />
+                    {/if}
+                </div>
+            </div>
+                
+            {/if}
+    
+            <Divider>
+                <Pencil />
+            </Divider>
+    
+            <Sources />
+    </div>
+</div>
 
 
 <style>
     .district-info {
         background-color: var(--colorBackgroundWhite);
         padding-top: 1rem;
-    }
-
-    .district-name {
-        letter-spacing: 0.04rem;
-        text-align: left;
     }
 
     .metric {
@@ -8814,6 +9208,13 @@ export const arrowRight = `
     #header {
         display: flex;
         flex-direction: row;
+        gap: 2rem;
+    }
+
+    .district-stats {
+        display: flex;
+        flex-direction: row;
+        /* align-items: center; */
         gap: 2rem;
     }
 
@@ -8856,7 +9257,7 @@ export const arrowRight = `
     }
 
     .iep-percent {
-        margin-top: -2rem;
+        margin-top: -0.2rem;
         display: flex;
         justify-content: flex-start;
     }
@@ -8883,9 +9284,7 @@ export const arrowRight = `
     import '$lib/styles/styles.css'
     import { colors } from '$lib/styles/colorConfig.js'
 
-    import Header2 from '$lib/components/Header2.svelte'
     import Footer from '$lib/components/Footer.svelte'
-    // import FeedbackComponent from '$lib/components/FeedbackComponent.svelte'
 
     let cssColors = `
         --colorInclusiveDark: ${colors.colorInclusiveDark};
@@ -8909,15 +9308,11 @@ export const arrowRight = `
 
 
 <div class="app" style="{cssColors}">
-    <!-- <Header2 /> -->
-
     <main>
         <slot />
     </main>
 
-    <!-- <FeedbackComponent /> -->
-
-    <!-- <Footer /> -->
+    <Footer />
 </div>
 
 
@@ -9005,11 +9400,10 @@ export const prerender = true
 
 <script>
     import { data, selectedDistrict, selectedDistrictData } from "$lib/stores/stores.js"
-    import Beeswarm from "$lib/components/Beeswarm.svelte"
+    import SideHeader from '$lib/components/SideHeader.svelte'
     import Divider from "$lib/components/Divider.svelte"
     import { Search, Pencil, TableProperties } from 'lucide-svelte'
     import Scroller from "$lib/components/Scroller.svelte"
-    import StateMap from "$lib/components/StateMap.svelte"
     import SelectDistricts from "$lib/components/SelectDistricts.svelte"
     import SimpleAccordion from "$lib/components/SimpleAccordion.svelte"
     import VisualizationToggle from "$lib/components/VisualizationToggle.svelte"
@@ -9017,6 +9411,8 @@ export const prerender = true
     import Sources from "$lib/components/Sources.svelte"
     import ScrollyCard from "$lib/components/ScrollyCard.svelte"
     import ScrollyProgress from "$lib/components/ScrollyProgress.svelte"
+
+    let windowWidth = 0
 
     // Scroller variables
     let index, offset, progress
@@ -9027,7 +9423,7 @@ export const prerender = true
     let isDistrictSelected = false
     $: isDistrictSelected = $selectedDistrict && $selectedDistrict.length > 0
     $: {
-        if ($selectedDistrict) {
+        if ($selectedDistrict && $selectedDistrict.length > 0) {
             index = 0;
         }
     }
@@ -9045,191 +9441,172 @@ export const prerender = true
     }
 </script>
 
-<div class="intro">
-    <div class="beeswarm-container">
-        <Beeswarm />
-    </div>
 
-    <h1 class="headline text-width">
-        Find rates of inclusion, discipline, graduation and more for disabled students in Oregon
-    </h1>
+<svelte:window bind:innerWidth={windowWidth} />
 
-    <h3 class="byline text-width">
-        Updated with data from the 2022-23 school year
-    </h3>
-
-    <StateMap />
-
-    <p class="text-width">
-        For families of students with disabilities, a common concern is not knowing what supports their child is eligible for from one area to the next. Moving from one place to another can mean drastic changes in services, even though the disability hasn't changed. These changes can have a huge impact on the well-being and developmental trajectory of a child.
-    </p>
-    <p class="text-width">
-        Usually, families find that the process of how an agency or district evaluates a student's disability is not transparent, and how those evaluations are used to make decisions about services is even less so. However, data is reported to states and the federal government that helps give a view into how students, as a whole, are supported in different areas.
-    </p>
-    <p class="text-width">
-        Below, you can explore that data.
-    </p>
-</div>
-
-<div class="content-wrapper">
-    <Scroller 
-        top={top} 
-        threshold={threshold} 
-        bottom={bottom} 
-        bind:index 
-        bind:offset 
-        bind:progress
-        showHelpers={false}
-    >
-        <div slot="background" class="background">
-            <Divider>
-                <Search />
-            </Divider>
-
-            <SelectDistricts />
-
-            <VisualizationToggle {index} />
+<div class="page-container">
+    {#if windowWidth <= 768}
+        <!-- Mobile: Header above the headline -->
+        <div class="header-container-mobile">
+            <SideHeader />
         </div>
-
-        <div slot="foreground" class="foreground-content">
-            
-            {#if isDistrictSelected}
-                <section>
-                    <ScrollyCard active={index === 0}>
-                        Let's explore how special education services vary across <strong>Oregon</strong>'s school districts
-                    </ScrollyCard>
-                </section>
-                <section>
-                    <ScrollyCard active={index === 1}>
-                        These circles represent all of the school districts in <strong>Oregon</strong>. Districts farther to the <strong>right</strong> are <strong><em>more inclusive</em></strong>, meaning that students with disabilities spend <strong>more time in general education classrooms</strong> with their peers
-                    </ScrollyCard>
-                </section>
-                <section>
-                    <ScrollyCard active={index === 2}>
-                        As an example, let's look at Portland Public Schools. This district serves <strong>{$selectedDistrictData[0].properties["Total Student Count"]} students with IEPs*</strong> <em>(note: you can select your local district at any time)</em>
-                        <br>
-                        <br>
-                        <em>*An IEP is a document that outlines what supports a student with a disability will receive at school. It's personalized to each student who needs it</em>
-                    </ScrollyCard>
-                </section>
-                <section>
-                    <ScrollyCard active={index === 3}>
-                        Districts report data on how much time students with IEPs spend in regular classrooms. Based on this, <strong>{$selectedDistrictData[0].properties["Institution Name"]}</strong> has an <strong>inclusion score</strong> of <strong>{$selectedDistrictData[0].properties["quartile"]} out of 4</strong>
-                        <br>
-                        <br>
-                        <SimpleAccordion title="How is the inclusion score calculated?">
-                            The inclusion score is based on the percent of children with disabilites who are in a regular classroom for:
-                            <ul>
-                                <li>- more than 80% of the day</li>
-                                <li>- more than 40% and less than 80% of the day</li>
-                                <li>- less than 40% of the day</li>
-                            </ul>
-                            Or, in a completely separate environment, like a hospital or detention facility.
-                        </SimpleAccordion>
-                    </ScrollyCard>
-                </section>
-                <section>
-                    <ScrollyCard active={index === 4}>
-                        Here's how {$selectedDistrictData[0].properties["Institution Name"]} compares to the <strong>largest districts</strong> in the state
-                    </ScrollyCard>
-                </section>
-                <section>
-                    <ScrollyCard active={index === 5}>
-                        And to the <strong>districts it touches</strong>
-                    </ScrollyCard>
-                </section>
-                <section>
-                    <ScrollyCard active={index === 6}>
-                        You can also <strong>select multiple districts</strong> to compare them directly
-                    </ScrollyCard>
-                </section>
-                <section>
-                    <ScrollyCard active={index === 7}>
-                        Now it's your turn! Use the <strong>toggle</strong> to switch between <strong>map and bubble views</strong>. You can also find districts in the <strong>table below</strong>
-                    </ScrollyCard>
-                </section>
-            {:else}
-                <section>
-                    <ScrollyCard active={index === 1}>
-                        Please select a district to view detailed information.
-                    </ScrollyCard>
-                </section>
-            {/if}
-        </div>
-    </Scroller>
-
-    <!-- Progress indicator and Skip button -->
-    {#if index > 0 && index < totalScrollySections - 1}
-        <ScrollyProgress 
-            currentIndex={index} 
-            totalSteps={totalScrollySections}
-            onSkip={skipToEnd}
-        />
     {/if}
 
-    <div class="post-scroll-content">
-        <Divider>
-            <TableProperties />
-        </Divider>
-    
-        <div class="table">
-            <TableOfDistricts data={$data} />
+    <div class="header-headline-container">
+        <div class="headline-container">
+            <h1 class="headline">
+                Find rates of inclusion, discipline, graduation and more for students with disabilities in Oregon
+            </h1>
         </div>
-    
-        <Divider>
-            <Pencil />
-        </Divider>
-    
-        <Sources />
+
+        {#if windowWidth > 768}
+            <!-- Desktop: Header to the right of the headline -->
+            <div class="header-container-desktop">
+                <SideHeader />
+            </div>
+        {/if}
+    </div>
+
+    <div class="content-container">
+        <div class="intro">
+            <h3 class="byline text-width">
+                Updated with data from the 2022-23 school year
+            </h3>
+        
+            <p class="text-width">
+                For families of students with disabilities, moving from one place to another can mean drastic changes in services, even though the disability hasn't changed. These changes can have a large impact on the well-being and developmental trajectory of a child. Although the processes for how a district determines services for a child is not transparent, data is reported to the state that gives a view into how students are supported differently.
+            </p>
+            <p class="text-width">
+                Below, you can explore that data.
+            </p>
+        </div>
+        
+        <div class="content-wrapper">
+            <Scroller 
+                top={top} 
+                threshold={threshold} 
+                bottom={bottom} 
+                bind:index 
+                bind:offset 
+                bind:progress
+                showHelpers={false}
+            >
+                <div slot="background" class="background">
+                    <Divider>
+                        <Search />
+                    </Divider>
+        
+                    <SelectDistricts />
+        
+                    <VisualizationToggle {index} />
+                </div>
+        
+                <div slot="foreground" class="foreground-content">
+                    
+                    {#if isDistrictSelected}
+                        <section>
+                            <ScrollyCard active={index === 0}>
+                                Let's explore how special education services vary across <strong>Oregon</strong>'s school districts
+                            </ScrollyCard>
+                        </section>
+                        <section>
+                            <ScrollyCard active={index === 1}>
+                                These circles represent all of the school districts in <strong>Oregon</strong>. Districts farther to the <strong>right</strong> are <strong><em>more inclusive</em></strong>, meaning that students with disabilities spend <strong>more time in general education classrooms</strong> with their peers
+                            </ScrollyCard>
+                        </section>
+                        <section>
+                            <ScrollyCard active={index === 2}>
+                                As an example, let's look at Portland Public Schools. This district serves <strong>{$selectedDistrictData[0].properties["Total Student Count"]} students with IEPs*</strong> <em>(note: you can select your local district at any time)</em>
+                                <br>
+                                <br>
+                                <em>*An IEP is a document that outlines what supports a student with a disability will receive at school. It's personalized to each student</em>
+                            </ScrollyCard>
+                        </section>
+                        <section>
+                            <ScrollyCard active={index === 3}>
+                                Districts report on how much time students with IEPs spend in regular classrooms. Based on this, <strong>{$selectedDistrictData[0].properties["Institution Name"]}</strong> has an <strong>inclusion score</strong> of <strong>{$selectedDistrictData[0].properties["quartile"]} out of 4</strong>
+                                <br>
+                                <br>
+                                <SimpleAccordion title="How is the inclusion score calculated?">
+                                    The inclusion score is based on the percent of children with disabilites who are in a regular classroom for:
+                                    <ul>
+                                        <li>- more than 80% of the day</li>
+                                        <li>- more than 40% and less than 80% of the day</li>
+                                        <li>- less than 40% of the day</li>
+                                    </ul>
+                                    Or, in a completely separate environment, like a hospital or detention facility.
+                                </SimpleAccordion>
+                            </ScrollyCard>
+                        </section>
+                        <section>
+                            <ScrollyCard active={index === 4}>
+                                Here's how {$selectedDistrictData[0].properties["Institution Name"]} compares to the <strong>largest districts</strong> in the state
+                            </ScrollyCard>
+                        </section>
+                        <section>
+                            <ScrollyCard active={index === 5}>
+                                And to the <strong>districts it touches</strong>
+                            </ScrollyCard>
+                        </section>
+                        <section>
+                            <ScrollyCard active={index === 6}>
+                                You can also <strong>select multiple districts</strong> to compare
+                            </ScrollyCard>
+                        </section>
+                        <section>
+                            <ScrollyCard active={index === 7}>
+                                Now it's your turn! Use the <strong>toggle</strong> to switch between <strong>map and bubble views</strong>. You can also find districts in the <strong>table below</strong>
+                            </ScrollyCard>
+                        </section>
+                    {:else}
+                        <section>
+                            <ScrollyCard active={index === 1}>
+                                Please select a district to view detailed information.
+                            </ScrollyCard>
+                        </section>
+                    {/if}
+                </div>
+            </Scroller>
+        
+            <!-- Progress indicator and Skip button -->
+            {#if index > 0 && index < totalScrollySections - 1}
+                <ScrollyProgress 
+                    currentIndex={index} 
+                    totalSteps={totalScrollySections}
+                    onSkip={skipToEnd}
+                />
+            {/if}
+        
+            <div class="post-scroll-content">
+                <Divider>
+                    <TableProperties />
+                </Divider>
+            
+                <div class="table">
+                    <TableOfDistricts data={$data} />
+                </div>
+            
+                <Divider>
+                    <Pencil />
+                </Divider>
+            
+                <Sources />
+            </div>
+        </div>
     </div>
 </div>
 
 
 <style>
     .intro {
-        margin-top: -4rem;
         margin-bottom: 1rem;
         position: relative;
-    }
-
-    .beeswarm-container {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        z-index: 1;
-    }
-
-    .headline {
-        text-align: left;
-        color: var(--colorInclusiveDark);
-        position: relative;
-        z-index: 2;
-        margin-top: 14rem;
-        margin-bottom: 2.5rem;
-        background: linear-gradient(to bottom, transparent 0%, var(--colorBackgroundWhite) 30%);
-        padding: 3rem 0 0rem 0;
-        font-size: 2.4rem;
-        line-height: 3rem;
-    }
-
-    @media (max-width: 768px) {
-        .headline {
-            width: 100%;
-            margin-left: auto;
-            margin-right: auto;
-            padding: 1rem 1rem;
-        }
     }
 
     .byline {
         font-size: 1rem;
         margin-bottom: 0.75rem;
         color: var(--colorNonInclusive);
-    }
-
-    .no-scroll {
-        overflow-y: hidden !important;
     }
 
     .content-wrapper {
@@ -9272,16 +9649,42 @@ export const prerender = true
 
 ```svelte
 <script>
+    import SideHeader from '$lib/components/SideHeader.svelte'
 
-
+    let windowWidth = 0
 </script>
 
-<h1>About</h1>
 
-<div class="text-width about">
-    <p>
-        This project makes data about disabled students in Oregon more accessible and understandable for families, students, and advocates. It started after Brianna spent a summer calling principals of elementary schools all over Oregon and California to get a sense of what her child's grade school experience might look like. Very quickly, she was disturbed by the lack of transparency and consistency in supports that disabled students receive in different areas. She sought out data that could give her a better sense of things. Soon, she realized this data could also be used by others, to help them understand the landscape of supports for the disabled students they're advocating for.
-    </p>
+<svelte:window bind:innerWidth={windowWidth} />
+
+<div class="page-container">
+    {#if windowWidth <= 768}
+        <!-- Mobile: Header above the headline -->
+        <div class="header-container-mobile">
+            <SideHeader />
+        </div>
+    {/if}
+
+    <div class="header-headline-container">
+        <div class="headline-container">
+            <h1 class="headline">About</h1>
+        </div>
+
+        {#if windowWidth > 768}
+            <!-- Desktop: Header to the right of the headline -->
+            <div class="header-container-desktop">
+                <SideHeader />
+            </div>
+        {/if}
+    </div>
+
+    <div class="content-container">
+        <div class="text-width about">
+            <p>
+                This project makes data about disabled students in Oregon more accessible and understandable for families, students, and advocates. It started after Brianna spent a summer calling principals of elementary schools all over Oregon and California to get a sense of what her child's grade school experience might look like. Very quickly, she was disturbed by the lack of transparency and consistency in supports that disabled students receive in different areas. She sought out data that could give her a better sense of things. Soon, she realized this data could also be used by others, to help them understand the landscape of supports for the disabled students they're advocating for.
+            </p>
+        </div>
+    </div>
 </div>
 
 
@@ -9325,21 +9728,50 @@ export async function POST({ request }) {
 
 ```svelte
 <script>
+    import SideHeader from '$lib/components/SideHeader.svelte'
+
+    let windowWidth = 0
 </script>
 
-<h1>Contact</h1>
 
-<div class="text-width contact">
-    <p>
-        We're always looking to improve these tools to make them more helpful and accessible! We'd love to hear from you.
-    </p>
-    <p>
-        You can contact us by email at <strong>disabilityeddata@protonmail.com</strong>, or by using the <strong>'Feedback' button</strong> in the bottom right corner below.
-    </p>
-    <p>
-        Thank you!
-    </p>
+<svelte:window bind:innerWidth={windowWidth} />
+
+<div class="page-container">
+    {#if windowWidth <= 768}
+        <!-- Mobile: Header above the headline -->
+        <div class="header-container-mobile">
+            <SideHeader />
+        </div>
+    {/if}
+
+    <div class="header-headline-container">
+        <div class="headline-container">
+            <h1 class="headline">Contact</h1>
+        </div>
+
+        {#if windowWidth > 768}
+            <!-- Desktop: Header to the right of the headline -->
+            <div class="header-container-desktop">
+                <SideHeader />
+            </div>
+        {/if}
+    </div>
+
+    <div class="content-container">
+        <div class="text-width contact">
+            <p>
+                We're always looking to improve these tools to make them more helpful and accessible! We'd love to hear from you.
+            </p>
+            <p>
+                You can contact us by email at <strong>disabilityeddata@protonmail.com</strong>, or by using the <strong>'Feedback' button</strong> in the bottom right corner below.
+            </p>
+            <p>
+                Thank you!
+            </p>
+        </div>
+    </div>
 </div>
+
 
 <style>
     .contact {
@@ -9356,7 +9788,6 @@ export async function POST({ request }) {
 <script>
     import '$lib/styles/styles.css'
     import { colors } from '$lib/styles/colorConfig.js'
-    import Footer from '$lib/components/Footer.svelte'
 
     let cssColors = `
         --colorInclusiveDark: ${colors.colorInclusiveDark};
@@ -9377,34 +9808,13 @@ export async function POST({ request }) {
     `
 </script>
 
-<div class="app funding-layout" style="{cssColors}">
+<div class="app" style="{cssColors}">
     <main>
         <slot />
     </main>
-
-    <Footer />
 </div>
 
-<style>
-    .app {
-        width: 100%;
-        min-height: 100vh;
-        font-family: var(--font-body);
-        color: var(--color-text);
-    }
 
-    main {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        margin: 0 auto;
-        background-color: var(--colorBackgroundWhite);
-    }
-
-    .funding-layout {
-        /* Any specific styles for funding page layout */
-    }
-</style>
 ```
 
 # src/routes/funding/+page.js
@@ -9429,14 +9839,14 @@ export async function load({ params }) {
 
 ```svelte
 <script>
+    import SideHeader from '$lib/components/SideHeader.svelte'
     import { fade } from 'svelte/transition'
     import SwarmIdentificationSize from '$lib/components/SwarmIdentificationSize.svelte'
     import Divider from "$lib/components/Divider.svelte"
     import { Pencil } from 'lucide-svelte'
     import SourcesFunding from "$lib/components/SourcesFunding.svelte"
-    import FundingHeader from '$lib/components/FundingHeader.svelte'
     
-    let windowWidth = 0;
+    let windowWidth = 0
 </script>
 
 <svelte:window bind:innerWidth={windowWidth} />
@@ -9445,7 +9855,7 @@ export async function load({ params }) {
     {#if windowWidth <= 768}
         <!-- Mobile: Header above the headline -->
         <div class="header-container-mobile">
-            <FundingHeader />
+            <SideHeader />
         </div>
     {/if}
     
@@ -9457,20 +9867,15 @@ export async function load({ params }) {
         {#if windowWidth > 768}
             <!-- Desktop: Header to the right of the headline -->
             <div class="header-container-desktop">
-                <FundingHeader />
+                <SideHeader />
             </div>
         {/if}
     </div>
 
     <div class="content-container">
-        <div class="text-width first-text">
-            <p> 
-                Oregon's special education funding cap falls significantly short of meeting the needs of school districts across the state. Many of Oregon's largest districts identify well above the 11% threshold, with some of the largest districts finding that 18% of their students need Individualized Education Plans (IEPs). Those additional services go unfunded by the state.
-            </p>
-        </div>
 
         <div class="map-container">
-            <div class="viz-in-progress">
+            <div>
                 <SwarmIdentificationSize />
             </div>
             <div class="source">
@@ -9480,23 +9885,27 @@ export async function load({ params }) {
         </div>
 
         <div class="text-width last-text">
+            <p> 
+                Oregon's special education funding cap falls significantly short of meeting the needs of school districts across the state. The majority of Oregon's districts fall well above the threshold, with many more than 11% of their students needing Individualized Education Plans (IEPs).
+            </p>
+
             <h3>
                 What does this mean?
             </h3>
             <p>
-                This funding structure creates a problematic disincentive for districts to identify students with disabilities. When districts identify students beyond the 11% cap, they must absorb those additional costs without corresponding state support. Despite the disincentive, districts are still identifying many more than 11% of their students needing supports. And if students don't get those supports there can be devastating, and even more expensive, effects down the road.
+                This funding structure creates a disincentive for districts to identify students with disabilities. When districts identify students beyond the 11% cap, they must absorb costs not funded by the state. Despite this disincentive, districts are still identifying many more students as needing supports. When a student receives supports sooner rather than later, their trajectory improves dramatically.
             </p>
             <h3>
                 How does this compare to other states?
             </h3>
             <p>
-                Only seven other states have a cap on special education funding. None of them are as low as Oregon's 11%.
+                Only seven other states have a cap on special education funding. None of them are as low as Oregon's 11%. This cap was set in the early 1990s and hasn't changed since.
             </p>
             <h3>
                 Next steps
             </h3>
             <p>
-                Talk to your legislators (find them <a href="https://geo.maps.arcgis.com/apps/instant/lookup/index.html?appid=fd070b56c975456ea2a25f7e3f4289d1" target="_blank">here</a>). There are a couple of bills moving through the state legislature right now, one to <a href="https://olis.oregonlegislature.gov/liz/2025R1/Measures/Overview/HB2953" target="_blank">remove the special education funding cap</a>, and one to <a href="https://olis.oregonlegislature.gov/liz/2025R1/Measures/Overview/HB2448" target="_blank">increase funds to the High Cost Disabilities Account</a>. Tell your legislators that you support these bills and want to see them passed.
+                Talk to your legislators (find them <a href="https://geo.maps.arcgis.com/apps/instant/lookup/index.html?appid=fd070b56c975456ea2a25f7e3f4289d1" target="_blank">here</a>). There is a bill moving through the state legislature to <a href="https://olis.oregonlegislature.gov/liz/2025R1/Measures/Overview/HB2953" target="_blank">remove the special education funding cap</a>. Another one would <a href="https://olis.oregonlegislature.gov/liz/2025R1/Measures/Overview/HB2448" target="_blank">increase funds to the High Cost Disabilities Account</a>. <a href="https://www.myactionalerts.com/action/specialeducationfunding" target="_blank">Tell your legislators</a> that you support these bills and want to see them passed.
             </p>
         </div>
 
@@ -9512,51 +9921,6 @@ export async function load({ params }) {
     a {
         color: var(--colorInclusiveDark);
         font-weight: 600;
-    }
-
-    .page-container {
-        display: flex;
-        flex-direction: column;
-        width: 100%;
-    }
-
-    .header-headline-container {
-        display: flex;
-        flex-direction: row;
-        width: 100%;
-        align-items: flex-start;
-        justify-content: space-between;
-    }
-
-    .headline-container {
-        z-index: 5;
-        padding-top: 0;
-        flex: 1;
-    }
-
-    .header-container-desktop {
-        width: auto;
-        z-index: 10;
-    }
-
-    .header-container-mobile {
-        width: 100%;
-        z-index: 10;
-        margin-bottom: 0.5rem;
-    }
-
-    .headline {
-        padding-top: 0;
-        margin: 2rem 3rem;
-        text-align: left;
-        max-width: 54rem;
-    }
-
-    .content-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        width: 100%;
     }
 
     .viz-in-progress {
@@ -9585,22 +9949,6 @@ export async function load({ params }) {
     .last-text {
         margin-bottom: 4rem;
     }
-
-    /* Mobile responsive adjustments */
-    @media (max-width: 768px) {
-        .header-headline-container {
-            flex-direction: column;
-            position: relative;
-        }
-
-        .headline {
-            margin-left: 1rem;
-            margin-right: 1rem;
-            font-size: 1.8rem;
-            line-height: 2.2rem;
-            margin-top: 0.5rem;
-        }
-    }
 </style>
 ```
 
@@ -9614,11 +9962,10 @@ export async function load({ params }) {
 
 <script>
     import { data, selectedDistrict, selectedDistrictData } from "$lib/stores/stores.js"
-    import Beeswarm from "$lib/components/Beeswarm.svelte"
+    import SideHeader from '$lib/components/SideHeader.svelte'
     import Divider from "$lib/components/Divider.svelte"
     import { Search, Pencil, TableProperties } from 'lucide-svelte'
     import Scroller from "$lib/components/Scroller.svelte"
-    import StateMap from "$lib/components/StateMap.svelte"
     import SelectDistricts from "$lib/components/SelectDistricts.svelte"
     import SimpleAccordion from "$lib/components/SimpleAccordion.svelte"
     import VisualizationToggle from "$lib/components/VisualizationToggle.svelte"
@@ -9627,10 +9974,12 @@ export async function load({ params }) {
     import ScrollyCard from "$lib/components/ScrollyCard.svelte"
     import ScrollyProgress from "$lib/components/ScrollyProgress.svelte"
 
+    let windowWidth = 0
+
     // Scroller variables
     let index, offset, progress
     let top = 0
-    let threshold = 0.1
+    let threshold = 0.5
     let bottom = 0.8
 
     let isDistrictSelected = false
@@ -9655,180 +10004,168 @@ export async function load({ params }) {
 </script>
 
 
-<div class="intro">
-    <div class="beeswarm-container">
-        <Beeswarm />
-    </div>
+<svelte:window bind:innerWidth={windowWidth} />
 
-    <h1 class="headline text-width">
-        Find rates of inclusion, discipline, graduation and more for disabled students in Oregon
-    </h1>
-
-    <h3 class="byline text-width">
-        Updated with data from the 2022-23 school year
-    </h3>
-
-    <StateMap />
-
-    <p class="text-width">
-        For families of students with disabilities, a common concern is not knowing what supports their child is eligible for from one area to the next. Moving from one place to another can mean drastic changes in services, even though the disability hasn't changed. These changes can have a huge impact on the well-being and developmental trajectory of a child.
-    </p>
-    <p class="text-width">
-        Usually, families find that the process of how an agency or district evaluates a student's disability is not transparent, and how those evaluations are used to make decisions about services is even less so. However, data is reported to states and the federal government that helps give a view into how students, as a whole, are supported in different areas.
-    </p>
-    <p class="text-width">
-        Below, you can explore that data.
-    </p>
-</div>
-
-<div class="content-wrapper">
-    <Scroller 
-        top={top} 
-        threshold={threshold} 
-        bottom={bottom} 
-        bind:index 
-        bind:offset 
-        bind:progress
-    >
-        <div slot="background" class="background">
-            <Divider>
-                <Search />
-            </Divider>
-
-            <SelectDistricts />
-
-            <VisualizationToggle {index} />
+<div class="page-container">
+    {#if windowWidth <= 768}
+        <!-- Mobile: Header above the headline -->
+        <div class="header-container-mobile">
+            <SideHeader />
         </div>
-
-        <div slot="foreground">
-            <section>
-                <!-- Empty first section -->
-            </section>
-            {#if isDistrictSelected}
-                <section>
-                    <ScrollyCard active={index === 1}>
-                        These circles represent all of the school districts in <strong>Oregon</strong>. Districts farther to the <strong>right</strong> are <strong><em>more inclusive</em></strong>. Districts farther to the <strong>left</strong> are <strong><em>less inclusive</em></strong>.
-                    </ScrollyCard>
-                </section>
-                <section>
-                    <ScrollyCard active={index === 2}>
-                        <strong>{$selectedDistrictData[0].properties["Institution Name"]}</strong> is selected. Let's learn more about its inclusion of students with disabilities
-                    </ScrollyCard>
-                </section>
-                <section>
-                    <ScrollyCard active={index === 3}>
-                        {$selectedDistrictData[0].properties["Institution Name"]} has <strong>{$selectedDistrictData[0].properties["Total Student Count"].toLocaleString()} students</strong> with IEPs
-                        <br>
-                        <br>
-                        <em>(An IEP is a document that outlines what supports a student with a disability will receive at school. It's personalized to each student)</em>
-                    </ScrollyCard>
-                </section>
-                <section>
-                    <ScrollyCard active={index === 4}>
-                        Based on how much of their day those students spend in regular classrooms, <strong>{$selectedDistrictData[0].properties["Institution Name"]}</strong> has an <strong>inclusion score</strong> of <strong>{$selectedDistrictData[0].properties.quartile} out of 4</strong> and is more inclusive than <strong>{$selectedDistrictData[0].properties.percent_more_inclusive}% of districts</strong> in Oregon.
-                        <br>
-                        <br>
-                        <SimpleAccordion title="How is the inclusion score calculated?">
-                            The inclusion score is based on the percent of children with disabilites who are in a regular classroom for:
-                            <ul>
-                                <li>- more than 80% of the day</li>
-                                <li>- more than 40% and less than 80% of the day</li>
-                                <li>- less than 40% of the day</li>
-                            </ul>
-                            Or, in a completely separate environment, like a hospital or detention facility.
-                        </SimpleAccordion>
-                    </ScrollyCard>
-                </section>
-                <section>
-                    <ScrollyCard active={index === 5}>
-                        This is how inclusive {$selectedDistrictData[0].properties["Institution Name"]} is compared to the <strong>largest districts</strong> in the state
-                    </ScrollyCard>
-                </section>
-                <section>
-                    <ScrollyCard active={index === 6}>
-                        And to the <strong>districts it touches</strong>
-                    </ScrollyCard>
-                </section>
-                <section>
-                    <ScrollyCard active={index === 7}>
-                        There's a lot more to explore in {$selectedDistrictData[0].properties["Institution Name"]}'s IEP data, including <strong>graduation rates</strong> and <strong>racial representation</strong>. You can find that information by clicking on 'learn more' in the district's <strong>tooltip</strong>, or in the <strong>table below</strong>
-                        <br>
-                        <br>
-                        To <strong>start over</strong> select a new district
-                    </ScrollyCard>
-                </section>
-            {:else}
-                <section>
-                    <ScrollyCard active={index === 1}>
-                        Please select a district to view detailed information.
-                    </ScrollyCard>
-                </section>
-            {/if}
-        </div>
-    </Scroller>
-
-    <!-- Progress indicator and Skip button -->
-    {#if index > 0 && index < totalScrollySections - 1}
-        <ScrollyProgress 
-            currentIndex={index} 
-            totalSteps={totalScrollySections}
-            onSkip={skipToEnd}
-        />
     {/if}
 
-    <div class="post-scroll-content">
-        <Divider>
-            <TableProperties />
-        </Divider>
-    
-        <div class="table">
-            <TableOfDistricts data={$data} />
+    <div class="header-headline-container">
+        <div class="headline-container">
+            <h1 class="headline">
+                Find rates of inclusion, discipline, graduation and more for students with disabilities in Oregon
+            </h1>
         </div>
-    
-        <Divider>
-            <Pencil />
-        </Divider>
-    
-        <Sources />
+
+        {#if windowWidth > 768}
+            <!-- Desktop: Header to the right of the headline -->
+            <div class="header-container-desktop">
+                <SideHeader />
+            </div>
+        {/if}
+    </div>
+
+    <div class="content-container">
+        <div class="intro">
+            <h3 class="byline text-width">
+                Updated with data from the 2022-23 school year
+            </h3>
+        
+            <p class="text-width">
+                For families of students with disabilities, a common concern is not knowing what supports their child is eligible for from one area to the next. Moving from one place to another can mean drastic changes in services, even though the disability hasn't changed. These changes can have a huge impact on the well-being and developmental trajectory of a child.
+            </p>
+            <p class="text-width">
+                Usually, families find that the process of how an agency or district evaluates a student's disability is not transparent, and how those evaluations are used to make decisions about services is even less so. However, data is reported to states and the federal government that helps give a view into how students, as a whole, are supported in different areas.
+            </p>
+            <p class="text-width">
+                Below, you can explore that data.
+            </p>
+        </div>
+        
+        <div class="content-wrapper">
+            <Scroller 
+                top={top} 
+                threshold={threshold} 
+                bottom={bottom} 
+                bind:index 
+                bind:offset 
+                bind:progress
+                showHelpers={false}
+            >
+                <div slot="background" class="background">
+                    <Divider>
+                        <Search />
+                    </Divider>
+        
+                    <SelectDistricts />
+        
+                    <VisualizationToggle {index} />
+                </div>
+        
+                <div slot="foreground" class="foreground-content">
+                    
+                    {#if isDistrictSelected}
+                        <section>
+                            <ScrollyCard active={index === 0}>
+                                Let's explore how special education services vary across <strong>Oregon</strong>'s school districts
+                            </ScrollyCard>
+                        </section>
+                        <section>
+                            <ScrollyCard active={index === 1}>
+                                These circles represent all of the school districts in <strong>Oregon</strong>. Districts farther to the <strong>right</strong> are <strong><em>more inclusive</em></strong>, meaning that students with disabilities spend <strong>more time in general education classrooms</strong> with their peers
+                            </ScrollyCard>
+                        </section>
+                        <section>
+                            <ScrollyCard active={index === 2}>
+                                As an example, let's look at Portland Public Schools. This district serves <strong>{$selectedDistrictData[0].properties["Total Student Count"]} students with IEPs*</strong> <em>(note: you can select your local district at any time)</em>
+                                <br>
+                                <br>
+                                <em>*An IEP is a document that outlines what supports a student with a disability will receive at school. It's personalized to each student who needs it</em>
+                            </ScrollyCard>
+                        </section>
+                        <section>
+                            <ScrollyCard active={index === 3}>
+                                Districts report data on how much time students with IEPs spend in regular classrooms. Based on this, <strong>{$selectedDistrictData[0].properties["Institution Name"]}</strong> has an <strong>inclusion score</strong> of <strong>{$selectedDistrictData[0].properties["quartile"]} out of 4</strong>
+                                <br>
+                                <br>
+                                <SimpleAccordion title="How is the inclusion score calculated?">
+                                    The inclusion score is based on the percent of children with disabilites who are in a regular classroom for:
+                                    <ul>
+                                        <li>- more than 80% of the day</li>
+                                        <li>- more than 40% and less than 80% of the day</li>
+                                        <li>- less than 40% of the day</li>
+                                    </ul>
+                                    Or, in a completely separate environment, like a hospital or detention facility.
+                                </SimpleAccordion>
+                            </ScrollyCard>
+                        </section>
+                        <section>
+                            <ScrollyCard active={index === 4}>
+                                Here's how {$selectedDistrictData[0].properties["Institution Name"]} compares to the <strong>largest districts</strong> in the state
+                            </ScrollyCard>
+                        </section>
+                        <section>
+                            <ScrollyCard active={index === 5}>
+                                And to the <strong>districts it touches</strong>
+                            </ScrollyCard>
+                        </section>
+                        <section>
+                            <ScrollyCard active={index === 6}>
+                                You can also <strong>select multiple districts</strong> to compare them directly
+                            </ScrollyCard>
+                        </section>
+                        <section>
+                            <ScrollyCard active={index === 7}>
+                                Now it's your turn! Use the <strong>toggle</strong> to switch between <strong>map and bubble views</strong>. You can also find districts in the <strong>table below</strong>
+                            </ScrollyCard>
+                        </section>
+                    {:else}
+                        <section>
+                            <ScrollyCard active={index === 1}>
+                                Please select a district to view detailed information.
+                            </ScrollyCard>
+                        </section>
+                    {/if}
+                </div>
+            </Scroller>
+        
+            <!-- Progress indicator and Skip button -->
+            {#if index > 0 && index < totalScrollySections - 1}
+                <ScrollyProgress 
+                    currentIndex={index} 
+                    totalSteps={totalScrollySections}
+                    onSkip={skipToEnd}
+                />
+            {/if}
+        
+            <div class="post-scroll-content">
+                <Divider>
+                    <TableProperties />
+                </Divider>
+            
+                <div class="table">
+                    <TableOfDistricts data={$data} />
+                </div>
+            
+                <Divider>
+                    <Pencil />
+                </Divider>
+            
+                <Sources />
+            </div>
+        </div>
     </div>
 </div>
 
 
 <style>
     .intro {
-        margin-top: -4rem;
         margin-bottom: 1rem;
         position: relative;
-    }
-
-    .beeswarm-container {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        z-index: 1;
-    }
-
-    .headline {
-        text-align: left;
-        color: var(--colorInclusiveDark);
-        position: relative;
-        z-index: 2;
-        margin-top: 14rem;
-        margin-bottom: 2.5rem;
-        background: linear-gradient(to bottom, transparent 0%, var(--colorBackgroundWhite) 30%);
-        padding: 3rem 0 0rem 0;
-        font-size: 2.4rem;
-        line-height: 3rem;
-    }
-
-    @media (max-width: 768px) {
-        .headline {
-            width: 100%;
-            margin-left: auto;
-            margin-right: auto;
-            padding: 1rem 1rem;
-        }
     }
 
     .byline {
@@ -9837,13 +10174,14 @@ export async function load({ params }) {
         color: var(--colorNonInclusive);
     }
 
-    .no-scroll {
-        overflow-y: hidden !important;
-    }
-
     .content-wrapper {
         position: relative;
         z-index: 1;
+    }
+
+    .foreground-content {
+        padding: 30rem 1rem 0 1rem;
+        z-index: 2;
     }
 
     .background {
@@ -9876,24 +10214,53 @@ export async function load({ params }) {
 
 ```svelte
 <script>
+    import SideHeader from '$lib/components/SideHeader.svelte'
+
+    let windowWidth = 0
 </script>
 
-<h1>Resources</h1>
 
-<div class="text-width resources">
-    <div class="link">
-        <a href="https://factoregon.org/" target="_blank">FACT Oregon</a>
-        <p>Has a support line and appointments for families who need help navigating systems of services for their disabled loved ones. They also have courses-on-demand, seminars, and much more.</p>
+<svelte:window bind:innerWidth={windowWidth} />
+
+<div class="page-container">
+    {#if windowWidth <= 768}
+        <!-- Mobile: Header above the headline -->
+        <div class="header-container-mobile">
+            <SideHeader />
+        </div>
+    {/if}
+
+    <div class="header-headline-container">
+        <div class="headline-container">
+            <h1 class="headline">Resources</h1>
+        </div>
+
+        {#if windowWidth > 768}
+            <!-- Desktop: Header to the right of the headline -->
+            <div class="header-container-desktop">
+                <SideHeader />
+            </div>
+        {/if}
     </div>
-    <div class="link">
-        <a href="https://www.droregon.org/" target="_blank">Disability Rights Oregon</a>
-        <p>Legal advocacy organization for people of all ages with disabilities, including children and students. Some of their work, for example, has contributed to the passing of legislation that ends restraint and seclusion practices in schools, and makes it illegal to deny students with disabilities the right to attend school for the full day.</p>
-    </div>
-    <div class="link">
-        <a href="https://sites.ed.gov/idea/" target="_blank">Individuals with Disabilities Act (IDEA)</a>
-        <p>The federal law enacted to make sure all children have the right to a free and appropriate public education. IDEA also specifies that children with disabilities have the right to be educated in the 'least restrictive environment,' or, in other words, in as mainstream an environment as possible with the needed supports provided.</p>
+
+    <div class="content-container">
+        <div class="text-width resources">
+            <div class="link">
+                <a href="https://factoregon.org/" target="_blank">FACT Oregon</a>
+                <p>Has a support line and appointments for families who need help navigating systems of services for their disabled loved ones. They also have courses-on-demand, seminars, and much more.</p>
+            </div>
+            <div class="link">
+                <a href="https://www.droregon.org/" target="_blank">Disability Rights Oregon</a>
+                <p>Legal advocacy organization for people of all ages with disabilities, including children and students. Some of their work, for example, has contributed to the passing of legislation that ends restraint and seclusion practices in schools, and makes it illegal to deny students with disabilities the right to attend school for the full day.</p>
+            </div>
+            <div class="link">
+                <a href="https://sites.ed.gov/idea/" target="_blank">Individuals with Disabilities Act (IDEA)</a>
+                <p>The federal law enacted to make sure all children have the right to a free and appropriate public education. IDEA also specifies that children with disabilities have the right to be educated in the 'least restrictive environment,' or, in other words, in as mainstream an environment as possible with the needed supports provided.</p>
+            </div>
+        </div>
     </div>
 </div>
+
 
 <style>
     .resources {
@@ -10074,7 +10441,6 @@ export async function load({ params }) {
 ```svelte
 <script>
     import { fade } from 'svelte/transition'
-    import SwarmIdentificationSize from '$lib/components/SwarmIdentificationSize.svelte'
     import ScatterplotIdentificationSize from '$lib/components/ScatterplotIdentificationSize.svelte'
     import ScatterplotInclSize from '$lib/components/ScatterplotInclSize.svelte'
     import BubbleMap from '$lib/components/BubbleMap.svelte'
@@ -10089,9 +10455,6 @@ export async function load({ params }) {
 <h1>Visualization Tests</h1>
 
 <div class="map-container">
-    <div class="viz-in-progress">
-        <SwarmIdentificationSize />
-    </div>
     
     <div class="viz-in-progress">
         <ScatterplotIdentificationSize />

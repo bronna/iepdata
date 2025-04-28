@@ -12,7 +12,7 @@
 	}
 
     function clearSelectedDistricts() {
-		selectedDistrict.set()
+		selectedDistrict.set([])
 		minSize = 0;
 		maxSize = 9000
 		values = [minSize, maxSize]
@@ -28,7 +28,7 @@
         <Svelecte 
             options={districtNames} 
             bind:value={$selectedDistrict} 
-            multiple={false} 
+            multiple={true} 
             placeholder={"find a school district"}
             closeAfterSelect={true}
         />
