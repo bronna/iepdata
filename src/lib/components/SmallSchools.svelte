@@ -29,8 +29,8 @@
     const globalExtents = {
         // Fixed domains based on analysis of all data
         expenditure: { min: 14000, max: 22000 },  // Per Pupil Spending
-        proficiency: { min: 35, max: 85 },       // Combined ELA/Math ranges
-        enrollment: { min: 0, max: 500 }         // School enrollment
+        proficiency: { min: 20, max: 90 },       // Combined ELA/Math ranges
+        enrollment: { min: 200, max: 500 }         // School enrollment
     }
 
     let dimensions = {
@@ -155,7 +155,7 @@
     // Create a scale for circle radius based on enrollment (uses sqrt to scale by area not radius)
     $: rScale = scaleSqrt()
         .domain([globalExtents.enrollment.min, globalExtents.enrollment.max])
-        .range([1, 26])
+        .range([12, 24])
 
     // Calculate the average per pupil spending
     $: avgSpending = processedData.reduce((sum, d) => sum + d.expenditure, 0) / processedData.length
@@ -214,58 +214,58 @@
     }
     
     // Define positions for leader line labels with more control options
-    const leaderLineLabels = {
-        "Lowrie": { 
-            offsetX: 42, 
-            offsetY: 24,
-            lineStartX: 21,  // Offset from circle center where line begins
-            lineStartY: 14,
-            lineEndX: 40,  // Control where the leader line ends
-            lineEndY: 20,
-            anchor: "end"   // text-anchor: start, middle, or end
-        },
-        "Stafford": { 
-            offsetX: 60, 
-            offsetY: 15,
-            lineStartX: 20,
-            lineStartY: 2,
-            lineEndX: 58,
-            lineEndY: 11,
-            anchor: "end"
-        },
-        "Sunset": { 
-            offsetX: 65, 
-            offsetY: 10,
-            lineStartX: 18,
-            lineStartY: 8,
-            lineEndX: 63,
-            lineEndY: 6,
-            anchor: "start"
-        },
-        "Cedaroak Park": { 
-            offsetX: 30, 
-            offsetY: -25,
-            lineStartX: 13,
-            lineStartY: -13,
-            lineEndX: 28,
-            lineEndY: -28,
-            anchor: "middle"
-        },
-        "Willamette": { 
-            offsetX: 45, 
-            offsetY: 25,
-            lineStartX: 18,
-            lineStartY: 12,
-            lineEndX: 43,
-            lineEndY: 20,
-            anchor: "start"
-        }
-    };
+    // const leaderLineLabels = {
+    //     "Lowrie": { 
+    //         offsetX: 42, 
+    //         offsetY: 24,
+    //         lineStartX: 21,  // Offset from circle center where line begins
+    //         lineStartY: 14,
+    //         lineEndX: 40,  // Control where the leader line ends
+    //         lineEndY: 20,
+    //         anchor: "end"   // text-anchor: start, middle, or end
+    //     },
+    //     "Stafford": { 
+    //         offsetX: 60, 
+    //         offsetY: 15,
+    //         lineStartX: 20,
+    //         lineStartY: 2,
+    //         lineEndX: 58,
+    //         lineEndY: 11,
+    //         anchor: "end"
+    //     },
+    //     "Sunset": { 
+    //         offsetX: 65, 
+    //         offsetY: 10,
+    //         lineStartX: 18,
+    //         lineStartY: 8,
+    //         lineEndX: 63,
+    //         lineEndY: 6,
+    //         anchor: "start"
+    //     },
+    //     "Cedaroak Park": { 
+    //         offsetX: 30, 
+    //         offsetY: -25,
+    //         lineStartX: 13,
+    //         lineStartY: -13,
+    //         lineEndX: 28,
+    //         lineEndY: -28,
+    //         anchor: "middle"
+    //     },
+    //     "Willamette": { 
+    //         offsetX: 45, 
+    //         offsetY: 25,
+    //         lineStartX: 18,
+    //         lineStartY: 12,
+    //         lineEndX: 43,
+    //         lineEndY: 20,
+    //         anchor: "start"
+    //     }
+    // };
     
     // Check if a school needs a leader line
-    function needsLeaderLine(schoolName) {
-        return Object.keys(leaderLineLabels).includes(schoolName);
-    }
+    // function needsLeaderLine(schoolName) {
+    //     return Object.keys(leaderLineLabels).includes(schoolName);
+    // }
 
     // Handle tooltip display
     function showTooltip(school, event) {
@@ -500,8 +500,7 @@
                         stroke-width="1"
                     />
                     
-                    {#if needsLeaderLine(school.shortName)}
-                        <!-- Leader line -->
+                    <!-- {#if needsLeaderLine(school.shortName)}
                         <line 
                             x1={xScale(school.expenditure) + leaderLineLabels[school.shortName].lineStartX}
                             y1={yScale(school.performance) + leaderLineLabels[school.shortName].lineStartY}
@@ -511,7 +510,6 @@
                             stroke-width="0.5"
                             stroke-dasharray="2,1"
                         />
-                        <!-- Offset label with leader line -->
                         <text
                             x={xScale(school.expenditure) + leaderLineLabels[school.shortName].offsetX}
                             y={yScale(school.performance) + leaderLineLabels[school.shortName].offsetY}
@@ -522,9 +520,9 @@
                             <tspan font-weight="600">{school.shortName}</tspan>
                             <tspan> ({school.totalDisadvantagedPercent}% disadv)</tspan>
                         </text>
-                    {:else}
+                    {:else} -->
                         <!-- Regular inline label -->
-                        <text
+                        <!-- <text
                             x={xScale(school.expenditure)}
                             y={yScale(school.performance) - rScale(school.enrollment) - 8}
                             text-anchor="middle"
@@ -533,26 +531,68 @@
                         >
                             <tspan font-weight="600">{school.shortName}</tspan>
                             <tspan> ({school.totalDisadvantagedPercent}% disadv)</tspan>
-                        </text>
-                    {/if}
+                        </text> -->
+                    <!-- {/if} -->
                 </g>
             {/each}
 
-            <!-- School Size legend - restored to original position -->
+            {#each processedData as school}
+                <text
+                    x={xScale(school.expenditure)}
+                    y={yScale(school.performance) - rScale(school.enrollment) - 8}
+                    text-anchor="middle"
+                    font-size="11px"
+                    fill={colors.colorText}
+                >
+                    <tspan font-weight="600">{school.shortName}</tspan>
+                    <tspan> ({school.totalDisadvantagedPercent}% disadv)</tspan>
+                </text>
+            {/each}
+
+            <!-- School Size legend with adjusted circles to account for the stroke width -->
             <g class="legend" transform="translate({dimensions.innerWidth - 57}, 220)">
                 <text font-size="12px" font-weight="600" fill={colors.colorDarkGray}>School Size:</text>
                 
                 <!-- Calculate legend circle sizes based on actual enrollment values -->
-                <circle cx="28" cy={36 + rScale(500) - rScale(200)} r={rScale(200)} fill="none" stroke={colors.colorMediumGray} stroke-width=1/>
-                <text x="60" y="53" font-size="10px">200</text>
+                <!-- Add stroke to match the data visualization and adjust radius to compensate -->
+                <circle 
+                    cx="28" 
+                    cy={36 + rScale(500) - rScale(200)} 
+                    r={rScale(200) - 0.5} 
+                    fill="none" 
+                    stroke={colors.colorMediumGray} 
+                    stroke-width="1"
+                />
+                <text x="60" y="47" font-size="10px">200</text>
 
-                <circle cx="28" cy={36 + rScale(500) - rScale(300)} r={rScale(300)} fill="none" stroke={colors.colorMediumGray} stroke-width=1/>
-                <text x="60" y="41" font-size="10px">300</text>
+                <circle 
+                    cx="28" 
+                    cy={36 + rScale(500) - rScale(300)} 
+                    r={rScale(300) - 0.5} 
+                    fill="none" 
+                    stroke={colors.colorMediumGray} 
+                    stroke-width="1"
+                />
+                <text x="60" y="37" font-size="10px">300</text>
                 
-                <circle cx="28" cy={36 + rScale(500) - rScale(400)} r={rScale(400)} fill="none" stroke={colors.colorMediumGray} stroke-width=1/>
-                <text x="60" y="29" font-size="10px">400</text>
+                <circle 
+                    cx="28" 
+                    cy={36 + rScale(500) - rScale(400)} 
+                    r={rScale(400) - 0.5} 
+                    fill="none" 
+                    stroke={colors.colorMediumGray} 
+                    stroke-width="1"
+                />
+                <text x="60" y="27" font-size="10px">400</text>
                 
-                <circle cx="28" cy="36" r={rScale(500)} fill="none" stroke={colors.colorMediumGray} stroke-width=1/>
+                <circle 
+                    cx="28" 
+                    cy="36" 
+                    r={rScale(500) - 0.5} 
+                    fill="none" 
+                    stroke={colors.colorMediumGray} 
+                    stroke-width="1"
+                />
                 <text x="60" y="17" font-size="10px">500 students</text>
             </g>
         </SVGChart>
