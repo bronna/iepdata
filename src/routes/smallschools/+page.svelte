@@ -48,6 +48,8 @@
                     <BarChart2 size={24} />
                 </Divider>
                 <h2>Student Demographics and Performance</h2>
+                <p style="text-align:center; font-size:1rem; margin-top:-0.5rem;">* % disadvantaged data not available for 21/22 school year, 22/23 data shown</p>
+                <p style="text-align:center; font-size:1rem; margin-top:-0.5rem;">* per pupil spending data not available for 23/24 school year, 22/23 data shown</p>
             </div>
             <SmallSchools />
         </div>
@@ -71,6 +73,7 @@
         <div class="viz-container">
             <div class="section-heading">
                 <h2>School Size vs. Per Pupil Spending</h2>
+                <p style="text-align:center; font-size:1rem; margin-top:-0.5rem;">* per pupil spending data not available for 23/24 school year, 22/23 data shown</p>
             </div>
             <div style="height: 470px;">
                 <SchoolSizeExpenditureChart />
