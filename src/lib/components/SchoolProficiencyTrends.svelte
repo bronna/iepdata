@@ -22,6 +22,7 @@
     let tooltipData = null;
     let tooltipX = 0;
     let tooltipY = 0;
+    let tooltipSchool = null; // Track which school's data is shown in tooltip
     
     // Get unique schools from the data
     let availableSchools = [...new Set(smallSchoolsData.map(school => school.School))].sort();
@@ -39,54 +40,48 @@
         .domain([200, 500])
         .range([8, 16])
 
-    // Group all data by school for background trend lines
-    $: schoolsData = availableSchools.map(school => {
-        return {
-            name: school,
-            data: smallSchoolsData
-                .filter(record => record.School === school)
-                .sort((a, b) => a["School Year"].localeCompare(b["School Year"]))
-                .map(record => {
-                    const proficiencyField = selectedSubject === "ELA" 
-                        ? "ELA Proficient & Above %" 
-                        : "Math Proficient & Above %";
-                            
-                    const proficiencyValue = parseInt(record[proficiencyField]?.replace(/%/g, '') || "0");
-                    
-                    return {
-                        year: record["School Year"],
-                        proficiency: proficiencyValue,
-                        enrollment: parseFloat(record["Total School Enrollment"] || 0),
-                        economicallyDisadvantaged: parseInt(record["Economically Disadvantaged %"]?.replace(/%/g, '') || "0"),
-                        studentsWithDisabilities: parseInt(record["Students w/Disabilities %"]?.replace(/%/g, '') || "0")
-                    };
-                })
-        };
-    });
-
-    // Filter data for selected school
-    $: selectedSchoolData = smallSchoolsData
-        .filter(school => school.School === selectedSchool)
-        .sort((a, b) => a["School Year"].localeCompare(b["School Year"]));
-
-    // Process data for visualization based on selected subject
-    $: chartData = selectedSchoolData.map(school => {
-        const proficiencyField = selectedSubject === "ELA" 
-            ? "ELA Proficient & Above %" 
-            : "Math Proficient & Above %";
+    // Process all schools data for both visualization and tooltips
+    $: processedSchoolsData = availableSchools.map(school => {
+        // Get all data for this school
+        const schoolRecords = smallSchoolsData
+            .filter(record => record.School === school)
+            .sort((a, b) => a["School Year"].localeCompare(b["School Year"]));
             
-        const proficiencyValue = parseInt(school[proficiencyField]?.replace(/%/g, '') || "0");
+        // Map each record to the format we need
+        const dataPoints = schoolRecords.map(record => {
+            const proficiencyField = selectedSubject === "ELA" 
+                ? "ELA Proficient & Above %" 
+                : "Math Proficient & Above %";
+                
+            const proficiencyValue = parseInt(record[proficiencyField]?.replace(/%/g, '') || "0");
+            
+            return {
+                school: record.School,
+                year: record["School Year"],
+                proficiency: proficiencyValue,
+                enrollment: parseFloat(record["Total School Enrollment"] || 0),
+                economicallyDisadvantaged: parseInt(record["Economically Disadvantaged %"]?.replace(/%/g, '') || "0"),
+                studentsWithDisabilities: parseInt(record["Students w/Disabilities %"]?.replace(/%/g, '') || "0"),
+                original: record // Keep the original data object for reference
+            };
+        });
         
         return {
-            year: school["School Year"],
-            proficiency: proficiencyValue,
-            enrollment: parseFloat(school["Total School Enrollment"] || 0),
-            economicallyDisadvantaged: parseInt(school["Economically Disadvantaged %"]?.replace(/%/g, '') || "0"),
-            studentsWithDisabilities: parseInt(school["Students w/Disabilities %"]?.replace(/%/g, '') || "0"),
-            original: school // Keep the original data object for tooltip
+            name: school,
+            isSelected: school === selectedSchool,
+            data: dataPoints
         };
     });
 
+    // Create line generator
+    $: lineGenerator = line()
+        .x(d => xScale(d.year))
+        .y(d => yScale(d.proficiency));
+
+    // Filter data for selected school
+    $: selectedSchoolData = processedSchoolsData.find(s => s.name === selectedSchool)?.data || [];
+
+    // Dimensions setup
     let dimensions = {
         width,
         height,
@@ -113,20 +108,11 @@
         .range([dimensions.innerHeight, 0])
         .nice();
 
-    // Create line generator
-    $: lineGenerator = line()
-        .x(d => xScale(d.year))
-        .y(d => yScale(d.proficiency));
-
     // Line paths for all schools
-    $: backgroundLinePaths = schoolsData.map(school => ({
-        name: school.name,
-        path: lineGenerator(school.data),
-        isSelected: school.name === selectedSchool
+    $: backgroundLinePaths = processedSchoolsData.map(school => ({
+        ...school,
+        path: lineGenerator(school.data)
     }));
-
-    // Line path for the selected school
-    $: selectedLinePath = lineGenerator(chartData);
 
     // Get chart title based on selections
     $: chartTitle = selectedSchool 
@@ -137,9 +123,11 @@
     const formatNumber = num => num.toLocaleString();
     const formatPercent = value => `${value}%`;
     
-    // Handle tooltip display
-    function showTooltip(point, event) {
+    // Handle tooltip display for data points 
+    function showTooltip(point, event, school = null) {
         tooltipData = point;
+        tooltipSchool = school || selectedSchool;
+        
         // Adjust tooltip position to be near the mouse but not directly under it
         tooltipX = event.offsetX + 15;
         tooltipY = event.offsetY - 10;
@@ -161,6 +149,34 @@
         tooltipVisible = true;
     }
 
+    // Handle tooltip display for background trend lines
+    function showLineTooltip(event, schoolData) {
+        // Find the nearest point on the line to show in tooltip
+        if (!schoolData || !schoolData.data || schoolData.data.length === 0) return;
+        
+        // Get mouse position relative to chart
+        const rect = event.target.getBoundingClientRect();
+        const mouseX = event.clientX - rect.left;
+        
+        // Find the closest year point on the x-axis
+        let closestYear = schoolYears[0];
+        let minDistance = Infinity;
+        
+        schoolYears.forEach(year => {
+            const distance = Math.abs(xScale(year) - (mouseX - dimensions.margin.left));
+            if (distance < minDistance) {
+                minDistance = distance;
+                closestYear = year;
+            }
+        });
+        
+        // Find the corresponding data point
+        const point = schoolData.data.find(d => d.year === closestYear);
+        if (point) {
+            showTooltip(point, event, schoolData.name);
+        }
+    }
+
     function hideTooltip() {
         tooltipVisible = false;
     }
@@ -170,6 +186,23 @@
         // Update the mobile detection on mount
         isMobile = width < 640;
     });
+    
+    // Find previous year's data for tooltip change calculation
+    function findPreviousYearData(schoolName, currentYear) {
+        // Get the school data
+        const school = processedSchoolsData.find(s => s.name === schoolName);
+        if (!school) return null;
+        
+        // Find current year index
+        const yearIndex = schoolYears.indexOf(currentYear);
+        if (yearIndex <= 0) return null; // No previous year
+        
+        // Get previous year
+        const prevYear = schoolYears[yearIndex - 1];
+        
+        // Find data point for previous year
+        return school.data.find(d => d.year === prevYear);
+    }
 </script>
 
 <div class="proficiency-trends-container" bind:clientWidth={width} bind:clientHeight={height}>
@@ -309,34 +342,50 @@
             {/each}
 
             <!-- Background trend lines for all schools -->
-            {#each backgroundLinePaths as linePath}
-                {#if linePath.name !== selectedSchool && linePath.path}
+            {#each backgroundLinePaths as schoolPath}
+                {#if schoolPath.name !== selectedSchool && schoolPath.path}
                     <path
-                        d={linePath.path}
+                        d={schoolPath.path}
                         fill="none"
                         stroke={colors.colorLightGray}
                         stroke-width="3"
                         stroke-opacity="0.5"
                         stroke-linecap="round"
                         stroke-linejoin="round"
+                        class="background-path"
+                        on:mouseenter={(e) => showLineTooltip(e, schoolPath)}
+                        on:mouseleave={hideTooltip}
+                    />
+                    <!-- Invisible wider stroke area for better hover target -->
+                    <path
+                        d={schoolPath.path}
+                        fill="none"
+                        stroke="transparent"
+                        stroke-width="10"
+                        class="hover-path"
+                        on:mouseenter={(e) => showLineTooltip(e, schoolPath)}
+                        on:mouseleave={hideTooltip}
                     />
                 {/if}
             {/each}
 
             <!-- Selected school trend line (highlighted) -->
-            {#if selectedLinePath}
-                <path
-                    d={selectedLinePath}
-                    fill="none"
-                    stroke="#01b6e1"
-                    stroke-width="3"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                />
+            {#if selectedSchool}
+                {@const selectedPath = backgroundLinePaths.find(s => s.name === selectedSchool)}
+                {#if selectedPath && selectedPath.path}
+                    <path
+                        d={selectedPath.path}
+                        fill="none"
+                        stroke="#01b6e1"
+                        stroke-width="3"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    />
+                {/if}
             {/if}
 
             <!-- Data points for selected school with hover interactions -->
-            {#each chartData as point, i}
+            {#each selectedSchoolData as point, i}
                 <g 
                     class="data-point"
                     on:mouseenter={(e) => showTooltip(point, e)}
@@ -412,12 +461,43 @@
                 />
                 <text x="60" y="17" font-size="10px">500 students</text>
             </g>
+
+            <!-- Additional school information in legend area -->
+            <g class="school-info" transform="translate({dimensions.innerWidth + 10}, 20)">
+                {#if selectedSchoolData.length > 0}
+                    <text font-size="12px" font-weight="600" fill={colors.colorText}>
+                        School Details:
+                    </text>
+                    <text y="20" font-size="12px" fill={colors.colorDarkGray}>
+                        Enrollment: {selectedSchoolData[selectedSchoolData.length-1].enrollment}
+                    </text>
+                    <text y="40" font-size="12px" fill={colors.colorDarkGray}>
+                        Econ. Disadvantaged: {selectedSchoolData[selectedSchoolData.length-1].economicallyDisadvantaged}%
+                    </text>
+                    <text y="60" font-size="12px" fill={colors.colorDarkGray}>
+                        Students w/Disabilities: {selectedSchoolData[selectedSchoolData.length-1].studentsWithDisabilities}%
+                    </text>
+                    
+                    <!-- Change indicators for most recent year if data available -->
+                    {#if selectedSchoolData.length > 1}
+                        {@const change = selectedSchoolData[selectedSchoolData.length-1].proficiency - selectedSchoolData[selectedSchoolData.length-2].proficiency}
+                        <text y="80" font-size="12px" font-weight="600" fill={change >= 0 ? colors.colorInclusive : colors.colorSeparate}>
+                            {change >= 0 ? '↑' : '↓'} {Math.abs(change)}% from previous
+                        </text>
+                    {/if}
+                {/if}
+            </g>
         </SVGChart>
 
-        <!-- Custom tooltip -->
+        <!-- Custom tooltip - works for both selected school points and background lines -->
         {#if tooltipVisible && tooltipData}
             <div class="tooltip" style="left: {tooltipX}px; top: {tooltipY}px">
-                <div class="tooltip-header">{selectedSchool} ({tooltipData.year})</div>
+                <div class="tooltip-header">
+                    {tooltipSchool} ({tooltipData.year})
+                    {#if tooltipSchool !== selectedSchool}
+                        <button class="select-school-button" on:click={() => selectedSchool = tooltipSchool}>Select</button>
+                    {/if}
+                </div>
                 <div class="tooltip-content">
                     <div class="tooltip-row">
                         <span class="tooltip-label">{selectedSubject} Proficiency:</span>
@@ -436,11 +516,10 @@
                         <span class="tooltip-value">{formatPercent(tooltipData.studentsWithDisabilities)}</span>
                     </div>
                     
+                    <!-- Previous year comparison if available -->
                     {#if tooltipData.year !== schoolYears[0]}
-                        <!-- Find the previous year's data point -->
-                        {@const prevYearIndex = chartData.findIndex(d => d.year === tooltipData.year) - 1}
-                        {#if prevYearIndex >= 0}
-                            {@const prevYearData = chartData[prevYearIndex]}
+                        {@const prevYearData = findPreviousYearData(tooltipSchool, tooltipData.year)}
+                        {#if prevYearData}
                             {@const yearChange = tooltipData.proficiency - prevYearData.proficiency}
                             <div class="tooltip-row change-row">
                                 <span class="tooltip-label">Change from {prevYearData.year}:</span>
@@ -540,6 +619,20 @@
         stroke-width: 3px;
     }
     
+    /* Background line hover effects */
+    .background-path {
+        cursor: pointer;
+        transition: stroke-opacity 0.2s;
+    }
+    
+    .background-path:hover {
+        stroke-opacity: 0.8;
+    }
+    
+    .hover-path {
+        cursor: pointer;
+    }
+    
     /* Tooltip styles */
     .tooltip {
         position: absolute;
@@ -560,6 +653,20 @@
         border-bottom: 1px solid #eee;
         font-size: 14px;
         color: var(--colorText);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .select-school-button {
+        font-size: 11px;
+        padding: 2px 6px;
+        background: var(--colorInclusive);
+        color: white;
+        border: none;
+        border-radius: 3px;
+        cursor: pointer;
+        pointer-events: auto;
     }
 
     .tooltip-content {
