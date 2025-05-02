@@ -12,10 +12,12 @@
     export let height = 450; // Increased height to give more room for the x-axis
 
     // Add school year selector with default value
-    export let selectedYear = "2023-2024"; // Default to newest year
+    export let selectedYear = "2022-2023"; // Default to newest year (excluding 2023-2024)
 
-    // Get unique school years from the data
-    let availableYears = [...new Set(smallSchoolsData.map(school => school["School Year"]))].sort().reverse();
+    // Get unique school years from the data, excluding 2023-2024
+    let availableYears = [...new Set(smallSchoolsData
+        .filter(school => school["School Year"] !== "2023-2024")
+        .map(school => school["School Year"]))].sort().reverse();
 
     // Filter data by selected year
     $: filteredYearData = smallSchoolsData.filter(school => 
@@ -66,10 +68,6 @@
     $: rScale = scaleSqrt()
         .domain([200, 500])
         .range([8, 16])
-
-    // $: rScale = scaleSqrt()
-    //     .domain([200, 500])
-    //     .range([12, 24])
 
     // Create color scale
     $: colorScale = scaleOrdinal()
@@ -272,8 +270,6 @@
                     </text>
                 </g>
             {/each}
-
-            <!-- Trend line could be added here if needed -->
             
             <!-- Average lines -->
             {#if processedData.length > 0}
