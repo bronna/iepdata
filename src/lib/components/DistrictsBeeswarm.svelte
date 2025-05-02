@@ -2,7 +2,6 @@
   import { tweened } from 'svelte/motion'
   import { fade } from 'svelte/transition'
   import { derived } from 'svelte/store'
-  import { quartileRanges } from '$lib/stores/quartileRanges.js'
   import { data, selectedDistrict, selectedDistrictData, stateData } from '$lib/stores/stores.js'
   import { scaleLinear, scaleSqrt, scaleOrdinal } from 'd3-scale'
   import { forceSimulation, forceX, forceY, forceCollide } from 'd3-force'
@@ -245,11 +244,11 @@
               <circle
                   cx={node.x}
                   cy={node.y}
-                  r={$tweenedRadii[i] + 6}
+                  r={$tweenedRadii[i] + 3}
                   fill="none"
                   stroke={colors.colorDarkGray}
-                  stroke-width={12}
-                  stroke-opacity={0.5}
+                  stroke-width={2}
+                  stroke-opacity={0.3}
               />
               <circle
                   cx={node.x}
