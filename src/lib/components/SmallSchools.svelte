@@ -299,7 +299,7 @@
 
 <div class="scatterplot-container" bind:clientWidth={width} bind:clientHeight={height}>
     <div class="controls">
-        <h2 class="text-width">School Performance vs. Per Pupil Spending</h2>
+        <h2 class="text-width">Per Pupil Spending, School Size, and Proficiency</h2>
         
         <div class="selectors">
             <div class="year-selector">

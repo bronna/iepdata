@@ -370,11 +370,6 @@
           </g>
         {/if}
     </SVGChart>
-    {#if $selectedDistrict && index < 1}
-      <div transition:fade="{{ duration: fadeDuration }}">
-        <p class="keep-scrolling">Keep scrolling</p>
-      </div>
-    {/if}
 </div>
 
 <style>
@@ -386,13 +381,6 @@
 
     text {
       pointer-events: none;
-    }
-
-    .keep-scrolling {
-      opacity: 0.5;
-      font-size: 0.8rem;
-      text-align: center;
-      margin-top: 1rem;
     }
 
     :global(.tippy-box) {

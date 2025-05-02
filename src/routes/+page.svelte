@@ -17,6 +17,9 @@
     import ScrollyCard from "$lib/components/ScrollyCard.svelte"
     import ScrollyProgress from "$lib/components/ScrollyProgress.svelte"
 
+    $: console.log("Selected district data:", $selectedDistrictData)
+    $: console.log("Selected district:", $selectedDistrict)
+
     let windowWidth = 0
 
     // Scroller variables
@@ -27,11 +30,6 @@
 
     let isDistrictSelected = false
     $: isDistrictSelected = $selectedDistrict && $selectedDistrict.length > 0
-    $: {
-        if ($selectedDistrict && $selectedDistrict.length > 0) {
-            index = 0;
-        }
-    }
 
     // Total number of scrolly sections
     $: totalScrollySections = isDistrictSelected ? 8 : 2
@@ -60,7 +58,7 @@
     <div class="header-headline-container">
         <div class="headline-container">
             <h1 class="headline">
-                Find rates of inclusion, discipline, graduation and more for students with disabilities in Oregon
+                Educational Access: How Districts Support Students with Disabilities
             </h1>
         </div>
 
@@ -79,10 +77,10 @@
             </h3>
         
             <p class="text-width">
-                For families of students with disabilities, moving from one place to another can mean drastic changes in services, even though the disability hasn't changed. These changes can have a large impact on the well-being and developmental trajectory of a child. Although the processes for how a district determines services for a child is not transparent, data is reported to the state that gives a view into how students are supported differently.
+                For families of students with disabilities, location can dramatically impact educational services. When moving to a new area, this reality becomes starkly apparent. Even when a child's disability remains unchanged, a change in district can trigger significant shifts in support services--shifts that can profoundly affect a child's well-being and developmental trajectory.
             </p>
             <p class="text-width">
-                Below, you can explore that data.
+                Navigating school district services can feel frustratingly opaque. Fortunately, under the Individuals with Disabilities Education Act (IDEA), districts must report annual data on how they support students with disabilities. This information provides valuable insights into how individual students might experience services in different locations. Below, you can explore this data.
             </p>
         </div>
         

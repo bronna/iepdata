@@ -69,20 +69,6 @@
         .domain([200, 500])
         .range([8, 16])
 
-    // Create color scale
-    $: colorScale = scaleOrdinal()
-        .domain(processedData.map(d => d.shortName))
-        .range([
-            colors.colorInclusive,
-            colors.colorSemiInclusive,
-            colors.colorNonInclusive,
-            colors.colorSeparate,
-            "#01b6e1", // Blue
-            "#ff9900", // Orange
-            "#8A2BE2", // BlueViolet
-            "#20B2AA"  // LightSeaGreen
-        ]);
-
     // Format numbers with commas
     const formatNumber = num => num.toLocaleString();
     const formatMoney = value => `$${value.toLocaleString()}`;

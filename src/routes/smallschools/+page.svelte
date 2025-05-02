@@ -5,7 +5,7 @@
     import SideHeader from '$lib/components/SideHeader.svelte'
     import { colors } from "$lib/styles/colorConfig"
     import Divider from "$lib/components/Divider.svelte"
-    import { Pencil, TrendingUp, BarChart2 } from 'lucide-svelte'
+    import { ChartNoAxesColumn, TrendingUp, Ruler } from 'lucide-svelte'
 
     let windowWidth = 0
 </script>
@@ -45,9 +45,9 @@
         <div class="viz-container">
             <div class="section-heading">
                 <Divider>
-                    <BarChart2 size={24} />
+                    <ChartNoAxesColumn size={24} />
                 </Divider>
-                <h2>Student Demographics and Performance</h2>
+                <h2>Spending, School Size, and Performance</h2>
                 <p style="text-align:center; font-size:1rem; margin-top:-0.5rem;">* % disadvantaged data not available for 21/22 school year, 22/23 data shown</p>
                 <p style="text-align:center; font-size:1rem; margin-top:-0.5rem;">* per pupil spending and enrollment data not available for 23/24 school year, 22/23 data shown</p>
             </div>
@@ -67,13 +67,11 @@
             </div>
         </div>
         
-        <Divider>
-            <Pencil />
-        </Divider>
-        
         <div class="viz-container">
             <div class="section-heading">
-                <h2>School Size vs. Per Pupil Spending</h2>
+                <Divider>
+                    <Ruler />
+                </Divider>
             </div>
             <div style="height: 470px;">
                 <SchoolSizeExpenditureChart />
