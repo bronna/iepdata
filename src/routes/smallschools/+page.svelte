@@ -59,7 +59,7 @@
                 <Divider>
                     <TrendingUp size={24} />
                 </Divider>
-                <h2>School Proficiency Trends Over Time</h2>\
+                <h2>School Proficiency Trends Over Time</h2>
                 <p style="text-align:center; font-size:1rem; margin-top:-0.5rem;">* enrollment data not available for 23/24 school year, 22/23 data shown</p>
             </div>
             <div style="height: 470px;">
