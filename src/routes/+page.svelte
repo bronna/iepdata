@@ -36,11 +36,11 @@
 
     // Function to skip the scrolly experience
     function skipToEnd() {
-        index = totalScrollySections - 1;
+        index = totalScrollySections - 1
         // Scroll to the table section
         document.querySelector('.post-scroll-content').scrollIntoView({ 
             behavior: 'smooth' 
-        });
+        })
     }
 </script>
 

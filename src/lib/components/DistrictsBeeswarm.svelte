@@ -113,9 +113,6 @@
     }
   }
 
-  // handle overlay visibility
-  $: showOverlay = index === 3 && $selectedDistrict && $selectedDistrict.length > 0
-
   // Improved tooltip implementation
   function tooltipContent(nodeData) {
     return `
@@ -375,8 +372,14 @@
 <style>
     .districts-beeswarm {
       height: 400px;
-      width: 100%;
-      margin-bottom: 0rem;
+      width: 90%;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 767px) {
+      .districts-beeswarm {
+        width: 100%;
+      }
     }
 
     text {
@@ -406,10 +409,3 @@
       text-decoration: underline;
     }
 </style>
-
-
-<!--
-
-
-
--->

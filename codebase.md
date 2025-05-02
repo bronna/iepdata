@@ -1982,11 +1982,6 @@ You can preview the production build with `npm run preview`.
           </g>
         {/if}
     </SVGChart>
-    {#if $selectedDistrict && index < 1}
-      <div transition:fade="{{ duration: fadeDuration }}">
-        <p class="keep-scrolling">Keep scrolling</p>
-      </div>
-    {/if}
 </div>
 
 <style>
@@ -1998,13 +1993,6 @@ You can preview the production build with `npm run preview`.
 
     text {
       pointer-events: none;
-    }
-
-    .keep-scrolling {
-      opacity: 0.5;
-      font-size: 0.8rem;
-      text-align: center;
-      margin-top: 1rem;
     }
 
     :global(.tippy-box) {
@@ -3694,7 +3682,7 @@ You can preview the production build with `npm run preview`.
 ```svelte
 <script>
     import { onMount, afterUpdate } from 'svelte';
-    import { scaleLinear, scalePoint } from 'd3-scale';
+    import { scaleLinear, scalePoint, scaleSqrt } from 'd3-scale';
     import { line } from 'd3-shape';
     import { extent } from 'd3-array';
     import { colors } from '$lib/styles/colorConfig';
@@ -3709,6 +3697,14 @@ You can preview the production build with `npm run preview`.
     // State variables
     let selectedSchool = null;
     let selectedSubject = "ELA"; // Default to ELA
+    let isMobile = false;
+    
+    // Tooltip related state
+    let tooltipVisible = false;
+    let tooltipData = null;
+    let tooltipX = 0;
+    let tooltipY = 0;
+    let tooltipSchool = null; // Track which school's data is shown in tooltip
     
     // Get unique schools from the data
     let availableSchools = [...new Set(smallSchoolsData.map(school => school.School))].sort();
@@ -3721,28 +3717,53 @@ You can preview the production build with `npm run preview`.
     // Get unique school years
     let schoolYears = [...new Set(smallSchoolsData.map(school => school["School Year"]))].sort();
 
-    // Filter data by selected school
-    $: filteredData = smallSchoolsData
-        .filter(school => school.School === selectedSchool)
-        .sort((a, b) => a["School Year"].localeCompare(b["School Year"]));
+    // Create radius scale for dots
+    $: rScale = scaleSqrt()
+        .domain([200, 500])
+        .range([8, 16])
 
-    // Process data for visualization based on selected subject
-    $: chartData = filteredData.map(school => {
-        const proficiencyField = selectedSubject === "ELA" 
-            ? "ELA Proficient & Above %" 
-            : "Math Proficient & Above %";
+    // Process all schools data for both visualization and tooltips
+    $: processedSchoolsData = availableSchools.map(school => {
+        // Get all data for this school
+        const schoolRecords = smallSchoolsData
+            .filter(record => record.School === school)
+            .sort((a, b) => a["School Year"].localeCompare(b["School Year"]));
             
-        const proficiencyValue = parseInt(school[proficiencyField]?.replace(/%/g, '') || "0");
+        // Map each record to the format we need
+        const dataPoints = schoolRecords.map(record => {
+            const proficiencyField = selectedSubject === "ELA" 
+                ? "ELA Proficient & Above %" 
+                : "Math Proficient & Above %";
+                
+            const proficiencyValue = parseInt(record[proficiencyField]?.replace(/%/g, '') || "0");
+            
+            return {
+                school: record.School,
+                year: record["School Year"],
+                proficiency: proficiencyValue,
+                enrollment: parseFloat(record["Total School Enrollment"] || 0),
+                economicallyDisadvantaged: parseInt(record["Economically Disadvantaged %"]?.replace(/%/g, '') || "0"),
+                studentsWithDisabilities: parseInt(record["Students w/Disabilities %"]?.replace(/%/g, '') || "0"),
+                original: record // Keep the original data object for reference
+            };
+        });
         
         return {
-            year: school["School Year"],
-            proficiency: proficiencyValue,
-            enrollment: parseFloat(school["Total School Enrollment"] || 0),
-            economicallyDisadvantaged: parseInt(school["Economically Disadvantaged %"]?.replace(/%/g, '') || "0"),
-            studentsWithDisabilities: parseInt(school["Students w/Disabilities %"]?.replace(/%/g, '') || "0")
+            name: school,
+            isSelected: school === selectedSchool,
+            data: dataPoints
         };
     });
 
+    // Create line generator
+    $: lineGenerator = line()
+        .x(d => xScale(d.year))
+        .y(d => yScale(d.proficiency));
+
+    // Filter data for selected school
+    $: selectedSchoolData = processedSchoolsData.find(s => s.name === selectedSchool)?.data || [];
+
+    // Dimensions setup
     let dimensions = {
         width,
         height,
@@ -3754,11 +3775,13 @@ You can preview the production build with `npm run preview`.
     $: {
         dimensions.innerWidth = width - dimensions.margin.left - dimensions.margin.right;
         dimensions.innerHeight = height - dimensions.margin.top - dimensions.margin.bottom;
+        // Detect mobile screen size
+        isMobile = width < 640;
     }
 
     // Create scales
     $: xScale = scalePoint()
-        .domain(chartData.map(d => d.year))
+        .domain(schoolYears)
         .range([0, dimensions.innerWidth])
         .padding(0.5);
 
@@ -3767,18 +3790,101 @@ You can preview the production build with `npm run preview`.
         .range([dimensions.innerHeight, 0])
         .nice();
 
-    // Create line generator for the proficiency trend
-    $: lineGenerator = line()
-        .x(d => xScale(d.year))
-        .y(d => yScale(d.proficiency));
-
-    // Line path for the trend
-    $: linePath = lineGenerator(chartData);
+    // Line paths for all schools
+    $: backgroundLinePaths = processedSchoolsData.map(school => ({
+        ...school,
+        path: lineGenerator(school.data)
+    }));
 
     // Get chart title based on selections
     $: chartTitle = selectedSchool 
         ? `${selectedSubject} Proficiency Trends for ${selectedSchool}` 
         : "Select a school to view proficiency trends";
+        
+    // Format numbers with commas
+    const formatNumber = num => num.toLocaleString();
+    const formatPercent = value => `${value}%`;
+    
+    // Handle tooltip display for data points 
+    function showTooltip(point, event, school = null) {
+        tooltipData = point;
+        tooltipSchool = school || selectedSchool;
+        
+        // Adjust tooltip position to be near the mouse but not directly under it
+        tooltipX = event.offsetX + 15;
+        tooltipY = event.offsetY - 10;
+        
+        // Make sure tooltip stays in view
+        const tooltipWidth = 250; // Approximate tooltip width
+        const tooltipHeight = 150; // Approximate tooltip height
+        
+        // Check right boundary
+        if (tooltipX + tooltipWidth > width) {
+            tooltipX = tooltipX - tooltipWidth - 30;
+        }
+        
+        // Check bottom boundary
+        if (tooltipY + tooltipHeight > height) {
+            tooltipY = tooltipY - tooltipHeight;
+        }
+        
+        tooltipVisible = true;
+    }
+
+    // Handle tooltip display for background trend lines
+    function showLineTooltip(event, schoolData) {
+        // Find the nearest point on the line to show in tooltip
+        if (!schoolData || !schoolData.data || schoolData.data.length === 0) return;
+        
+        // Get mouse position relative to chart
+        const rect = event.target.getBoundingClientRect();
+        const mouseX = event.clientX - rect.left;
+        
+        // Find the closest year point on the x-axis
+        let closestYear = schoolYears[0];
+        let minDistance = Infinity;
+        
+        schoolYears.forEach(year => {
+            const distance = Math.abs(xScale(year) - (mouseX - dimensions.margin.left));
+            if (distance < minDistance) {
+                minDistance = distance;
+                closestYear = year;
+            }
+        });
+        
+        // Find the corresponding data point
+        const point = schoolData.data.find(d => d.year === closestYear);
+        if (point) {
+            showTooltip(point, event, schoolData.name);
+        }
+    }
+
+    function hideTooltip() {
+        tooltipVisible = false;
+    }
+    
+    // Initialize component
+    onMount(() => {
+        // Update the mobile detection on mount
+        isMobile = width < 640;
+    });
+    
+    // Find previous year's data for tooltip change calculation
+    function findPreviousYearData(schoolName, currentYear) {
+        // Get the school data
+        const school = processedSchoolsData.find(s => s.name === schoolName);
+        if (!school) return null;
+        
+        // Find current year index
+        const yearIndex = schoolYears.indexOf(currentYear);
+        if (yearIndex <= 0) return null; // No previous year
+        
+        // Get previous year
+        const prevYear = schoolYears[yearIndex - 1];
+        
+        // Find data point for previous year
+        return school.data.find(d => d.year === prevYear);
+    }
 </script>
 
 <div class="proficiency-trends-container" bind:clientWidth={width} bind:clientHeight={height}>
@@ -3826,8 +3932,8 @@ You can preview the production build with `npm run preview`.
                 />
                 
                 <!-- X-axis ticks and labels -->
-                {#each chartData as point}
-                    <g transform="translate({xScale(point.year)}, {dimensions.innerHeight})">
+                {#each schoolYears as year}
+                    <g transform="translate({xScale(year)}, {dimensions.innerHeight})">
                         <line 
                             y2="6" 
                             stroke={colors.colorLightGray}
@@ -3839,7 +3945,7 @@ You can preview the production build with `npm run preview`.
                             fill={colors.colorText}
                             font-size="12px"
                         >
-                            {point.year}
+                            {year}
                         </text>
                     </g>
                 {/each}
@@ -3917,43 +4023,71 @@ You can preview the production build with `npm run preview`.
                 />
             {/each}
 
-            <!-- Line representing proficiency trend -->
-            {#if chartData.length > 1}
-                <path
-                    d={linePath}
-                    fill="none"
-                    stroke="#01b6e1"
-                    stroke-width="3"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                />
+            <!-- Background trend lines for all schools -->
+            {#each backgroundLinePaths as schoolPath}
+                {#if schoolPath.name !== selectedSchool && schoolPath.path}
+                    <path
+                        d={schoolPath.path}
+                        fill="none"
+                        stroke={colors.colorLightGray}
+                        stroke-width="3"
+                        stroke-opacity="0.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        class="background-path"
+                        on:mouseenter={(e) => showLineTooltip(e, schoolPath)}
+                        on:mouseleave={hideTooltip}
+                    />
+                    <!-- Invisible wider stroke area for better hover target -->
+                    <path
+                        d={schoolPath.path}
+                        fill="none"
+                        stroke="transparent"
+                        stroke-width="10"
+                        class="hover-path"
+                        on:mouseenter={(e) => showLineTooltip(e, schoolPath)}
+                        on:mouseleave={hideTooltip}
+                    />
+                {/if}
+            {/each}
+
+            <!-- Selected school trend line (highlighted) -->
+            {#if selectedSchool}
+                {@const selectedPath = backgroundLinePaths.find(s => s.name === selectedSchool)}
+                {#if selectedPath && selectedPath.path}
+                    <path
+                        d={selectedPath.path}
+                        fill="none"
+                        stroke="#01b6e1"
+                        stroke-width="3"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    />
+                {/if}
             {/if}
 
-            <!-- Data points with tooltips -->
-            {#each chartData as point}
-                <g class="data-point">
+            <!-- Data points for selected school with hover interactions -->
+            {#each selectedSchoolData as point, i}
+                <g 
+                    class="data-point"
+                    on:mouseenter={(e) => showTooltip(point, e)}
+                    on:mouseleave={hideTooltip}
+                >
                     <circle
                         cx={xScale(point.year)}
                         cy={yScale(point.proficiency)}
-                        r="6"
+                        r={rScale(point.enrollment)}
                         fill="#01b6e1"
                         stroke="white"
                         stroke-width="2"
-                    >
-                        <title>
-                            {point.year}
-                            {selectedSubject} Proficiency: {point.proficiency}%
-                            Enrollment: {point.enrollment} students
-                            Economically Disadvantaged: {point.economicallyDisadvantaged}%
-                            Students with Disabilities: {point.studentsWithDisabilities}%
-                        </title>
-                    </circle>
+                    />
                     
                     <!-- Point value labels -->
                     <text
                         x={xScale(point.year)}
-                        y={yScale(point.proficiency) - 12}
+                        y={yScale(point.proficiency) - rScale(point.enrollment) - 5}
                         text-anchor="middle"
+                        dominant-baseline="middle"
                         fill={colors.colorText}
                         font-size="12px"
                         font-weight="600"
@@ -3963,25 +4097,72 @@ You can preview the production build with `npm run preview`.
                 </g>
             {/each}
 
+            <!-- School Size legend with adjusted circles to account for the stroke width -->
+            <g class="legend" transform="translate({dimensions.innerWidth - 214}, 220)">
+                <text font-size="12px" font-weight="600" fill={colors.colorDarkGray}>School Size:</text>
+                
+                <!-- Calculate legend circle sizes based on actual enrollment values -->
+                <!-- Add stroke to match the data visualization and adjust radius to compensate -->
+                <circle 
+                    cx="28" 
+                    cy={36 + rScale(500) - rScale(200)} 
+                    r={rScale(200) - 0.5} 
+                    fill="none" 
+                    stroke={colors.colorMediumGray} 
+                    stroke-width="1"
+                />
+                <text x="60" y="47" font-size="10px">200</text>
+
+                <circle 
+                    cx="28" 
+                    cy={36 + rScale(500) - rScale(300)} 
+                    r={rScale(300) - 0.5} 
+                    fill="none" 
+                    stroke={colors.colorMediumGray} 
+                    stroke-width="1"
+                />
+                <text x="60" y="37" font-size="10px">300</text>
+                
+                <circle 
+                    cx="28" 
+                    cy={36 + rScale(500) - rScale(400)} 
+                    r={rScale(400) - 0.5} 
+                    fill="none" 
+                    stroke={colors.colorMediumGray} 
+                    stroke-width="1"
+                />
+                <text x="60" y="27" font-size="10px">400</text>
+                
+                <circle 
+                    cx="28" 
+                    cy="36" 
+                    r={rScale(500) - 0.5} 
+                    fill="none" 
+                    stroke={colors.colorMediumGray} 
+                    stroke-width="1"
+                />
+                <text x="60" y="17" font-size="10px">500 students</text>
+            </g>
+
             <!-- Additional school information in legend area -->
             <g class="school-info" transform="translate({dimensions.innerWidth + 10}, 20)">
-                {#if chartData.length > 0}
+                {#if selectedSchoolData.length > 0}
                     <text font-size="12px" font-weight="600" fill={colors.colorText}>
                         School Details:
                     </text>
                     <text y="20" font-size="12px" fill={colors.colorDarkGray}>
-                        Enrollment: {chartData[chartData.length-1].enrollment}
+                        Enrollment: {selectedSchoolData[selectedSchoolData.length-1].enrollment}
                     </text>
                     <text y="40" font-size="12px" fill={colors.colorDarkGray}>
-                        Econ. Disadvantaged: {chartData[chartData.length-1].economicallyDisadvantaged}%
+                        Econ. Disadvantaged: {selectedSchoolData[selectedSchoolData.length-1].economicallyDisadvantaged}%
                     </text>
                     <text y="60" font-size="12px" fill={colors.colorDarkGray}>
-                        Students w/Disabilities: {chartData[chartData.length-1].studentsWithDisabilities}%
+                        Students w/Disabilities: {selectedSchoolData[selectedSchoolData.length-1].studentsWithDisabilities}%
                     </text>
                     
                     <!-- Change indicators for most recent year if data available -->
-                    {#if chartData.length > 1}
-                        {@const change = chartData[chartData.length-1].proficiency - chartData[chartData.length-2].proficiency}
+                    {#if selectedSchoolData.length > 1}
+                        {@const change = selectedSchoolData[selectedSchoolData.length-1].proficiency - selectedSchoolData[selectedSchoolData.length-2].proficiency}
                         <text y="80" font-size="12px" font-weight="600" fill={change >= 0 ? colors.colorInclusive : colors.colorSeparate}>
                             {change >= 0 ? '↑' : '↓'} {Math.abs(change)}% from previous
                         </text>
@@ -3989,6 +4170,50 @@ You can preview the production build with `npm run preview`.
                 {/if}
             </g>
         </SVGChart>
+
+        <!-- Custom tooltip - works for both selected school points and background lines -->
+        {#if tooltipVisible && tooltipData}
+            <div class="tooltip" style="left: {tooltipX}px; top: {tooltipY}px">
+                <div class="tooltip-header">
+                    {tooltipSchool} ({tooltipData.year})
+                    {#if tooltipSchool !== selectedSchool}
+                        <button class="select-school-button" on:click={() => selectedSchool = tooltipSchool}>Select</button>
+                    {/if}
+                </div>
+                <div class="tooltip-content">
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">{selectedSubject} Proficiency:</span>
+                        <span class="tooltip-value">{formatPercent(tooltipData.proficiency)}</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Enrollment:</span>
+                        <span class="tooltip-value">{formatNumber(tooltipData.enrollment)} students</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Economically Disadvantaged:</span>
+                        <span class="tooltip-value">{formatPercent(tooltipData.economicallyDisadvantaged)}</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Students with Disabilities:</span>
+                        <span class="tooltip-value">{formatPercent(tooltipData.studentsWithDisabilities)}</span>
+                    </div>
+                    
+                    <!-- Previous year comparison if available -->
+                    {#if tooltipData.year !== schoolYears[0]}
+                        {@const prevYearData = findPreviousYearData(tooltipSchool, tooltipData.year)}
+                        {#if prevYearData}
+                            {@const yearChange = tooltipData.proficiency - prevYearData.proficiency}
+                            <div class="tooltip-row change-row">
+                                <span class="tooltip-label">Change from {prevYearData.year}:</span>
+                                <span class="tooltip-value" style="color: {yearChange >= 0 ? colors.colorInclusive : colors.colorSeparate}">
+                                    {yearChange >= 0 ? '+' : ''}{yearChange}%
+                                </span>
+                            </div>
+                        {/if}
+                    {/if}
+                </div>
+            </div>
+        {/if}
     </div>
 </div>
 
@@ -4068,10 +4293,88 @@ You can preview the production build with `npm run preview`.
 
     .data-point circle {
         transition: r 0.2s ease-out;
+        cursor: pointer;
     }
 
     .data-point:hover circle {
-        r: 8;
+        filter: brightness(1.1);
+        stroke-width: 3px;
+    }
+    
+    /* Background line hover effects */
+    .background-path {
+        cursor: pointer;
+        transition: stroke-opacity 0.2s;
+    }
+    
+    .background-path:hover {
+        stroke-opacity: 0.8;
+    }
+    
+    .hover-path {
+        cursor: pointer;
+    }
+    
+    /* Tooltip styles */
+    .tooltip {
+        position: absolute;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        padding: 10px;
+        width: 250px;
+        pointer-events: none;
+        z-index: 10;
+    }
+
+    .tooltip-header {
+        font-weight: 700;
+        margin-bottom: 8px;
+        padding-bottom: 4px;
+        border-bottom: 1px solid #eee;
+        font-size: 14px;
+        color: var(--colorText);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .select-school-button {
+        font-size: 11px;
+        padding: 2px 6px;
+        background: var(--colorInclusive);
+        color: white;
+        border: none;
+        border-radius: 3px;
+        cursor: pointer;
+        pointer-events: auto;
+    }
+
+    .tooltip-content {
+        font-size: 12px;
+    }
+
+    .tooltip-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 4px;
+    }
+    
+    .change-row {
+        margin-top: 6px;
+        padding-top: 4px;
+        border-top: 1px dashed #eee;
+    }
+
+    .tooltip-label {
+        font-weight: 600;
+        color: var(--colorDarkGray);
+    }
+
+    .tooltip-value {
+        text-align: right;
+        color: var(--colorText);
     }
 
     @media (max-width: 768px) {
@@ -4095,6 +4398,11 @@ You can preview the production build with `npm run preview`.
         .school-selector select {
             flex-grow: 1;
         }
+        
+        .tooltip {
+            width: 220px;
+            font-size: 11px;
+        }
     }
 </style>
 ```
@@ -4116,10 +4424,12 @@ You can preview the production build with `npm run preview`.
     export let height = 450; // Increased height to give more room for the x-axis
 
     // Add school year selector with default value
-    export let selectedYear = "2023-2024"; // Default to newest year
+    export let selectedYear = "2022-2023"; // Default to newest year (excluding 2023-2024)
 
-    // Get unique school years from the data
-    let availableYears = [...new Set(smallSchoolsData.map(school => school["School Year"]))].sort().reverse();
+    // Get unique school years from the data, excluding 2023-2024
+    let availableYears = [...new Set(smallSchoolsData
+        .filter(school => school["School Year"] !== "2023-2024")
+        .map(school => school["School Year"]))].sort().reverse();
 
     // Filter data by selected year
     $: filteredYearData = smallSchoolsData.filter(school => 
@@ -4170,24 +4480,6 @@ You can preview the production build with `npm run preview`.
     $: rScale = scaleSqrt()
         .domain([200, 500])
         .range([8, 16])
-
-    // $: rScale = scaleSqrt()
-    //     .domain([200, 500])
-    //     .range([12, 24])
-
-    // Create color scale
-    $: colorScale = scaleOrdinal()
-        .domain(processedData.map(d => d.shortName))
-        .range([
-            colors.colorInclusive,
-            colors.colorSemiInclusive,
-            colors.colorNonInclusive,
-            colors.colorSeparate,
-            "#01b6e1", // Blue
-            "#ff9900", // Orange
-            "#8A2BE2", // BlueViolet
-            "#20B2AA"  // LightSeaGreen
-        ]);
 
     // Format numbers with commas
     const formatNumber = num => num.toLocaleString();
@@ -4376,8 +4668,6 @@ You can preview the production build with `npm run preview`.
                     </text>
                 </g>
             {/each}
-
-            <!-- Trend line could be added here if needed -->
             
             <!-- Average lines -->
             {#if processedData.length > 0}
@@ -5679,7 +5969,7 @@ You can preview the production build with `npm run preview`.
 
 <div class="scatterplot-container" bind:clientWidth={width} bind:clientHeight={height}>
     <div class="controls">
-        <h2 class="text-width">School Performance vs. Per Pupil Spending</h2>
+        <h2 class="text-width">Per Pupil Spending, School Size, and Proficiency</h2>
         
         <div class="selectors">
             <div class="year-selector">
@@ -10501,6 +10791,9 @@ export const prerender = true
     import ScrollyCard from "$lib/components/ScrollyCard.svelte"
     import ScrollyProgress from "$lib/components/ScrollyProgress.svelte"
 
+    $: console.log("Selected district data:", $selectedDistrictData)
+    $: console.log("Selected district:", $selectedDistrict)
+
     let windowWidth = 0
 
     // Scroller variables
@@ -10511,22 +10804,17 @@ export const prerender = true
 
     let isDistrictSelected = false
     $: isDistrictSelected = $selectedDistrict && $selectedDistrict.length > 0
-    $: {
-        if ($selectedDistrict && $selectedDistrict.length > 0) {
-            index = 0;
-        }
-    }
 
     // Total number of scrolly sections
     $: totalScrollySections = isDistrictSelected ? 8 : 2
 
     // Function to skip the scrolly experience
     function skipToEnd() {
-        index = totalScrollySections - 1;
+        index = totalScrollySections - 1
         // Scroll to the table section
         document.querySelector('.post-scroll-content').scrollIntoView({ 
             behavior: 'smooth' 
-        });
+        })
     }
 </script>
 
@@ -10544,7 +10832,7 @@ export const prerender = true
     <div class="header-headline-container">
         <div class="headline-container">
             <h1 class="headline">
-                Find rates of inclusion, discipline, graduation and more for students with disabilities in Oregon
+                Educational Access: How Districts Support Students with Disabilities
             </h1>
         </div>
 
@@ -10563,10 +10851,10 @@ export const prerender = true
             </h3>
         
             <p class="text-width">
-                For families of students with disabilities, moving from one place to another can mean drastic changes in services, even though the disability hasn't changed. These changes can have a large impact on the well-being and developmental trajectory of a child. Although the processes for how a district determines services for a child is not transparent, data is reported to the state that gives a view into how students are supported differently.
+                For families of students with disabilities, location can dramatically impact educational services. When moving to a new area, this reality becomes starkly apparent. Even when a child's disability remains unchanged, a change in district can trigger significant shifts in support services--shifts that can profoundly affect a child's well-being and developmental trajectory.
             </p>
             <p class="text-width">
-                Below, you can explore that data.
+                Navigating school district services can feel frustratingly opaque. Fortunately, under the Individuals with Disabilities Education Act (IDEA), districts must report annual data on how they support students with disabilities. This information provides valuable insights into how individual students might experience services in different locations. Below, you can explore this data.
             </p>
         </div>
         
@@ -11375,7 +11663,7 @@ export async function load({ params }) {
     import SideHeader from '$lib/components/SideHeader.svelte'
     import { colors } from "$lib/styles/colorConfig"
     import Divider from "$lib/components/Divider.svelte"
-    import { Pencil, TrendingUp, BarChart2 } from 'lucide-svelte'
+    import { ChartNoAxesColumn, TrendingUp, Ruler } from 'lucide-svelte'
 
     let windowWidth = 0
 </script>
@@ -11415,11 +11703,11 @@ export async function load({ params }) {
         <div class="viz-container">
             <div class="section-heading">
                 <Divider>
-                    <BarChart2 size={24} />
+                    <ChartNoAxesColumn size={24} />
                 </Divider>
-                <h2>Student Demographics and Performance</h2>
+                <h2>Spending, School Size, and Performance</h2>
                 <p style="text-align:center; font-size:1rem; margin-top:-0.5rem;">* % disadvantaged data not available for 21/22 school year, 22/23 data shown</p>
-                <p style="text-align:center; font-size:1rem; margin-top:-0.5rem;">* per pupil spending data not available for 23/24 school year, 22/23 data shown</p>
+                <p style="text-align:center; font-size:1rem; margin-top:-0.5rem;">* per pupil spending and enrollment data not available for 23/24 school year, 22/23 data shown</p>
             </div>
             <SmallSchools />
         </div>
@@ -11430,20 +11718,18 @@ export async function load({ params }) {
                     <TrendingUp size={24} />
                 </Divider>
                 <h2>School Proficiency Trends Over Time</h2>
+                <p style="text-align:center; font-size:1rem; margin-top:-0.5rem;">* enrollment data not available for 23/24 school year, 22/23 data shown</p>
             </div>
             <div style="height: 470px;">
                 <SchoolProficiencyTrends />
             </div>
         </div>
         
-        <Divider>
-            <Pencil />
-        </Divider>
-        
         <div class="viz-container">
             <div class="section-heading">
-                <h2>School Size vs. Per Pupil Spending</h2>
-                <p style="text-align:center; font-size:1rem; margin-top:-0.5rem;">* per pupil spending data not available for 23/24 school year, 22/23 data shown</p>
+                <Divider>
+                    <Ruler />
+                </Divider>
             </div>
             <div style="height: 470px;">
                 <SchoolSizeExpenditureChart />

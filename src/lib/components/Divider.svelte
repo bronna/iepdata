@@ -2,7 +2,7 @@
     import { colors } from "$lib/styles/colorConfig"
   
     export let color = colors.colorText
-    export let width = "90%"
+    export let width = "80%"
     export let iconSize = 24
     export let iconStrokeWidth = 2.5
   </script>
@@ -38,8 +38,8 @@
     hr {
       flex-grow: 1;
       border: none;
-      border-top: 1.5px solid var(--color);
-      opacity: 50%;
+      border-top: 2.5px solid var(--color);
+      opacity: 35%;
       margin: 0;
     }
   
