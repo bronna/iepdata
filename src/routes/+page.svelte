@@ -58,7 +58,7 @@
     <div class="header-headline-container">
         <div class="headline-container">
             <h1 class="headline">
-                Educational Access: How Districts Support Students with Disabilities
+                Educational Access: How School Districts Support Students with Disabilities
             </h1>
         </div>
 
@@ -77,7 +77,7 @@
             </h3>
         
             <p class="text-width">
-                For families of students with disabilities, location can dramatically impact educational services. When moving to a new area, this reality becomes starkly apparent. Even when a child's disability remains unchanged, a change in district can trigger significant shifts in support services--shifts that can profoundly affect a child's well-being and developmental trajectory.
+                For families of students with disabilities, location can dramatically impact educational services. This reality becomes especially apparent when moving from one area to another. Even when a child's disability remains unchanged, a change in district can trigger significant shifts in support services--shifts that can profoundly affect a child's well-being and developmental trajectory.
             </p>
             <p class="text-width">
                 Navigating school district services can feel frustratingly opaque. Fortunately, under the Individuals with Disabilities Education Act (IDEA), districts must report annual data on how they support students with disabilities. This information provides valuable insights into how individual students might experience services in different locations. Below, you can explore this data.
@@ -201,6 +201,10 @@
 
 
 <style>
+    .headline {
+        color: var(--colorInclusiveDark);
+    }
+
     .intro {
         margin-bottom: 1rem;
         position: relative;
@@ -209,7 +213,7 @@
     .byline {
         font-size: 1rem;
         margin-bottom: 0.75rem;
-        color: var(--colorNonInclusive);
+        color: var(--colorInclusive);
     }
 
     .content-wrapper {

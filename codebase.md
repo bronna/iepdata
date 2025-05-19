@@ -1614,7 +1614,6 @@ You can preview the production build with `npm run preview`.
   import { tweened } from 'svelte/motion'
   import { fade } from 'svelte/transition'
   import { derived } from 'svelte/store'
-  import { quartileRanges } from '$lib/stores/quartileRanges.js'
   import { data, selectedDistrict, selectedDistrictData, stateData } from '$lib/stores/stores.js'
   import { scaleLinear, scaleSqrt, scaleOrdinal } from 'd3-scale'
   import { forceSimulation, forceX, forceY, forceCollide } from 'd3-force'
@@ -1724,9 +1723,6 @@ You can preview the production build with `npm run preview`.
       selectedDistrictX = 0
     }
   }
-
-  // handle overlay visibility
-  $: showOverlay = index === 3 && $selectedDistrict && $selectedDistrict.length > 0
 
   // Improved tooltip implementation
   function tooltipContent(nodeData) {
@@ -1860,11 +1856,11 @@ You can preview the production build with `npm run preview`.
               <circle
                   cx={node.x}
                   cy={node.y}
-                  r={$tweenedRadii[i] + 6}
+                  r={$tweenedRadii[i] + 3}
                   fill="none"
                   stroke={colors.colorDarkGray}
-                  stroke-width={12}
-                  stroke-opacity={0.5}
+                  stroke-width={2}
+                  stroke-opacity={0.3}
               />
               <circle
                   cx={node.x}
@@ -1987,8 +1983,14 @@ You can preview the production build with `npm run preview`.
 <style>
     .districts-beeswarm {
       height: 400px;
-      width: 100%;
-      margin-bottom: 0rem;
+      width: 90%;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 767px) {
+      .districts-beeswarm {
+        width: 100%;
+      }
     }
 
     text {
@@ -2018,13 +2020,6 @@ You can preview the production build with `npm run preview`.
       text-decoration: underline;
     }
 </style>
-
-
-<!--
-
-
-
--->
 ```
 
 # src/lib/components/Divider.svelte
@@ -2034,7 +2029,7 @@ You can preview the production build with `npm run preview`.
     import { colors } from "$lib/styles/colorConfig"
   
     export let color = colors.colorText
-    export let width = "90%"
+    export let width = "80%"
     export let iconSize = 24
     export let iconStrokeWidth = 2.5
   </script>
@@ -2070,8 +2065,8 @@ You can preview the production build with `npm run preview`.
     hr {
       flex-grow: 1;
       border: none;
-      border-top: 1.5px solid var(--color);
-      opacity: 50%;
+      border-top: 2.5px solid var(--color);
+      opacity: 35%;
       margin: 0;
     }
   

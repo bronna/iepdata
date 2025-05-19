@@ -14,9 +14,8 @@
     // Add school year selector with default value
     export let selectedYear = "2022-2023"; // Default to newest year (excluding 2023-2024)
 
-    // Get unique school years from the data, excluding 2023-2024
+    // Get unique school years from the data
     let availableYears = [...new Set(smallSchoolsData
-        .filter(school => school["School Year"] !== "2023-2024")
         .map(school => school["School Year"]))].sort().reverse();
 
     // Filter data by selected year

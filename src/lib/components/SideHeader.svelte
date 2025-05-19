@@ -61,6 +61,7 @@
       justify-content: space-between;
       align-items: center;
       width: 100%;
+      padding-top: 0.4rem;
     }
   
     .logo-container {
@@ -81,7 +82,7 @@
       border: none;
       font-size: 2rem;
       cursor: pointer;
-      color: var(--colorText);
+      color: var(--colorDarkGray);
       z-index: 20;
       padding: 0;
       margin: 0;
