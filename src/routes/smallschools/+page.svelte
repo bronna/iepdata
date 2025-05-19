@@ -48,7 +48,6 @@
                     <ChartNoAxesColumn size={24} />
                 </Divider>
                 <h2>Spending, School Size, and Performance</h2>
-                <p style="text-align:center; font-size:1rem; margin-top:-0.5rem;">* % disadvantaged data not available for 21/22 school year, 22/23 data shown</p>
                 <p style="text-align:center; font-size:1rem; margin-top:-0.5rem;">* per pupil spending data not available for 23/24 school year, 22/23 data shown</p>
             </div>
             <SmallSchools />
