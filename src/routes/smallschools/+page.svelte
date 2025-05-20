@@ -30,7 +30,7 @@
     <div class="header-headline-container">
         <div class="headline-container">
             <h1 class="headline">
-                WLWV Primary School Size & Performance
+                WLWV Primary School Size, Spending, & Performance
             </h1>
         </div>
 
