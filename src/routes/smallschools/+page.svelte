@@ -1,4 +1,5 @@
 <script>
+    import SchoolProficiencyBySize from '$lib/components/SchoolProficiencyBySize.svelte'
     import SmallSchools from '$lib/components/SmallSchools.svelte'
     import SchoolSizeExpenditureChart from '$lib/components/SchoolSizeExpenditureChart.svelte'
     import SchoolProficiencyTrends from '$lib/components/SchoolProficiencyTrends.svelte'
@@ -11,7 +12,7 @@
 </script>
 
 <svelte:head>
-    <title>School Performance Analysis</title>
+    <title>School Size & Performance</title>
     <meta name="description" content="Analysis of small school performance compared to per pupil spending" />
 </svelte:head>
 
@@ -29,7 +30,7 @@
     <div class="header-headline-container">
         <div class="headline-container">
             <h1 class="headline">
-                Primary school size analyses
+                WLWV Primary School Size & Performance
             </h1>
         </div>
 
@@ -42,6 +43,15 @@
     </div>
 
     <div class="content-container">
+        <div class="viz-container">
+            <div class="section-heading">
+                <Divider>
+                    <ChartNoAxesColumn size={24} />
+                </Divider>
+            </div>
+            <SchoolProficiencyBySize />
+        </div>
+
         <div class="viz-container">
             <div class="section-heading">
                 <Divider>

@@ -12,14 +12,14 @@
     export let height = 800
 
     // Add school year selector with default value
-    let selectedYear = "2023-2024" // Default to newest year
-    
-    // Add subject selector with default value
-    let selectedSubject = "ELA" // Default to ELA
+    let selectedYear = "2022-2023" // Default to newest year
     
     // Get unique school years from the data
     let availableYears = [...new Set(smallSchoolsData.map(school => school["School Year"]))].sort().reverse()
 
+    // Toggle for showing/hiding school labels
+    let showLabels = true
+    
     // Tooltip related state
     let tooltipVisible = false
     let tooltipData = null
@@ -118,7 +118,7 @@
         school["School Year"] === selectedYear
     );
 
-    // Process the data to parse numeric values
+    // Process the data to parse numeric values and calculate average proficiency
     $: processedData = filteredYearData.map(school => {
         // Create a derived name field for display that's more compact
         const shortName = school.School.replace(" Primary School", "");
@@ -126,12 +126,10 @@
         // Parse individual metrics
         const expenditure = parseInt(school["Per Pupil Spending"].replace(/\$|,/g, ''));
         
-        // Use selected subject proficiency
-        const performanceField = selectedSubject === "ELA" 
-            ? "ELA Proficient & Above %" 
-            : "Math Proficient & Above %";
-            
-        const performance = parseInt(school[performanceField]?.replace(/%/g, '') || "0");
+        // Calculate average of ELA and Math proficiency
+        const elaProf = parseInt(school["ELA Proficient & Above %"]?.replace(/%/g, '') || "0");
+        const mathProf = parseInt(school["Math Proficient & Above %"]?.replace(/%/g, '') || "0");
+        const averageProficiency = (elaProf + mathProf) / 2;
         
         const disabilityPercent = parseInt(school["Students w/Disabilities %"]?.replace(/%/g, '') || "0");
         const economicDisadvantagePercent = parseInt(school["Economically Disadvantaged %"]?.replace(/%/g, '') || "0");
@@ -144,7 +142,7 @@
             ...school,
             shortName,
             expenditure,
-            performance,
+            performance: averageProficiency,
             disabilityPercent,
             economicDisadvantagePercent,
             totalDisadvantagedPercent,
@@ -212,60 +210,6 @@
             })
         })
     }
-    
-    // Define positions for leader line labels with more control options
-    // const leaderLineLabels = {
-    //     "Lowrie": { 
-    //         offsetX: 42, 
-    //         offsetY: 24,
-    //         lineStartX: 21,  // Offset from circle center where line begins
-    //         lineStartY: 14,
-    //         lineEndX: 40,  // Control where the leader line ends
-    //         lineEndY: 20,
-    //         anchor: "end"   // text-anchor: start, middle, or end
-    //     },
-    //     "Stafford": { 
-    //         offsetX: 60, 
-    //         offsetY: 15,
-    //         lineStartX: 20,
-    //         lineStartY: 2,
-    //         lineEndX: 58,
-    //         lineEndY: 11,
-    //         anchor: "end"
-    //     },
-    //     "Sunset": { 
-    //         offsetX: 65, 
-    //         offsetY: 10,
-    //         lineStartX: 18,
-    //         lineStartY: 8,
-    //         lineEndX: 63,
-    //         lineEndY: 6,
-    //         anchor: "start"
-    //     },
-    //     "Cedaroak Park": { 
-    //         offsetX: 30, 
-    //         offsetY: -25,
-    //         lineStartX: 13,
-    //         lineStartY: -13,
-    //         lineEndX: 28,
-    //         lineEndY: -28,
-    //         anchor: "middle"
-    //     },
-    //     "Willamette": { 
-    //         offsetX: 45, 
-    //         offsetY: 25,
-    //         lineStartX: 18,
-    //         lineStartY: 12,
-    //         lineEndX: 43,
-    //         lineEndY: 20,
-    //         anchor: "start"
-    //     }
-    // };
-    
-    // Check if a school needs a leader line
-    // function needsLeaderLine(schoolName) {
-    //     return Object.keys(leaderLineLabels).includes(schoolName);
-    // }
 
     // Handle tooltip display
     function showTooltip(school, event) {
@@ -311,18 +255,11 @@
                 </select>
             </div>
             
-            <div class="subject-selector">
-                <label>Subject:</label>
-                <div class="radio-group">
-                    <label class="radio-label">
-                        <input type="radio" bind:group={selectedSubject} value="ELA" name="subject">
-                        <span>ELA</span>
-                    </label>
-                    <label class="radio-label">
-                        <input type="radio" bind:group={selectedSubject} value="Math" name="subject">
-                        <span>Math</span>
-                    </label>
-                </div>
+            <div class="toggle-container">
+                <label class="toggle-label">
+                    <input type="checkbox" bind:checked={showLabels} class="toggle-input">
+                    <span class="toggle-text">{showLabels ? 'Hide Labels' : 'Show Labels'}</span>
+                </label>
             </div>
         </div>
     </div>
@@ -408,7 +345,7 @@
                     font-size="14px"
                     font-weight="600"
                 >
-                    {selectedSubject} Proficient & Above
+                    Proficiency (ELA/Math Average)
                 </text>
             </g>
 
@@ -453,7 +390,7 @@
                     font-size="12px"
                     fill={colors.colorDarkGray}
                 >
-                    Avg {selectedSubject} Performance
+                    Avg Proficiency
                 </text>
             </g>
 
@@ -499,44 +436,11 @@
                         stroke={colors.colorBackgroundWhite}
                         stroke-width="1"
                     />
-                    
-                    <!-- {#if needsLeaderLine(school.shortName)}
-                        <line 
-                            x1={xScale(school.expenditure) + leaderLineLabels[school.shortName].lineStartX}
-                            y1={yScale(school.performance) + leaderLineLabels[school.shortName].lineStartY}
-                            x2={xScale(school.expenditure) + leaderLineLabels[school.shortName].lineEndX}
-                            y2={yScale(school.performance) + leaderLineLabels[school.shortName].lineEndY}
-                            stroke={colors.colorDarkGray}
-                            stroke-width="0.5"
-                            stroke-dasharray="2,1"
-                        />
-                        <text
-                            x={xScale(school.expenditure) + leaderLineLabels[school.shortName].offsetX}
-                            y={yScale(school.performance) + leaderLineLabels[school.shortName].offsetY}
-                            text-anchor={leaderLineLabels[school.shortName].offsetX < 0 ? "end" : "start"}
-                            font-size="11px"
-                            fill={colors.colorText}
-                        >
-                            <tspan font-weight="600">{school.shortName}</tspan>
-                            <tspan> ({school.totalDisadvantagedPercent}% disadv)</tspan>
-                        </text>
-                    {:else} -->
-                        <!-- Regular inline label -->
-                        <!-- <text
-                            x={xScale(school.expenditure)}
-                            y={yScale(school.performance) - rScale(school.enrollment) - 8}
-                            text-anchor="middle"
-                            font-size="11px"
-                            fill={colors.colorText}
-                        >
-                            <tspan font-weight="600">{school.shortName}</tspan>
-                            <tspan> ({school.totalDisadvantagedPercent}% disadv)</tspan>
-                        </text> -->
-                    <!-- {/if} -->
                 </g>
             {/each}
 
             {#each processedData as school}
+                {#if showLabels}
                 <text
                     x={xScale(school.expenditure)}
                     y={yScale(school.performance) - rScale(school.enrollment) - 8}
@@ -547,6 +451,7 @@
                     <tspan font-weight="600">{school.shortName}</tspan>
                     <tspan> ({school.totalDisadvantagedPercent}% disadv)</tspan>
                 </text>
+                {/if}
             {/each}
 
             <!-- School Size legend with adjusted circles to account for the stroke width -->
@@ -601,6 +506,10 @@
         {#if tooltipVisible && tooltipData}
             <div class="tooltip" style="left: {tooltipX}px; top: {tooltipY}px">
                 <div class="tooltip-header">{tooltipData.School}</div>
+                <div class="tooltip-highlight-row">
+                    <span class="tooltip-highlight-label">Total Disadvantaged:</span>
+                    <span class="tooltip-highlight-value">{tooltipData.totalDisadvantagedPercent}%</span>
+                </div>
                 <div class="tooltip-content">
                     <div class="tooltip-row">
                         <span class="tooltip-label">Enrollment:</span>
@@ -625,6 +534,10 @@
                     <div class="tooltip-row">
                         <span class="tooltip-label">Math Proficient:</span>
                         <span class="tooltip-value">{tooltipData["Math Proficient & Above %"]}</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Avg Proficiency:</span>
+                        <span class="tooltip-value">{tooltipData.performance.toFixed(1)}%</span>
                     </div>
                 </div>
             </div>
@@ -652,13 +565,13 @@
         gap: 1.5rem;
     }
 
-    .year-selector, .subject-selector {
+    .year-selector {
         display: flex;
         align-items: center;
         gap: 0.5rem;
     }
 
-    .year-selector label, .subject-selector label {
+    .year-selector label {
         font-weight: 600;
         color: var(--colorText);
         white-space: nowrap;
@@ -671,26 +584,6 @@
         font-size: 1rem;
         background-color: white;
         cursor: pointer;
-    }
-
-    .radio-group {
-        display: flex;
-        gap: 1rem;
-    }
-
-    .radio-label {
-        display: flex;
-        align-items: center;
-        gap: 0.25rem;
-        cursor: pointer;
-    }
-
-    .radio-label input {
-        cursor: pointer;
-    }
-
-    .radio-label span {
-        font-size: 1rem;
     }
 
     h2 {
@@ -745,6 +638,26 @@
         font-size: 14px;
         color: var(--colorText);
     }
+    
+    .tooltip-highlight-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        padding: 5px 8px;
+        background-color: #f0f0f0;
+        border-radius: 4px;
+        font-weight: 600;
+    }
+    
+    .tooltip-highlight-label {
+        color: var(--colorText);
+        font-size: 13px;
+    }
+    
+    .tooltip-highlight-value {
+        color: var(--colorInclusiveDark);
+        font-size: 15px;
+    }
 
     .tooltip-content {
         font-size: 12px;
@@ -766,6 +679,28 @@
         color: var(--colorText);
     }
 
+    .toggle-container {
+        display: flex;
+        align-items: center;
+    }
+    
+    .toggle-label {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        font-weight: 600;
+        color: var(--colorText);
+        gap: 0.5rem;
+    }
+    
+    .toggle-input {
+        cursor: pointer;
+    }
+    
+    .toggle-text {
+        white-space: nowrap;
+    }
+
     @media (max-width: 768px) {
         .controls {
             flex-direction: column;
@@ -780,13 +715,8 @@
             width: 100%;
         }
 
-        .year-selector, .subject-selector {
+        .year-selector, .toggle-container {
             width: 100%;
-        }
-
-        .radio-group {
-            flex: 1;
-            justify-content: flex-start;
         }
         
         .tooltip {

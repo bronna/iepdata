@@ -4,29 +4,29 @@
     "School Year": "2023-2024",
     "Total School Enrollment": 470.0,
     "Per Pupil Spending": "$16935",
-    "Economically Disadvantaged %": "22%",
+    "Economically Disadvantaged %": "22.2%",
     "Students w/Disabilities %": "16%",
-    "ELA Proficient & Above %": "53%",
-    "Math Proficient & Above %": "46%"
+    "ELA Proficient & Above %": "54%",
+    "Math Proficient & Above %": "48%"
   },
   {
     "School": "Bolton Primary School",
     "School Year": "2023-2024",
     "Total School Enrollment": 236.0,
     "Per Pupil Spending": "$21306",
-    "Economically Disadvantaged %": "8%",
-    "Students w/Disabilities %": "18%",
+    "Economically Disadvantaged %": "6.7%",
+    "Students w/Disabilities %": "16%",
     "ELA Proficient & Above %": "80%",
-    "Math Proficient & Above %": "75%"
+    "Math Proficient & Above %": "74%"
   },
   {
     "School": "Boones Ferry Primary School",
     "School Year": "2023-2024",
     "Total School Enrollment": 475.0,
     "Per Pupil Spending": "$18367",
-    "Economically Disadvantaged %": "26%",
-    "Students w/Disabilities %": "16%",
-    "ELA Proficient & Above %": "40%",
+    "Economically Disadvantaged %": "25.9%",
+    "Students w/Disabilities %": "15%",
+    "ELA Proficient & Above %": "41%",
     "Math Proficient & Above %": "37%"
   },
   {
@@ -34,8 +34,8 @@
     "School Year": "2023-2024",
     "Total School Enrollment": 336.0,
     "Per Pupil Spending": "$17304",
-    "Economically Disadvantaged %": "14%",
-    "Students w/Disabilities %": "16%",
+    "Economically Disadvantaged %": "11.1%",
+    "Students w/Disabilities %": "14%",
     "ELA Proficient & Above %": "66%",
     "Math Proficient & Above %": "72%"
   },
@@ -44,38 +44,38 @@
     "School Year": "2023-2024",
     "Total School Enrollment": 460.0,
     "Per Pupil Spending": "$16388",
-    "Economically Disadvantaged %": "16%",
-    "Students w/Disabilities %": "10%",
+    "Economically Disadvantaged %": "17.0%",
+    "Students w/Disabilities %": "11%",
     "ELA Proficient & Above %": "56%",
-    "Math Proficient & Above %": "54%"
+    "Math Proficient & Above %": "55%"
   },
   {
     "School": "Stafford Primary School",
     "School Year": "2023-2024",
     "Total School Enrollment": 346.0,
     "Per Pupil Spending": "$16759",
-    "Economically Disadvantaged %": "5%",
-    "Students w/Disabilities %": "15%",
-    "ELA Proficient & Above %": "67%",
-    "Math Proficient & Above %": "68%"
+    "Economically Disadvantaged %": "3.2%",
+    "Students w/Disabilities %": "14%",
+    "ELA Proficient & Above %": "69%",
+    "Math Proficient & Above %": "69%"
   },
   {
     "School": "Sunset Primary School",
     "School Year": "2023-2024",
     "Total School Enrollment": 380.0,
     "Per Pupil Spending": "$16951",
-    "Economically Disadvantaged %": "9%",
-    "Students w/Disabilities %": "19%",
-    "ELA Proficient & Above %": "64%",
-    "Math Proficient & Above %": "59%"
+    "Economically Disadvantaged %": "9.9%",
+    "Students w/Disabilities %": "20%",
+    "ELA Proficient & Above %": "66%",
+    "Math Proficient & Above %": "61%"
   },
   {
     "School": "Trillium Creek Primary School",
     "School Year": "2023-2024",
     "Total School Enrollment": 491.0,
     "Per Pupil Spending": "$16018",
-    "Economically Disadvantaged %": "5%",
-    "Students w/Disabilities %": "12%",
+    "Economically Disadvantaged %": "4.7%",
+    "Students w/Disabilities %": "13%",
     "ELA Proficient & Above %": "64%",
     "Math Proficient & Above %": "62%"
   },
@@ -84,7 +84,7 @@
     "School Year": "2023-2024",
     "Total School Enrollment": 388.0,
     "Per Pupil Spending": "$16786",
-    "Economically Disadvantaged %": "11%",
+    "Economically Disadvantaged %": "13.1%",
     "Students w/Disabilities %": "18%",
     "ELA Proficient & Above %": "70%",
     "Math Proficient & Above %": "68%"
@@ -92,19 +92,19 @@
   {
     "School": "Boeckman Creek Primary School",
     "School Year": "2022-2023",
-    "Total School Enrollment": 468.0,
+    "Total School Enrollment": 472.0,
     "Per Pupil Spending": "$16935",
-    "Economically Disadvantaged %": "31%",
+    "Economically Disadvantaged %": "25.6%",
     "Students w/Disabilities %": "16%",
-    "ELA Proficient & Above %": "49%",
-    "Math Proficient & Above %": "41%"
+    "ELA Proficient & Above %": "51%",
+    "Math Proficient & Above %": "42%"
   },
   {
     "School": "Bolton Primary School",
     "School Year": "2022-2023",
     "Total School Enrollment": 216.0,
     "Per Pupil Spending": "$21306",
-    "Economically Disadvantaged %": "12%",
+    "Economically Disadvantaged %": "9.9%",
     "Students w/Disabilities %": "18%",
     "ELA Proficient & Above %": "73%",
     "Math Proficient & Above %": "69%"
@@ -114,19 +114,19 @@
     "School Year": "2022-2023",
     "Total School Enrollment": 497.0,
     "Per Pupil Spending": "$18367",
-    "Economically Disadvantaged %": "35%",
+    "Economically Disadvantaged %": "32.6%",
     "Students w/Disabilities %": "16%",
-    "ELA Proficient & Above %": "46%",
-    "Math Proficient & Above %": "42%"
+    "ELA Proficient & Above %": "48%",
+    "Math Proficient & Above %": "43%"
   },
   {
     "School": "Cedaroak Park Primary School",
     "School Year": "2022-2023",
-    "Total School Enrollment": 339.0,
+    "Total School Enrollment": 336.0,
     "Per Pupil Spending": "$17304",
-    "Economically Disadvantaged %": "11%",
+    "Economically Disadvantaged %": "8.7%",
     "Students w/Disabilities %": "16%",
-    "ELA Proficient & Above %": "68%",
+    "ELA Proficient & Above %": "67%",
     "Math Proficient & Above %": "62%"
   },
   {
@@ -134,7 +134,7 @@
     "School Year": "2022-2023",
     "Total School Enrollment": 476.0,
     "Per Pupil Spending": "$16388",
-    "Economically Disadvantaged %": "22%",
+    "Economically Disadvantaged %": "21.1%",
     "Students w/Disabilities %": "10%",
     "ELA Proficient & Above %": "59%",
     "Math Proficient & Above %": "54%"
@@ -142,39 +142,39 @@
   {
     "School": "Stafford Primary School",
     "School Year": "2022-2023",
-    "Total School Enrollment": 352.0,
+    "Total School Enrollment": 355.0,
     "Per Pupil Spending": "$16759",
-    "Economically Disadvantaged %": "8%",
+    "Economically Disadvantaged %": "6.8%",
     "Students w/Disabilities %": "15%",
-    "ELA Proficient & Above %": "64%",
+    "ELA Proficient & Above %": "65%",
     "Math Proficient & Above %": "70%"
   },
   {
     "School": "Sunset Primary School",
     "School Year": "2022-2023",
-    "Total School Enrollment": 367.0,
+    "Total School Enrollment": 371.0,
     "Per Pupil Spending": "$16951",
-    "Economically Disadvantaged %": "12%",
+    "Economically Disadvantaged %": "10.4%",
     "Students w/Disabilities %": "19%",
     "ELA Proficient & Above %": "66%",
-    "Math Proficient & Above %": "57%"
+    "Math Proficient & Above %": "58%"
   },
   {
     "School": "Trillium Creek Primary School",
     "School Year": "2022-2023",
-    "Total School Enrollment": 465.0,
+    "Total School Enrollment": 470.0,
     "Per Pupil Spending": "$16018",
-    "Economically Disadvantaged %": "7%",
+    "Economically Disadvantaged %": "5.6%",
     "Students w/Disabilities %": "12%",
     "ELA Proficient & Above %": "68%",
-    "Math Proficient & Above %": "61%"
+    "Math Proficient & Above %": "62%"
   },
   {
     "School": "Willamette Primary School",
     "School Year": "2022-2023",
-    "Total School Enrollment": 424.0,
+    "Total School Enrollment": 425.0,
     "Per Pupil Spending": "$16786",
-    "Economically Disadvantaged %": "17%",
+    "Economically Disadvantaged %": "13.8%",
     "Students w/Disabilities %": "18%",
     "ELA Proficient & Above %": "62%",
     "Math Proficient & Above %": "47%"
@@ -182,19 +182,19 @@
   {
     "School": "Boeckman Creek Primary School",
     "School Year": "2021-2022",
-    "Total School Enrollment": 461,
-    "Per Pupil Spending": "$16406",
-    "Economically Disadvantaged %": "26%",
+    "Total School Enrollment": 459,
+    "Per Pupil Spending": "$14529",
+    "Economically Disadvantaged %": "28%",
     "Students w/Disabilities %": "14%",
-    "ELA Proficient & Above %": "45%",
-    "Math Proficient & Above %": "40%"
+    "ELA Proficient & Above %": "46%",
+    "Math Proficient & Above %": "42%"
   },
   {
     "School": "Bolton Primary School",
     "School Year": "2021-2022",
-    "Total School Enrollment": 294,
-    "Per Pupil Spending": "$17681",
-    "Economically Disadvantaged %": "10%",
+    "Total School Enrollment": 243,
+    "Per Pupil Spending": "$19622",
+    "Economically Disadvantaged %": "11%",
     "Students w/Disabilities %": "12%",
     "ELA Proficient & Above %": "79%",
     "Math Proficient & Above %": "67%"
@@ -202,59 +202,59 @@
   {
     "School": "Boones Ferry Primary School",
     "School Year": "2021-2022",
-    "Total School Enrollment": 520,
-    "Per Pupil Spending": "$17258",
-    "Economically Disadvantaged %": "33%",
+    "Total School Enrollment": 492,
+    "Per Pupil Spending": "$15566",
+    "Economically Disadvantaged %": "32%",
     "Students w/Disabilities %": "15%",
-    "ELA Proficient & Above %": "38%",
+    "ELA Proficient & Above %": "37%",
     "Math Proficient & Above %": "34%"
   },
   {
     "School": "Cedaroak Park Primary School",
     "School Year": "2021-2022",
-    "Total School Enrollment": 268,
-    "Per Pupil Spending": "$16172",
+    "Total School Enrollment": 345,
+    "Per Pupil Spending": "$14918",
     "Economically Disadvantaged %": "9%",
     "Students w/Disabilities %": "11%",
-    "ELA Proficient & Above %": "66%",
-    "Math Proficient & Above %": "61%"
+    "ELA Proficient & Above %": "67%",
+    "Math Proficient & Above %": "62%"
   },
   {
     "School": "Lowrie Primary School",
     "School Year": "2021-2022",
-    "Total School Enrollment": 488,
-    "Per Pupil Spending": "$16203",
+    "Total School Enrollment": 473,
+    "Per Pupil Spending": "$14708",
     "Economically Disadvantaged %": "21%",
     "Students w/Disabilities %": "9%",
-    "ELA Proficient & Above %": "58%",
-    "Math Proficient & Above %": "52%"
+    "ELA Proficient & Above %": "59%",
+    "Math Proficient & Above %": "53%"
   },
   {
     "School": "Stafford Primary School",
     "School Year": "2021-2022",
-    "Total School Enrollment": 350,
-    "Per Pupil Spending": "$14915",
+    "Total School Enrollment": 360,
+    "Per Pupil Spending": "$14969",
     "Economically Disadvantaged %": "7%",
     "Students w/Disabilities %": "13%",
     "ELA Proficient & Above %": "63%",
-    "Math Proficient & Above %": "66%"
+    "Math Proficient & Above %": "67%"
   },
   {
     "School": "Sunset Primary School",
     "School Year": "2021-2022",
-    "Total School Enrollment": 351,
-    "Per Pupil Spending": "$16031",
+    "Total School Enrollment": 367,
+    "Per Pupil Spending": "$15387",
     "Economically Disadvantaged %": "10%",
     "Students w/Disabilities %": "14%",
-    "ELA Proficient & Above %": "68%",
+    "ELA Proficient & Above %": "69%",
     "Math Proficient & Above %": "63%"
   },
   {
     "School": "Trillium Creek Primary School",
     "School Year": "2021-2022",
     "Total School Enrollment": 462,
-    "Per Pupil Spending": "$16018",
-    "Economically Disadvantaged %": "6%",
+    "Per Pupil Spending": "$14430",
+    "Economically Disadvantaged %": "7%",
     "Students w/Disabilities %": "10%",
     "ELA Proficient & Above %": "73%",
     "Math Proficient & Above %": "64%"
@@ -262,11 +262,11 @@
   {
     "School": "Willamette Primary School",
     "School Year": "2021-2022",
-    "Total School Enrollment": 468,
-    "Per Pupil Spending": "$14181",
-    "Economically Disadvantaged %": "14%",
+    "Total School Enrollment": 424,
+    "Per Pupil Spending": "$14599",
+    "Economically Disadvantaged %": "16%",
     "Students w/Disabilities %": "15%",
     "ELA Proficient & Above %": "56%",
-    "Math Proficient & Above %": "49%"
+    "Math Proficient & Above %": "48%"
   }
 ]
