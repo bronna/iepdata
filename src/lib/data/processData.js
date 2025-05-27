@@ -1,5 +1,5 @@
 import * as topojson from "topojson-client"
-import OregonData from "./oregon_data_23.json"
+import OregonData from "./oregon_data_24.json"
 
 let largeDistrictCutoff = 500
 
@@ -67,7 +67,7 @@ function calculateRanks(data) {
 }
 
 export const getData = () => {
-    const objectName = "OR_SDs_merged_23"
+    const objectName = "OR_SDs_merged_24"
     const geojsonData = topojson.feature(OregonData, OregonData.objects[objectName])
     let data = geojsonData.features
 
@@ -113,12 +113,12 @@ export const getData = () => {
             sumHigherEdTrainingEmployed += (district.properties["Higher Ed/Training/Employed"] / 100) * district.properties["Total Student Count"]
         }
 
-        if (typeof district.properties["IEP 4Yr Cohort Grad 18-19"] === "number" && !isNaN(district.properties["IEP 4Yr Cohort Grad 18-19"])) {
-            sumIEP4YrCohortGrad += (district.properties["IEP 4Yr Cohort Grad 18-19"] / 100) * district.properties["Total Student Count"]
+        if (typeof district.properties["Graduation Rate"] === "number" && !isNaN(district.properties["Graduation Rate"])) {
+            sumIEP4YrCohortGrad += (district.properties["Graduation Rate"] / 100) * district.properties["Total Student Count"]
         }
 
-        if (typeof district.properties["IEP Dropout 18-19"] === "number" && !isNaN(district.properties["IEP Dropout 18-19"])) {
-            sumIEPDropout += (district.properties["IEP Dropout 18-19"] / 100) * district.properties["Total Student Count"]
+        if (typeof district.properties["Dropout Rate"] === "number" && !isNaN(district.properties["Dropout Rate"])) {
+            sumIEPDropout += (district.properties["Dropout Rate"] / 100) * district.properties["Total Student Count"]
         }
 
         // Calculate the weighted inclusion
@@ -135,7 +135,12 @@ export const getData = () => {
                 alertsCount++
             }
         })
-        district.properties.nAlerts = alertsCount
+        // Only set nAlerts if we have alert data, otherwise set to null
+        const hasAlertData = alertColumns.some(column => 
+            district.properties[column] !== undefined && 
+            district.properties[column] !== null
+        )
+        district.properties.nAlerts = hasAlertData ? alertsCount : null
 
         // indicate if large or small district
         if (!district.properties["Total Student Count"]) {
@@ -221,8 +226,8 @@ export const getData = () => {
             "LRE Students <40%": (numNonInclusive / totalStudents) * 100,
             "LRE Students Separate Settings": (numSeparate / totalStudents) * 100,
             "Higher Ed/Training/Employed": sumHigherEdTrainingEmployed / totalStudents * 100,
-            "IEP 4Yr Cohort Grad 18-19": sumIEP4YrCohortGrad / totalStudents * 100,
-            "IEP Dropout 18-19": sumIEPDropout / totalStudents * 100,
+            "Graduation Rate": sumIEP4YrCohortGrad / totalStudents * 100,
+            "Dropout Rate": sumIEPDropout / totalStudents * 100,
             "minWeightedInclusion": minWeightedInclusion,
             "maxWeightedInclusion": maxWeightedInclusion,
             "minWeightedInclusionAll": minWeightedInclusionAll,

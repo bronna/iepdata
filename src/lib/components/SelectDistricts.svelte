@@ -1,22 +1,17 @@
+<!-- src/lib/components/SelectDistricts.svelte -->
+
 <script>
-    import { data, selectedDistrict, hideSmallDistricts } from '$lib/stores/stores.js'
+    import { data, selectedDistricts, hideSmallDistricts } from '$lib/stores/stores.js'
     import Svelecte from 'svelecte'
 
-    // create array of objects with id and name value for each item in the data array
-	let districtNames = $data.map((district) => {
-		return { value: district.properties.GEOID, label: district.properties["Institution Name"] }
-	})
+    // Create array of objects with id and name value for each item in the data array
+    let districtNames = $data.map((district) => {
+        return { value: district.properties.GEOID, label: district.properties["Institution Name"] }
+    })
 
     function toggleHideSmallDistricts() {
-		hideSmallDistricts.update(value => !value)
-	}
-
-    function clearSelectedDistricts() {
-		selectedDistrict.set([])
-		minSize = 0;
-		maxSize = 9000
-		values = [minSize, maxSize]
-	}
+        hideSmallDistricts.update(value => !value)
+    }
 </script>
 
 <div class="search text-width">
@@ -27,7 +22,7 @@
     <div class="search-container text-width">
         <Svelecte 
             options={districtNames} 
-            bind:value={$selectedDistrict} 
+            bind:value={$selectedDistricts} 
             multiple={true} 
             placeholder={"find a school district"}
             closeAfterSelect={true}
@@ -35,29 +30,13 @@
     </div>
 </div>
 
-{#if $selectedDistrict}
-    <!-- <div class="filters">
-        <div class="hide-small-button">
-            <button on:click={toggleHideSmallDistricts} class="action-button" id="hide-button">
-                {$hideSmallDistricts ? 'show small districts' : 'hide small districts'}
-            </button>
-            <p class="asterisk">* small districts don't have as accurate of an inclusion score</p>
-        </div>
-
-        <button on:click={clearSelectedDistricts} class="action-button" id="select-none-button">
-            clear selected
-        </button>
-    </div> -->
-{/if}
-
-
 <style>
     .search h2 {
         margin: 1rem 0;
     }
 
     .search-description {
-        color: var(--colorText);
+        color: var(--colorInclusive);
         font-size: 1.4rem;
         letter-spacing: 0.01rem;
         font-weight: 700;
@@ -77,33 +56,11 @@
         margin: 2rem 0 2rem 0;
         width: 100%;
         max-width: 72rem;
-        /* gap: 1rem; */
-    }
-
-    /* Fallback for older browsers */
-	.filters > *:not(:last-child) {
-		margin-right: 1rem; /* Horizontal spacing */
-	}
-
-	@supports (gap: 1rem) {
-		.filters {
-			gap: 1rem;
-		}
-		/* With gap supported, we no longer need the extra margin on buttons */
-		.filters > * {
-			margin: 0;
-		}
-	}
-
-    @media (max-width: 768px) {
-        .filters {
-            width: 100%;
-        }
+        gap: 1rem;
     }
 
     .action-button {
         padding: 0.25rem 0.5rem;
-        /* margin: 0; */
         border-radius: 20px;
         cursor: pointer;
         color: var(--colorText);
@@ -115,30 +72,60 @@
         font-weight: 700;
         letter-spacing: 0.02rem;
         opacity: 0.85;
-        /* Added margin for fallback, will be overridden if gap is supported */
-        margin: 0; /* Resets any additional margin for the feature query to work properly */
+        margin: 0;
     }
 
     .action-button:hover {
         background-color: whitesmoke;
     }
 
-    #hide-button {
-        margin-bottom: -1rem;
-        width: 12rem;
-    }
-
-    .hide-small-button {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-	}
-
-	.asterisk {
+    .primary-district-info {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
         font-size: 0.9rem;
         color: var(--colorDarkGray);
-        margin-top: 1.8rem;
-        line-height: 1.2rem;
-        margin-left: 1rem;
+    }
+    
+    .info-text {
+        font-style: italic;
+        font-weight: 600;
+    }
+
+    .district-pills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .district-pill {
+        background-color: var(--colorLightGray);
+        border: 1px solid var(--colorMediumGray);
+        border-radius: 12px;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+    .district-pill:hover {
+        background-color: var(--colorMediumGray);
+        color: white;
+    }
+
+    @media (max-width: 768px) {
+        .filters {
+            width: 100%;
+            flex-direction: column;
+        }
+        
+        .primary-district-info {
+            margin: 0.5rem 0 0 0;
+        }
+        
+        .district-pills {
+            justify-content: center;
+        }
     }
 </style>

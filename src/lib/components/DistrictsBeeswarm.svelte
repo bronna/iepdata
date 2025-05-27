@@ -1,8 +1,8 @@
 <script>
   import { tweened } from 'svelte/motion'
   import { fade } from 'svelte/transition'
-  import { derived } from 'svelte/store'
-  import { data, selectedDistrict, selectedDistrictData, stateData } from '$lib/stores/stores.js'
+  import { cubicOut } from 'svelte/easing'
+  import { data, selectedDistricts, selectedDistrictsData, stateData, primaryDistrictId } from '$lib/stores/stores.js'
   import { scaleLinear, scaleSqrt, scaleOrdinal } from 'd3-scale'
   import { forceSimulation, forceX, forceY, forceCollide } from 'd3-force'
   import { extent } from 'd3-array'
@@ -16,94 +16,231 @@
   let fadeDuration = 300
 
   // Filter out data rows with no "weighted_inclusion" value
-  const filteredData = $data.filter(d => d.properties.weighted_inclusion !== null && d.properties.weighted_inclusion !== undefined)
+  $: filteredData = $data ? $data.filter(d => d.properties.weighted_inclusion !== null && d.properties.weighted_inclusion !== undefined) : []
   
   // Chart dimensions & initial values
   let defaultRadius = 10
   $: defaultRadius = width <= 768 ? 5 : 10
 
-  let width
-  let height
+  let width = 800
+  let height = 400
   $: dimensions = { 
-    width, 
-    height, 
-    margin: width <= 768 ? { top: 0, right: 20, bottom: 20, left: 20 } : { top: 0, right: 30, bottom: 20, left: 30 },
+    width: width || 800, 
+    height: height || 400, 
+    margin: (width && width <= 768) ? { top: 0, right: 20, bottom: 20, left: 20 } : { top: 0, right: 30, bottom: 20, left: 30 },
   }
 
-  $: xScale = scaleLinear()
-    .domain(extent(filteredData, d => d.properties.weighted_inclusion))
-    .range([0, dimensions.width - dimensions.margin.right - dimensions.margin.left])
+  $: innerWidth = (dimensions.width || 800) - (dimensions.margin?.right || 30) - (dimensions.margin?.left || 30)
+  $: innerHeight = (dimensions.height || 400) - (dimensions.margin?.top || 0) - (dimensions.margin?.bottom || 20)
 
-  $: rScale = scaleSqrt()
+  $: xScale = filteredData.length > 0 && innerWidth > 0 ? scaleLinear()
+    .domain(extent(filteredData, d => d.properties.weighted_inclusion))
+    .range([0, innerWidth]) : scaleLinear().domain([0, 1]).range([0, 100])
+
+  $: rScale = filteredData.length > 0 ? scaleSqrt()
     .domain(extent(filteredData, d => d.properties['Total Student Count']))
-    .range(width < 768 ? [2, 20] : [3, 50])
+    .range((width && width < 768) ? [2, 20] : [3, 50]) : scaleSqrt().domain([0, 1000]).range([3, 50])
 
   let colorScale = scaleOrdinal()
     .domain([1, 2, 3, 4])
     .range([colors.colorSeparate, colors.colorNonInclusive, colors.colorSemiInclusive, colors.colorInclusive])
 
-  // Force simulation
+  // Force simulation - only run once when data/dimensions change, NOT when index changes
   let bubblePadding = 2
-  let useScaledRadius = false
+  let simulation
+  let nodes = []
+  let simulationInitialized = false
 
-  let simulation = forceSimulation(filteredData)
+  // Create tweened stores for animated values
+  const tweenedRadii = tweened([], {
+    duration: fadeDuration,
+    easing: cubicOut
+  })
 
+  const tweenedColors = tweened([], {
+    duration: fadeDuration,
+    interpolate: (a, b) => {
+      return t => a.map((color, i) => {
+        if (!b[i]) return color
+        return interpolateRgb(color, b[i])(t)
+      })
+    }
+  })
+
+  const tweenedOpacities = tweened([], {
+    duration: fadeDuration,
+    easing: cubicOut
+  })
+
+  // Helper function to calculate radius for a node
+  function getNodeRadius(node, currentIndex) {
+    if (currentIndex >= 2) {
+      return rScale(node.properties['Total Student Count'])
+    } else {
+      return $selectedDistricts && $selectedDistricts.includes(node.properties.GEOID) ? 12 : defaultRadius
+    }
+  }
+
+  // SEPARATE: Simulation initialization (only runs when data/scales change, NOT index)
   $: {
-    simulation
-      .force('x',
-        forceX()
-          .x(d => xScale(d.properties.weighted_inclusion))
+    if (filteredData.length > 0 && width && height && xScale && rScale && !simulationInitialized) {
+      initializeSimulation()
+    }
+  }
+
+  function initializeSimulation() {
+    // Create a copy of the data for the simulation
+    const simData = filteredData.map(d => ({ ...d }))
+    
+    // Create the simulation with consistent positioning logic
+    simulation = forceSimulation(simData)
+      .force('x', 
+        forceX(d => xScale(d.properties.weighted_inclusion))
           .strength(1.5)
       )
-      .force('y',
-        forceY()
-          .y(height / 2)
+      .force('y', 
+        forceY(height / 2)
           .strength(0.1)
       )
-      .force('collide',
-        forceCollide()
-          .radius(d => useScaledRadius ? rScale(d.properties['Total Student Count']) + bubblePadding : defaultRadius + bubblePadding)
-          .strength(0.8)
+      .force('collide', 
+        forceCollide(d => defaultRadius + bubblePadding).strength(0.8)
       )
       .alpha(0.5)
       .alphaMin(0.01)
       .alphaDecay(0.05)
       .velocityDecay(0.4)
-      .restart()
+      .stop()
+    
+    // Run manual ticks for immediate positioning
+    for (let i = 0; i < 120; ++i) {
+      simulation.tick()
+    }
+    
+    // Get the positioned nodes
+    nodes = simulation.nodes()
+    
+    // Initialize tweened values
+    initializeTweenedValues()
+    
+    // Set up ongoing tick handler
+    simulation.on('tick', () => {
+      nodes = [...simulation.nodes()]
+    })
+    
+    // Mark as initialized and restart
+    simulationInitialized = true
+    simulation.restart()
   }
 
-  let nodes = []
-  simulation.on('tick', () => {
-    nodes = simulation.nodes()
-  })
+  // Track if we've updated collision for size-based view
+  let hasUpdatedCollisionForSize = false
 
-  $: visibleLabels = derived(
-    [selectedDistrict, selectedDistrictData],
-    ([$selectedDistrict, $selectedDistrictData]) => {
-      if (index < 6) {
-        return nodes.filter(node => highlightedDistricts.includes(node.properties.GEOID))
-      } else if ($selectedDistrict && $selectedDistrict.length > 0) {
-        return nodes.filter(node => $selectedDistrict.includes(node.properties.GEOID))
+  // SEPARATE: Visual updates when index, selection, or highlighted districts change
+  $: if (nodes.length > 0 && simulationInitialized && index !== undefined) {
+    updateRadii()
+  }
+
+  $: if (nodes.length > 0 && simulationInitialized && highlightedDistricts && index !== undefined) {
+    updateColors()
+  }
+
+  $: if (nodes.length > 0 && simulationInitialized && $selectedDistricts) {
+    updateOpacities()
+  }
+
+  function updateRadii() {
+    const newRadii = nodes.map(node => getNodeRadius(node, index))
+    tweenedRadii.set(newRadii)
+
+    // Update collision force when transitioning to size-based view (index 2+)
+    if (index >= 2 && simulation && !hasUpdatedCollisionForSize) {
+      const newCollisionRadius = (d) => {
+        return rScale(d.properties['Total Student Count']) + bubblePadding
       }
+      
+      simulation.force('collide', forceCollide(newCollisionRadius).strength(0.8))
+      simulation.alpha(0.3).restart()
+      hasUpdatedCollisionForSize = true
+    } else if (index < 2) {
+      hasUpdatedCollisionForSize = false
+    }
+  }
+
+  function updateColors() {
+    const newColors = nodes.map(node => {
+      if (index === 0) {
+        return colorScale(node.properties.quartile)
+      } else {
+        return highlightedDistricts.includes(node.properties.GEOID)
+          ? colorScale(node.properties.quartile)
+          : colors.colorLightGray
+      }
+    })
+    tweenedColors.set(newColors)
+  }
+
+  function updateOpacities() {
+    const newOpacities = nodes.map(node => {
+      if ($selectedDistricts && $selectedDistricts.includes(node.properties.GEOID)) {
+        return 1
+      }
+      return 0.9
+    })
+    tweenedOpacities.set(newOpacities)
+  }
+
+  // Function to initialize tweened values
+  function initializeTweenedValues() {
+    const initialRadii = nodes.map(node => getNodeRadius(node, index))
+    
+    const initialColors = nodes.map(node => {
+      return colorScale(node.properties.quartile) // Start with all districts colored
+    })
+    
+    const initialOpacities = nodes.map(() => 0.9)
+    
+    tweenedRadii.set(initialRadii, { duration: 0 })
+    tweenedColors.set(initialColors, { duration: 0 })
+    tweenedOpacities.set(initialOpacities, { duration: 0 })
+  }
+
+  // Reset simulation when key parameters change (but not index)
+  $: {
+    if (simulationInitialized && (width || height)) {
+      simulationInitialized = false
+      hasUpdatedCollisionForSize = false
+    }
+  }
+
+  // Create derived store only when dependencies are available
+  $: visibleLabels = (() => {
+    if (!$selectedDistricts || !$selectedDistrictsData || !nodes || nodes.length === 0) {
       return []
     }
-  )
+    
+    if (index < 6) {
+      return nodes.filter(node => highlightedDistricts.includes(node.properties.GEOID))
+    } else if ($selectedDistricts && $selectedDistricts.length > 0) {
+      return nodes.filter(node => $selectedDistricts.includes(node.properties.GEOID))
+    }
+    return []
+  })()
 
-  $: legendWidth = rScale(6000) + 140
-  $: legendHeight = rScale(6000) + 1
+  $: legendWidth = filteredData.length > 0 ? rScale(6000) + 140 : 140
+  $: legendHeight = filteredData.length > 0 ? rScale(6000) + 1 : 1
 
   // Get selected district's x position
   let selectedDistrictX = 0
   $: {
-    if ($selectedDistrict && $selectedDistrict.length > 0) {
-      const selectedGEOID = String($selectedDistrict) // Convert to string to ensure proper comparison
+    if ($selectedDistricts && $selectedDistricts.length > 0 && nodes.length > 0 && dimensions.margin) {
+      const selectedGEOID = $selectedDistricts[0]
       
       const selectedNode = nodes.find(node => {
-        return String(node.properties.GEOID) === selectedGEOID
+        return node.properties.GEOID === selectedGEOID
       })
       
-      if (selectedNode) {
-        selectedDistrictX = selectedNode.x + dimensions.margin.left
+      if (selectedNode && selectedNode.x && !isNaN(selectedNode.x)) {
+        selectedDistrictX = selectedNode.x + (dimensions.margin.left || 0)
       } else {
         selectedDistrictX = 0
       }
@@ -144,12 +281,15 @@
     }
   }
 
-  let largestDistricts = $stateData[0].properties.largestDistricts
+  let largestDistricts = []
+  $: if ($stateData && $stateData.length > 0) {
+    largestDistricts = $stateData[0].properties.largestDistricts || []
+  }
 
   let neighborDistrictIds = []
   $: {
-    if ($selectedDistrict && $selectedDistrict.length > 0 && $selectedDistrictData && $selectedDistrictData.length > 0) {
-        neighborDistrictIds = $selectedDistrictData[0].properties.neighbors
+    if ($selectedDistricts && $selectedDistricts.length > 0 && $selectedDistrictsData && $selectedDistrictsData.length > 0) {
+        neighborDistrictIds = $selectedDistrictsData[0].properties.neighbors || []
     } else {
         neighborDistrictIds = []
     }
@@ -157,113 +297,65 @@
 
   let highlightedDistricts = []
   $: {
-    if ($selectedDistrict && $selectedDistrict.length > 0) {
-      if (index < 4) {
-        highlightedDistricts = $selectedDistrict
-      } else if (index === 4) {
-        highlightedDistricts = [$selectedDistrict, ...largestDistricts]
-      } else if (index === 5) {
-        highlightedDistricts = [$selectedDistrict, ...neighborDistrictIds]
+      if ($selectedDistricts && $selectedDistricts.length > 0) {
+          if (index < 4) {
+              highlightedDistricts = [$primaryDistrictId]
+          } else if (index === 4) {
+              highlightedDistricts = [$primaryDistrictId, ...largestDistricts]
+          } else if (index === 5) {
+              highlightedDistricts = [$primaryDistrictId, ...neighborDistrictIds]
+          } else {
+              highlightedDistricts = filteredData.map(d => d.properties.GEOID)
+          }
       } else {
-        highlightedDistricts = filteredData.map(d => d.properties.GEOID)
+          highlightedDistricts = index < 7 ? [] : filteredData.map(d => d.properties.GEOID)
       }
-    } else {
-      highlightedDistricts = index < 7 ? [] : filteredData.map(d => d.properties.GEOID)
-    }
-  }
-
-  // Tweened values for transitions
-  let tweenedOpacity = tweened(0, { duration: fadeDuration })
-  $: {
-    if (index > 0) {
-      tweenedOpacity.set(0.85)
-    } else {
-      tweenedOpacity.set(0)
-    }
-  }
-
-  let tweenedRadii = tweened(new Array(filteredData.length).fill(defaultRadius), { duration: fadeDuration })
-  $: {
-    if (index >= 2) {
-      useScaledRadius = true
-      tweenedRadii.set(filteredData.map(d => rScale(d.properties['Total Student Count'])))
-    } else {
-      useScaledRadius = false
-      tweenedRadii.set(filteredData.map(d => 
-        $selectedDistrict && $selectedDistrict.includes(d.properties.GEOID) ? 12 : defaultRadius
-      ))
-    }
-  }
-
-  function interpolateColor(a, b) {
-    const interpolate = interpolateRgb(a, b)
-    return t => interpolate(t)
-  }
-
-  let tweenedColors = tweened(
-    filteredData.map(() => colors.colorLightGray),
-    {
-      duration: fadeDuration,
-      interpolate: (a, b) => {
-        return t => a.map((color, i) => interpolateColor(color, b[i])(t))
-      }
-    }
-  )
-  $: {
-    tweenedColors.set(
-      filteredData.map(d => {
-        if (index === 0) {
-          return colorScale(d.properties.quartile)
-        } else {
-          return highlightedDistricts.includes(d.properties.GEOID)
-            ? colorScale(d.properties.quartile)
-            : colors.colorLightGray
-        }
-      })
-    )
   }
 </script>
 
 <div class="districts-beeswarm" bind:clientWidth={width} bind:clientHeight={height}>
     <SVGChart dimensions={dimensions}>
       {#each nodes as node, i}
-          {#if !($selectedDistrict && $selectedDistrict.includes(node.properties.GEOID))}
+          {#if !($selectedDistricts && $selectedDistricts.includes(node.properties.GEOID))}
               <circle
                   cx={node.x}
                   cy={node.y}
-                  r={$tweenedRadii[i]}
-                  fill={$tweenedColors[i]}
+                  r={$tweenedRadii[i] || defaultRadius}
+                  fill={$tweenedColors[i] || colors.colorLightGray}
+                  opacity={$tweenedOpacities[i] || 0.9}
                   use:tooltipAction={tooltipContent(node.properties)}
-                  style="cursor: pointer;"
+                  style="cursor: pointer; transition: stroke-width 0.3s ease;"
               />
           {/if}
       {/each}
       
       {#each nodes as node, i}
-          {#if $selectedDistrict && $selectedDistrict.includes(node.properties.GEOID)}
+          {#if $selectedDistricts && $selectedDistricts.includes(node.properties.GEOID)}
               <circle
                   cx={node.x}
                   cy={node.y}
-                  r={$tweenedRadii[i] + 3}
+                  r={($tweenedRadii[i] || defaultRadius) + 3}
                   fill="none"
                   stroke={colors.colorDarkGray}
                   stroke-width={2}
                   stroke-opacity={0.3}
+                  style="transition: all 0.3s ease;"
               />
               <circle
                   cx={node.x}
                   cy={node.y}
-                  r={$tweenedRadii[i]}
-                  fill={$tweenedColors[i]}
+                  r={$tweenedRadii[i] || defaultRadius}
+                  fill={$tweenedColors[i] || colors.colorLightGray}
+                  opacity={$tweenedOpacities[i] || 1}
                   stroke={colors.colorWhite}
                   stroke-width={1}
                   use:tooltipAction={tooltipContent(node.properties)}
-                  style="cursor: pointer;"
+                  style="cursor: pointer; transition: all 0.3s ease;"
               />
           {/if}
       {/each}
 
-        {#each $visibleLabels as node}
+        {#each visibleLabels as node}
             <text
               x={node.x}
               y={node.y}
@@ -273,6 +365,7 @@
               stroke="white"
               stroke-width="5"
               style="font-size: 14px; font-weight:400;"
+              transition:fade={{duration: fadeDuration}}
             >
               {node.properties["Institution Name"]}
             </text>
@@ -283,6 +376,7 @@
               text-anchor="middle"
               fill="black"
               style="font-size: 14px; font-weight:400;"
+              transition:fade={{duration: fadeDuration}}
             >
               {node.properties["Institution Name"]}
             </text>
@@ -300,7 +394,7 @@
             &#8592; Less inclusive
           </text>
           <text 
-            x={dimensions.width - dimensions.margin.right - dimensions.margin.left - 50}
+            x={Math.max(50, innerWidth - 50)}
             y={60} 
             text-anchor="end"
             font-size="14px"
@@ -311,8 +405,8 @@
           </text>
         </g>
   
-        {#if index > 1}
-          <g class="legend" transform="translate({dimensions.width - legendWidth}, {dimensions.height - legendHeight})" transition:fade="{{ duration: fadeDuration}}">
+        {#if index > 1 && rScale && innerWidth > 0 && innerHeight > 0}
+          <g class="legend" transform="translate({Math.max(0, innerWidth - legendWidth)}, {Math.max(0, innerHeight - legendHeight)})" transition:fade="{{ duration: fadeDuration}}">
             <circle r={rScale(6000)} fill="none" stroke={colors.colorText} stroke-width="1" />
             <line 
               x1="0" x2={rScale(6000) + 5}

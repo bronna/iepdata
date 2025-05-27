@@ -1,7 +1,7 @@
+<!-- src/routes/+layout.svelte -->
 <script>
     import '$lib/styles/styles.css'
     import { colors } from '$lib/styles/colorConfig.js'
-
     import Footer from '$lib/components/Footer.svelte'
 
     let cssColors = `
@@ -24,8 +24,10 @@
     `
 </script>
 
-
 <div class="app" style="{cssColors}">
+    <!-- Color bar inside app div so it can access CSS variables -->
+    <div class="color-bar"></div>
+    
     <main>
         <slot />
     </main>
@@ -33,8 +35,13 @@
     <Footer />
 </div>
 
-
 <style>
+    .color-bar {
+        width: 100%;
+        height: 8px;
+        background-color: var(--colorInclusive);
+    }
+
     :global(:root) {
         --font-body: 'Source Sans 3', sans-serif;
         --font-headers: 'Bitter', serif;
@@ -63,7 +70,7 @@
     }
 
     :global(.header) {
-        color: var(--colorText);
+        color: var(--colorInclusive);
         font-size: 1.3rem;
         letter-spacing: 0.01rem;
         font-weight: 700;
@@ -89,6 +96,7 @@
         min-height: 100vh;
         font-family: var(--font-body);
         color: var(--color-text);
+        /* Remove top padding since color bar is no longer fixed */
     }
 
     main {

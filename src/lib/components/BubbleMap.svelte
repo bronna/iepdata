@@ -13,7 +13,7 @@
         forceX,
         forceY
     } from 'd3'
-    import { data, selectedDistrict } from '$lib/stores/stores.js'
+    import { data, selectedDistricts, primaryDistrictId } from '$lib/stores/stores.js'
     import { colors } from "$lib/styles/colorConfig"
     import { browser } from '$app/environment'
     import { fade } from 'svelte/transition'
@@ -63,7 +63,7 @@
     }
 
     // Get the selected district data for highlighting
-    $: selectedDistrictData = $data.find(d => d.properties.GEOID === $selectedDistrict);
+    $: selectedDistrictData = $data.find(d => d.properties.GEOID === $primaryDistrictId);
 
     function updateProjection() {
         if (!browser || !mapElement || !$data.length) return
@@ -134,7 +134,8 @@
                         originalY: y,
                         r: rScale(district.properties['Total Student Count'] || 0),
                         district: district,
-                        isSelected: district.properties.GEOID === $selectedDistrict
+                        isSelected: $selectedDistricts.includes(district.properties.GEOID),
+                        isPrimary: district.properties.GEOID === $primaryDistrictId
                     }
                 } catch (e) {
                     console.warn("Error processing district:", district.properties.GEOID);
@@ -146,7 +147,8 @@
                         originalY: dims.height / 2,
                         r: 5, // Default small radius
                         district: district,
-                        isSelected: district.properties.GEOID === $selectedDistrict
+                        isSelected: $selectedDistricts.includes(district.properties.GEOID),
+                        isPrimary: district.properties.GEOID === $primaryDistrictId
                     }
                 }
             });
@@ -212,7 +214,31 @@
         setTimeout(updateProjection, 200)
     }
 
+    // Update nodes when selection changes
+    $: if (nodes.length > 0) {
+        nodes = nodes.map(node => ({
+            ...node,
+            isSelected: $selectedDistricts.includes(node.district.properties.GEOID),
+            isPrimary: node.district.properties.GEOID === $primaryDistrictId
+        }));
+    }
+
     // Handle clicks on districts
+    function handleDistrictClick(district) {
+        const districtId = district.properties.GEOID;
+        
+        selectedDistricts.update(districts => {
+            // If the district is already selected, move it to the front (make it primary)
+            if (districts.includes(districtId)) {
+                const filtered = districts.filter(id => id !== districtId);
+                return [districtId, ...filtered];
+            } else {
+                // If it's not selected, add it to the front
+                return [districtId, ...districts];
+            }
+        });
+    }
+
     // Tooltip content generation function to match DistrictsBeeswarm
     function tooltipContent(nodeData) {
         return `
@@ -245,10 +271,6 @@
             }
         };
     }
-
-    function handleDistrictClick(district) {
-        selectedDistrict.set(district.properties.GEOID);
-    }
 </script>
 
 <div id="map" bind:this={mapElement} style="width: 100%; height: 100%;">
@@ -278,16 +300,16 @@
                     
                     <!-- First render non-selected circles -->
                     {#each nodes as node}
-                        {#if !isNaN(node.x) && !isNaN(node.y) && node.r > 0 && !node.isSelected}
+                        {#if !isNaN(node.x) && !isNaN(node.y) && node.r > 0 && !node.isPrimary}
                             <!-- svelte-ignore a11y-click-events-have-key-events -->
                             <circle
                                 cx={node.x}
                                 cy={node.y}
                                 r={node.r}
                                 fill={colorScale(node.district.properties.quartile)}
-                                stroke={colors.colorBackgroundWhite}
-                                stroke-width={1}
-                                opacity={0.8}
+                                stroke={node.isSelected ? colors.colorDarkGray : colors.colorBackgroundWhite}
+                                stroke-width={node.isSelected ? 2 : 1}
+                                opacity={node.isSelected ? 0.9 : 0.7}
                                 on:click={() => handleDistrictClick(node.district)}
                                 class="district-circle"
                                 use:tooltipAction={tooltipContent(node.district.properties)}
@@ -295,9 +317,9 @@
                         {/if}
                     {/each}
                     
-                    <!-- Then render selected circle with highlight effect -->
+                    <!-- Then render primary circle with highlight effect -->
                     {#each nodes as node}
-                        {#if !isNaN(node.x) && !isNaN(node.y) && node.r > 0 && node.isSelected}
+                        {#if !isNaN(node.x) && !isNaN(node.y) && node.r > 0 && node.isPrimary}
                             <!-- Background highlight circle -->
                             <circle
                                 cx={node.x}
@@ -308,7 +330,7 @@
                                 stroke-width={6}
                                 stroke-opacity={0.5}
                             />
-                            <!-- Selected circle -->
+                            <!-- Primary circle -->
                             <!-- svelte-ignore a11y-click-events-have-key-events -->
                             <circle
                                 cx={node.x}
@@ -316,7 +338,7 @@
                                 r={node.r}
                                 fill={colorScale(node.district.properties.quartile)}
                                 stroke={colors.colorWhite}
-                                stroke-width={1}
+                                stroke-width={2}
                                 on:click={() => handleDistrictClick(node.district)}
                                 class="district-circle selected"
                                 use:tooltipAction={tooltipContent(node.district.properties)}
@@ -324,8 +346,8 @@
                         {/if}
                     {/each}
 
-                                                <!-- Selected district label -->
-                    {#if selectedLabelPosition && $selectedDistrict}
+                    <!-- Selected district label -->
+                    {#if selectedLabelPosition && $primaryDistrictId}
                         <g in:fade={{ duration: 300 }}>
                             <!-- White text stroke for better readability -->
                             <text 

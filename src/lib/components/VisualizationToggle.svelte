@@ -2,9 +2,11 @@
     import { fade } from 'svelte/transition'
     import { Map, BarChart2 } from 'lucide-svelte'
     import { colors } from '$lib/styles/colorConfig'
-    import { selectedDistrict, selectedDistrictData } from '$lib/stores/stores.js'
+    import { selectedDistricts, primaryDistrictData } from '$lib/stores/stores.js'
     
-    $: districtData = $selectedDistrictData?.[0]?.properties
+    // No need to extract the first item - primaryDistrictData is already a single object
+    $: districtData = $primaryDistrictData?.properties
+    
     import DistrictsBeeswarm from './DistrictsBeeswarm.svelte'
     import BubbleMap from './BubbleMap.svelte'
 
@@ -28,7 +30,7 @@
                     size={20} 
                     color={currentView === 'beeswarm' ? colors.colorWhite : colors.colorText} 
                 />
-                <span>Beeswarm</span>
+                <span>Swarm</span>
             </button>
             <button 
                 class="toggle-btn {currentView === 'map' ? 'active' : ''}"

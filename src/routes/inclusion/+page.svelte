@@ -4,7 +4,7 @@
 </svelte:head>
 
 <script>
-    import { data, selectedDistrict, selectedDistrictData } from "$lib/stores/stores.js"
+    import { data, selectedDistricts, selectedDistrictsData, primaryDistrictData } from "$lib/stores/stores.js"
     import SideHeader from '$lib/components/SideHeader.svelte'
     import Divider from "$lib/components/Divider.svelte"
     import { Search, Pencil, TableProperties } from 'lucide-svelte'
@@ -25,24 +25,19 @@
     let threshold = 0.5
     let bottom = 0.8
 
-    let isDistrictSelected = false
-    $: isDistrictSelected = $selectedDistrict && $selectedDistrict.length > 0
-    $: {
-        if ($selectedDistrict) {
-            index = 0;
-        }
-    }
+    // Check if any districts are selected
+    $: isDistrictSelected = $selectedDistricts && $selectedDistricts.length > 0
 
     // Total number of scrolly sections
     $: totalScrollySections = isDistrictSelected ? 8 : 2
 
     // Function to skip the scrolly experience
     function skipToEnd() {
-        index = totalScrollySections - 1;
+        index = totalScrollySections - 1
         // Scroll to the table section
         document.querySelector('.post-scroll-content').scrollIntoView({ 
             behavior: 'smooth' 
-        });
+        })
     }
 </script>
 
@@ -60,7 +55,7 @@
     <div class="header-headline-container">
         <div class="headline-container">
             <h1 class="headline">
-                Find rates of inclusion, discipline, graduation and more for students with disabilities in Oregon
+                Educational Access: How School Districts in Oregon Support Students with Disabilities
             </h1>
         </div>
 
@@ -75,17 +70,14 @@
     <div class="content-container">
         <div class="intro">
             <h3 class="byline text-width">
-                Updated with data from the 2022-23 school year
+                Updated with data from the 2023-24 school year
             </h3>
         
             <p class="text-width">
-                For families of students with disabilities, a common concern is not knowing what supports their child is eligible for from one area to the next. Moving from one place to another can mean drastic changes in services, even though the disability hasn't changed. These changes can have a huge impact on the well-being and developmental trajectory of a child.
+                For families of students with disabilities, location can dramatically impact educational services. This reality becomes especially apparent when moving from one area to another. Even when a child's disability remains unchanged, a change in district can trigger significant shifts in support services--shifts that can profoundly affect a child's well-being and developmental trajectory.
             </p>
             <p class="text-width">
-                Usually, families find that the process of how an agency or district evaluates a student's disability is not transparent, and how those evaluations are used to make decisions about services is even less so. However, data is reported to states and the federal government that helps give a view into how students, as a whole, are supported in different areas.
-            </p>
-            <p class="text-width">
-                Below, you can explore that data.
+                Navigating school district services can feel frustratingly opaque. Fortunately, under the Individuals with Disabilities Education Act (IDEA), districts must report annual data on how they support students with disabilities. This information provides valuable insights into how individual students might experience services in different locations. Below, you can explore this data.
             </p>
         </div>
         
@@ -124,15 +116,20 @@
                         </section>
                         <section>
                             <ScrollyCard active={index === 2}>
-                                As an example, let's look at Portland Public Schools. This district serves <strong>{$selectedDistrictData[0].properties["Total Student Count"]} students with IEPs*</strong> <em>(note: you can select your local district at any time)</em>
+                                As an example, let's look at {$primaryDistrictData?.properties["Institution Name"]}. 
+                                This district serves <strong>{$primaryDistrictData?.properties["Total Student Count"]} students with IEPs*</strong>
+                                <em>(note: you can select your local district at any time)</em>
                                 <br>
                                 <br>
-                                <em>*An IEP is a document that outlines what supports a student with a disability will receive at school. It's personalized to each student who needs it</em>
+                                <em>*An IEP is a document that outlines what supports a student with a disability will receive at school. It's personalized to each student</em>
                             </ScrollyCard>
                         </section>
                         <section>
                             <ScrollyCard active={index === 3}>
-                                Districts report data on how much time students with IEPs spend in regular classrooms. Based on this, <strong>{$selectedDistrictData[0].properties["Institution Name"]}</strong> has an <strong>inclusion score</strong> of <strong>{$selectedDistrictData[0].properties["quartile"]} out of 4</strong>
+                                Districts report on how much time students with IEPs spend in regular classrooms. 
+                                Based on this, <strong>{$primaryDistrictData?.properties["Institution Name"]}</strong> 
+                                has an <strong>inclusion score</strong> of 
+                                <strong>{$primaryDistrictData?.properties["quartile"]} out of 4</strong>
                                 <br>
                                 <br>
                                 <SimpleAccordion title="How is the inclusion score calculated?">
@@ -148,7 +145,7 @@
                         </section>
                         <section>
                             <ScrollyCard active={index === 4}>
-                                Here's how {$selectedDistrictData[0].properties["Institution Name"]} compares to the <strong>largest districts</strong> in the state
+                                Here's how {$primaryDistrictData?.properties["Institution Name"]} compares to the <strong>largest districts</strong> in the state
                             </ScrollyCard>
                         </section>
                         <section>
@@ -158,12 +155,12 @@
                         </section>
                         <section>
                             <ScrollyCard active={index === 6}>
-                                You can also <strong>select multiple districts</strong> to compare them directly
+                                You can also <strong>select multiple districts</strong> to compare
                             </ScrollyCard>
                         </section>
                         <section>
                             <ScrollyCard active={index === 7}>
-                                Now it's your turn! Use the <strong>toggle</strong> to switch between <strong>map and bubble views</strong>. You can also find districts in the <strong>table below</strong>
+                                Now it's your turn! Use the <strong>toggle</strong> to switch between <strong>map and bubble swarm views</strong>. You can also find district overviews in the <strong>table below</strong>
                             </ScrollyCard>
                         </section>
                     {:else}
@@ -206,9 +203,25 @@
 
 
 <style>
+    .headline {
+        color: var(--colorInclusive);
+        max-width: 44rem;
+    }
+
     .intro {
+        margin-top: 2rem;
         margin-bottom: 1rem;
         position: relative;
+    }
+
+    @media (max-width: 768px) {
+        .headline {
+            margin-top: 3rem;
+        }
+
+        .intro {
+            margin-top: 0rem;
+        }
     }
 
     .byline {

@@ -4,7 +4,7 @@
     import { extent } from 'd3-array'
     import { forceSimulation, forceX, forceY, forceCollide } from 'd3-force'
     import { colors } from '$lib/styles/colorConfig'
-    import { data, selectedDistrict } from '$lib/stores/stores.js'
+    import { data, selectedDistricts } from '$lib/stores/stores.js'
     import { Search } from 'lucide-svelte'
     import { writable, derived } from "svelte/store"
     import { goto } from '$app/navigation'
@@ -42,7 +42,7 @@
 
     // Handle district selection
     function selectDistrict(districtGEOID) {
-        selectedDistrict.set(districtGEOID)
+        selectedDistricts.set(districtGEOID)
         clearSearch()
         // Navigate to district details if needed
         // goto(`/${districtGEOID}`)
@@ -117,7 +117,7 @@
     let simulation;
 
     // Get the selected district data 
-    $: selectedDistrictData = $data.find(d => d.properties.GEOID === $selectedDistrict);
+    $: selectedDistrictData = $data.find(d => d.properties.GEOID === $selectedDistricts);
 
     function runSimulation() {
         if (!filteredData.length || !dimensions.innerWidth) return;
@@ -170,11 +170,11 @@
 
     // Watch for changes to selectedDistrict and highlight it
     $: {
-        if (initialized && $selectedDistrict && nodes.length) {
+        if (initialized && $selectedDistricts && nodes.length) {
             // Update nodes to highlight the selected district
             nodes = nodes.map(node => ({
                 ...node,
-                isSelected: node.properties.GEOID === $selectedDistrict
+                isSelected: node.properties.GEOID === $selectedDistricts
             }));
         }
     }
@@ -217,8 +217,8 @@
             {#each searchResults as result}
                 <!-- svelte-ignore a11y-click-events-have-key-events -->
                 <div 
-                    class="search-result-item {$selectedDistrict === result.properties.GEOID ? 'selected' : ''}"
-                    on:click={() => selectDistrict(result.properties.GEOID)}
+                    class="search-result-item {$selectedDistricts === result.properties.GEOID ? 'selected' : ''}"
+                    on:click={() => selectDistricts(result.properties.GEOID)}
                 >
                     <div class="result-name">{result.properties["Institution Name"]}</div>
                     <div class="result-details">

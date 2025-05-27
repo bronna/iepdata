@@ -15,7 +15,7 @@
     </div>
     
     <button class="skip-button" on:click={onSkip}>
-      Skip
+      go to data table
     </button>
   </div>
   
@@ -52,7 +52,7 @@
     }
   
     .progress-dot.completed {
-      background-color: var(--colorInclusiveGray);
+      background-color: var(--colorInclusive);
     }
   
     .skip-button {

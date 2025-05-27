@@ -4,6 +4,8 @@
   import { colors } from "$lib/styles/colorConfig.js";
 </script>
 
+
+<div class="color-bar"></div>
 <footer>
   <div class="footer-content">
     <div class="footer-column">
@@ -25,11 +27,18 @@
   </div>
 </footer>
 
+
 <style>
   footer {
     background-color: var(--colorText);
     color: white;
     padding: 4rem 0;
+  }
+
+  .color-bar {
+        width: 100%;
+        height: 8px;
+        background-color: var(--colorInclusive);
   }
 
   .footer-content {

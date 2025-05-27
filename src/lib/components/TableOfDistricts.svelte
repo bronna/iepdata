@@ -205,10 +205,16 @@
                     {/if}
                 </td>
                 <td class="hide-mobile">
-                    {#if district.properties["nAlerts"]}
-                        <span class="underline-on-hover" style="font-weight: 900; font-size: 1.4rem; color: rgb(222, 84, 102);">{'!'.repeat(district.properties["nAlerts"])}</span>
+                    {#if district.properties["nAlerts"] !== null && district.properties["nAlerts"] !== undefined}
+                        {#if district.properties["nAlerts"] > 0}
+                            <span class="underline-on-hover" style="font-weight: 900; font-size: 1.4rem; color: rgb(222, 84, 102);">
+                                {'!'.repeat(district.properties["nAlerts"])}
+                            </span>
+                        {:else}
+                            <span class="no-data">0</span>
+                        {/if}
                     {:else}
-                        <span class="no-data">-</span>
+                        <span class="no-data">coming soon</span>
                     {/if}
                 </td>
                 <td class="hide-mobile settings-data">
@@ -263,14 +269,21 @@
 
                 <div class="mobile-alerts-row show-mobile">
                     <div class="mobile-alerts">
-                        {#if district.properties["nAlerts"]}
-                            <span class="underline-on-hover" style="font-weight: 900; font-size: 1rem; color: rgb(222, 84, 102);">Alerts: {'!'.repeat(district.properties["nAlerts"])}</span>
+                        {#if district.properties["nAlerts"] !== null && district.properties["nAlerts"] !== undefined}
+                            {#if district.properties["nAlerts"] > 0}
+                                <span class="underline-on-hover" style="font-weight: 900; font-size: 1rem; color: rgb(222, 84, 102);">
+                                    Alerts: {'!'.repeat(district.properties["nAlerts"])}
+                                </span>
+                            {:else}
+                                <span>No alerts</span>
+                            {/if}
                         {:else}
-                            <span class="no-data">-</span>
+                            <span class="no-data">Alerts data coming soon</span>
                         {/if}
                     </div>
                     <span class="mobile-more">more ></span>
                 </div>
+                
             </tr>
         {/each}
     </tbody>

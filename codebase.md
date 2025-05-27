@@ -120,7 +120,7 @@ You can preview the production build with `npm run preview`.
 
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-		<link href="https://fonts.googleapis.com/css2?family=Bitter:wght@400;600;700;800&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;0,900;1,400;1,600;1,700;1,900&display=swap" rel="stylesheet">
+		<link href="https://fonts.googleapis.com/css2?family=Bitter:wght@400;600;700;800;900&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;0,900;1,400;1,600;1,700;1,900&display=swap" rel="stylesheet">
 
 		%sveltekit.head%
 	</head>
@@ -138,11 +138,17 @@ You can preview the production build with `npm run preview`.
     import { colors } from "$lib/styles/colorConfig"
 
     export let alertsData
+    
+    // Filter out alerts with no data
+    $: validAlerts = alertsData.filter(alert => 
+        alert.value !== undefined && 
+        alert.value !== null
+    )
 </script>
 
 
 <div class="alerts">
-    {#each alertsData as alert}
+    {#each validAlerts as alert}
         <div class="alert-card">
             {#if alert.value === "Yes"}
                 <div class="svg-container">
@@ -599,7 +605,7 @@ You can preview the production build with `npm run preview`.
         forceX,
         forceY
     } from 'd3'
-    import { data, selectedDistrict } from '$lib/stores/stores.js'
+    import { data, selectedDistricts, primaryDistrictId } from '$lib/stores/stores.js'
     import { colors } from "$lib/styles/colorConfig"
     import { browser } from '$app/environment'
     import { fade } from 'svelte/transition'
@@ -649,7 +655,7 @@ You can preview the production build with `npm run preview`.
     }
 
     // Get the selected district data for highlighting
-    $: selectedDistrictData = $data.find(d => d.properties.GEOID === $selectedDistrict);
+    $: selectedDistrictData = $data.find(d => d.properties.GEOID === $primaryDistrictId);
 
     function updateProjection() {
         if (!browser || !mapElement || !$data.length) return
@@ -720,7 +726,8 @@ You can preview the production build with `npm run preview`.
                         originalY: y,
                         r: rScale(district.properties['Total Student Count'] || 0),
                         district: district,
-                        isSelected: district.properties.GEOID === $selectedDistrict
+                        isSelected: $selectedDistricts.includes(district.properties.GEOID),
+                        isPrimary: district.properties.GEOID === $primaryDistrictId
                     }
                 } catch (e) {
                     console.warn("Error processing district:", district.properties.GEOID);
@@ -732,7 +739,8 @@ You can preview the production build with `npm run preview`.
                         originalY: dims.height / 2,
                         r: 5, // Default small radius
                         district: district,
-                        isSelected: district.properties.GEOID === $selectedDistrict
+                        isSelected: $selectedDistricts.includes(district.properties.GEOID),
+                        isPrimary: district.properties.GEOID === $primaryDistrictId
                     }
                 }
             });
@@ -798,7 +806,31 @@ You can preview the production build with `npm run preview`.
         setTimeout(updateProjection, 200)
     }
 
+    // Update nodes when selection changes
+    $: if (nodes.length > 0) {
+        nodes = nodes.map(node => ({
+            ...node,
+            isSelected: $selectedDistricts.includes(node.district.properties.GEOID),
+            isPrimary: node.district.properties.GEOID === $primaryDistrictId
+        }));
+    }
+
     // Handle clicks on districts
+    function handleDistrictClick(district) {
+        const districtId = district.properties.GEOID;
+        
+        selectedDistricts.update(districts => {
+            // If the district is already selected, move it to the front (make it primary)
+            if (districts.includes(districtId)) {
+                const filtered = districts.filter(id => id !== districtId);
+                return [districtId, ...filtered];
+            } else {
+                // If it's not selected, add it to the front
+                return [districtId, ...districts];
+            }
+        });
+    }
+
     // Tooltip content generation function to match DistrictsBeeswarm
     function tooltipContent(nodeData) {
         return `
@@ -831,10 +863,6 @@ You can preview the production build with `npm run preview`.
             }
         };
     }
-
-    function handleDistrictClick(district) {
-        selectedDistrict.set(district.properties.GEOID);
-    }
 </script>
 
 <div id="map" bind:this={mapElement} style="width: 100%; height: 100%;">
@@ -864,16 +892,16 @@ You can preview the production build with `npm run preview`.
                     
                     <!-- First render non-selected circles -->
                     {#each nodes as node}
-                        {#if !isNaN(node.x) && !isNaN(node.y) && node.r > 0 && !node.isSelected}
+                        {#if !isNaN(node.x) && !isNaN(node.y) && node.r > 0 && !node.isPrimary}
                             <!-- svelte-ignore a11y-click-events-have-key-events -->
                             <circle
                                 cx={node.x}
                                 cy={node.y}
                                 r={node.r}
                                 fill={colorScale(node.district.properties.quartile)}
-                                stroke={colors.colorBackgroundWhite}
-                                stroke-width={1}
-                                opacity={0.8}
+                                stroke={node.isSelected ? colors.colorDarkGray : colors.colorBackgroundWhite}
+                                stroke-width={node.isSelected ? 2 : 1}
+                                opacity={node.isSelected ? 0.9 : 0.7}
                                 on:click={() => handleDistrictClick(node.district)}
                                 class="district-circle"
                                 use:tooltipAction={tooltipContent(node.district.properties)}
@@ -881,9 +909,9 @@ You can preview the production build with `npm run preview`.
                         {/if}
                     {/each}
                     
-                    <!-- Then render selected circle with highlight effect -->
+                    <!-- Then render primary circle with highlight effect -->
                     {#each nodes as node}
-                        {#if !isNaN(node.x) && !isNaN(node.y) && node.r > 0 && node.isSelected}
+                        {#if !isNaN(node.x) && !isNaN(node.y) && node.r > 0 && node.isPrimary}
                             <!-- Background highlight circle -->
                             <circle
                                 cx={node.x}
@@ -894,7 +922,7 @@ You can preview the production build with `npm run preview`.
                                 stroke-width={6}
                                 stroke-opacity={0.5}
                             />
-                            <!-- Selected circle -->
+                            <!-- Primary circle -->
                             <!-- svelte-ignore a11y-click-events-have-key-events -->
                             <circle
                                 cx={node.x}
@@ -902,7 +930,7 @@ You can preview the production build with `npm run preview`.
                                 r={node.r}
                                 fill={colorScale(node.district.properties.quartile)}
                                 stroke={colors.colorWhite}
-                                stroke-width={1}
+                                stroke-width={2}
                                 on:click={() => handleDistrictClick(node.district)}
                                 class="district-circle selected"
                                 use:tooltipAction={tooltipContent(node.district.properties)}
@@ -910,8 +938,8 @@ You can preview the production build with `npm run preview`.
                         {/if}
                     {/each}
 
-                                                <!-- Selected district label -->
-                    {#if selectedLabelPosition && $selectedDistrict}
+                    <!-- Selected district label -->
+                    {#if selectedLabelPosition && $primaryDistrictId}
                         <g in:fade={{ duration: 300 }}>
                             <!-- White text stroke for better readability -->
                             <text 
@@ -1103,7 +1131,7 @@ You can preview the production build with `npm run preview`.
   
     export let data
     export let dimensions
-    export let selectedDistrict
+    export let selectedDistricts
     export let highlightedDistricts
     export let index
     export let quartileRanges
@@ -1204,7 +1232,7 @@ You can preview the production build with `npm run preview`.
       } else {
         useScaledRadius = false
         tweenedRadii.set(data.map(d => 
-          selectedDistrict && selectedDistrict.includes(d.properties.GEOID) ? 16 : defaultRadius
+          selectedDistricts && selectedDistricts.includes(d.properties.GEOID) ? 16 : defaultRadius
         ))
       }
     }
@@ -1248,8 +1276,8 @@ You can preview the production build with `npm run preview`.
         cy={node.y}
         r={$tweenedRadii[i]}
         fill={$tweenedColors[i]}
-        stroke={selectedDistrict && selectedDistrict.includes(node.properties.GEOID) ? colors.colorText : 'none'}
-        stroke-width={selectedDistrict && selectedDistrict.includes(node.properties.GEOID) ? 2 : 0}
+        stroke={selectedDistricts && selectedDistricts.includes(node.properties.GEOID) ? colors.colorText : 'none'}
+        stroke-width={selectedDistricts && selectedDistricts.includes(node.properties.GEOID) ? 2 : 0}
         use:tippy={tooltipContent(node.properties)}
       />
     {/each}
@@ -1613,8 +1641,8 @@ You can preview the production build with `npm run preview`.
 <script>
   import { tweened } from 'svelte/motion'
   import { fade } from 'svelte/transition'
-  import { derived } from 'svelte/store'
-  import { data, selectedDistrict, selectedDistrictData, stateData } from '$lib/stores/stores.js'
+  import { cubicOut } from 'svelte/easing'
+  import { data, selectedDistricts, selectedDistrictsData, stateData, primaryDistrictId } from '$lib/stores/stores.js'
   import { scaleLinear, scaleSqrt, scaleOrdinal } from 'd3-scale'
   import { forceSimulation, forceX, forceY, forceCollide } from 'd3-force'
   import { extent } from 'd3-array'
@@ -1628,94 +1656,231 @@ You can preview the production build with `npm run preview`.
   let fadeDuration = 300
 
   // Filter out data rows with no "weighted_inclusion" value
-  const filteredData = $data.filter(d => d.properties.weighted_inclusion !== null && d.properties.weighted_inclusion !== undefined)
+  $: filteredData = $data ? $data.filter(d => d.properties.weighted_inclusion !== null && d.properties.weighted_inclusion !== undefined) : []
   
   // Chart dimensions & initial values
   let defaultRadius = 10
   $: defaultRadius = width <= 768 ? 5 : 10
 
-  let width
-  let height
+  let width = 800
+  let height = 400
   $: dimensions = { 
-    width, 
-    height, 
-    margin: width <= 768 ? { top: 0, right: 20, bottom: 20, left: 20 } : { top: 0, right: 30, bottom: 20, left: 30 },
+    width: width || 800, 
+    height: height || 400, 
+    margin: (width && width <= 768) ? { top: 0, right: 20, bottom: 20, left: 20 } : { top: 0, right: 30, bottom: 20, left: 30 },
   }
 
-  $: xScale = scaleLinear()
-    .domain(extent(filteredData, d => d.properties.weighted_inclusion))
-    .range([0, dimensions.width - dimensions.margin.right - dimensions.margin.left])
+  $: innerWidth = (dimensions.width || 800) - (dimensions.margin?.right || 30) - (dimensions.margin?.left || 30)
+  $: innerHeight = (dimensions.height || 400) - (dimensions.margin?.top || 0) - (dimensions.margin?.bottom || 20)
 
-  $: rScale = scaleSqrt()
+  $: xScale = filteredData.length > 0 && innerWidth > 0 ? scaleLinear()
+    .domain(extent(filteredData, d => d.properties.weighted_inclusion))
+    .range([0, innerWidth]) : scaleLinear().domain([0, 1]).range([0, 100])
+
+  $: rScale = filteredData.length > 0 ? scaleSqrt()
     .domain(extent(filteredData, d => d.properties['Total Student Count']))
-    .range(width < 768 ? [2, 20] : [3, 50])
+    .range((width && width < 768) ? [2, 20] : [3, 50]) : scaleSqrt().domain([0, 1000]).range([3, 50])
 
   let colorScale = scaleOrdinal()
     .domain([1, 2, 3, 4])
     .range([colors.colorSeparate, colors.colorNonInclusive, colors.colorSemiInclusive, colors.colorInclusive])
 
-  // Force simulation
+  // Force simulation - only run once when data/dimensions change, NOT when index changes
   let bubblePadding = 2
-  let useScaledRadius = false
+  let simulation
+  let nodes = []
+  let simulationInitialized = false
 
-  let simulation = forceSimulation(filteredData)
+  // Create tweened stores for animated values
+  const tweenedRadii = tweened([], {
+    duration: fadeDuration,
+    easing: cubicOut
+  })
 
+  const tweenedColors = tweened([], {
+    duration: fadeDuration,
+    interpolate: (a, b) => {
+      return t => a.map((color, i) => {
+        if (!b[i]) return color
+        return interpolateRgb(color, b[i])(t)
+      })
+    }
+  })
+
+  const tweenedOpacities = tweened([], {
+    duration: fadeDuration,
+    easing: cubicOut
+  })
+
+  // Helper function to calculate radius for a node
+  function getNodeRadius(node, currentIndex) {
+    if (currentIndex >= 2) {
+      return rScale(node.properties['Total Student Count'])
+    } else {
+      return $selectedDistricts && $selectedDistricts.includes(node.properties.GEOID) ? 12 : defaultRadius
+    }
+  }
+
+  // SEPARATE: Simulation initialization (only runs when data/scales change, NOT index)
   $: {
-    simulation
-      .force('x',
-        forceX()
-          .x(d => xScale(d.properties.weighted_inclusion))
+    if (filteredData.length > 0 && width && height && xScale && rScale && !simulationInitialized) {
+      initializeSimulation()
+    }
+  }
+
+  function initializeSimulation() {
+    // Create a copy of the data for the simulation
+    const simData = filteredData.map(d => ({ ...d }))
+    
+    // Create the simulation with consistent positioning logic
+    simulation = forceSimulation(simData)
+      .force('x', 
+        forceX(d => xScale(d.properties.weighted_inclusion))
           .strength(1.5)
       )
-      .force('y',
-        forceY()
-          .y(height / 2)
+      .force('y', 
+        forceY(height / 2)
           .strength(0.1)
       )
-      .force('collide',
-        forceCollide()
-          .radius(d => useScaledRadius ? rScale(d.properties['Total Student Count']) + bubblePadding : defaultRadius + bubblePadding)
-          .strength(0.8)
+      .force('collide', 
+        forceCollide(d => defaultRadius + bubblePadding).strength(0.8)
       )
       .alpha(0.5)
       .alphaMin(0.01)
       .alphaDecay(0.05)
       .velocityDecay(0.4)
-      .restart()
+      .stop()
+    
+    // Run manual ticks for immediate positioning
+    for (let i = 0; i < 120; ++i) {
+      simulation.tick()
+    }
+    
+    // Get the positioned nodes
+    nodes = simulation.nodes()
+    
+    // Initialize tweened values
+    initializeTweenedValues()
+    
+    // Set up ongoing tick handler
+    simulation.on('tick', () => {
+      nodes = [...simulation.nodes()]
+    })
+    
+    // Mark as initialized and restart
+    simulationInitialized = true
+    simulation.restart()
   }
 
-  let nodes = []
-  simulation.on('tick', () => {
-    nodes = simulation.nodes()
-  })
+  // Track if we've updated collision for size-based view
+  let hasUpdatedCollisionForSize = false
 
-  $: visibleLabels = derived(
-    [selectedDistrict, selectedDistrictData],
-    ([$selectedDistrict, $selectedDistrictData]) => {
-      if (index < 6) {
-        return nodes.filter(node => highlightedDistricts.includes(node.properties.GEOID))
-      } else if ($selectedDistrict && $selectedDistrict.length > 0) {
-        return nodes.filter(node => $selectedDistrict.includes(node.properties.GEOID))
+  // SEPARATE: Visual updates when index, selection, or highlighted districts change
+  $: if (nodes.length > 0 && simulationInitialized && index !== undefined) {
+    updateRadii()
+  }
+
+  $: if (nodes.length > 0 && simulationInitialized && highlightedDistricts && index !== undefined) {
+    updateColors()
+  }
+
+  $: if (nodes.length > 0 && simulationInitialized && $selectedDistricts) {
+    updateOpacities()
+  }
+
+  function updateRadii() {
+    const newRadii = nodes.map(node => getNodeRadius(node, index))
+    tweenedRadii.set(newRadii)
+
+    // Update collision force when transitioning to size-based view (index 2+)
+    if (index >= 2 && simulation && !hasUpdatedCollisionForSize) {
+      const newCollisionRadius = (d) => {
+        return rScale(d.properties['Total Student Count']) + bubblePadding
       }
+      
+      simulation.force('collide', forceCollide(newCollisionRadius).strength(0.8))
+      simulation.alpha(0.3).restart()
+      hasUpdatedCollisionForSize = true
+    } else if (index < 2) {
+      hasUpdatedCollisionForSize = false
+    }
+  }
+
+  function updateColors() {
+    const newColors = nodes.map(node => {
+      if (index === 0) {
+        return colorScale(node.properties.quartile)
+      } else {
+        return highlightedDistricts.includes(node.properties.GEOID)
+          ? colorScale(node.properties.quartile)
+          : colors.colorLightGray
+      }
+    })
+    tweenedColors.set(newColors)
+  }
+
+  function updateOpacities() {
+    const newOpacities = nodes.map(node => {
+      if ($selectedDistricts && $selectedDistricts.includes(node.properties.GEOID)) {
+        return 1
+      }
+      return 0.9
+    })
+    tweenedOpacities.set(newOpacities)
+  }
+
+  // Function to initialize tweened values
+  function initializeTweenedValues() {
+    const initialRadii = nodes.map(node => getNodeRadius(node, index))
+    
+    const initialColors = nodes.map(node => {
+      return colorScale(node.properties.quartile) // Start with all districts colored
+    })
+    
+    const initialOpacities = nodes.map(() => 0.9)
+    
+    tweenedRadii.set(initialRadii, { duration: 0 })
+    tweenedColors.set(initialColors, { duration: 0 })
+    tweenedOpacities.set(initialOpacities, { duration: 0 })
+  }
+
+  // Reset simulation when key parameters change (but not index)
+  $: {
+    if (simulationInitialized && (width || height)) {
+      simulationInitialized = false
+      hasUpdatedCollisionForSize = false
+    }
+  }
+
+  // Create derived store only when dependencies are available
+  $: visibleLabels = (() => {
+    if (!$selectedDistricts || !$selectedDistrictsData || !nodes || nodes.length === 0) {
       return []
     }
-  )
+    
+    if (index < 6) {
+      return nodes.filter(node => highlightedDistricts.includes(node.properties.GEOID))
+    } else if ($selectedDistricts && $selectedDistricts.length > 0) {
+      return nodes.filter(node => $selectedDistricts.includes(node.properties.GEOID))
+    }
+    return []
+  })()
 
-  $: legendWidth = rScale(6000) + 140
-  $: legendHeight = rScale(6000) + 1
+  $: legendWidth = filteredData.length > 0 ? rScale(6000) + 140 : 140
+  $: legendHeight = filteredData.length > 0 ? rScale(6000) + 1 : 1
 
   // Get selected district's x position
   let selectedDistrictX = 0
   $: {
-    if ($selectedDistrict && $selectedDistrict.length > 0) {
-      const selectedGEOID = String($selectedDistrict) // Convert to string to ensure proper comparison
+    if ($selectedDistricts && $selectedDistricts.length > 0 && nodes.length > 0 && dimensions.margin) {
+      const selectedGEOID = $selectedDistricts[0]
       
       const selectedNode = nodes.find(node => {
-        return String(node.properties.GEOID) === selectedGEOID
+        return node.properties.GEOID === selectedGEOID
       })
       
-      if (selectedNode) {
-        selectedDistrictX = selectedNode.x + dimensions.margin.left
+      if (selectedNode && selectedNode.x && !isNaN(selectedNode.x)) {
+        selectedDistrictX = selectedNode.x + (dimensions.margin.left || 0)
       } else {
         selectedDistrictX = 0
       }
@@ -1756,12 +1921,15 @@ You can preview the production build with `npm run preview`.
     }
   }
 
-  let largestDistricts = $stateData[0].properties.largestDistricts
+  let largestDistricts = []
+  $: if ($stateData && $stateData.length > 0) {
+    largestDistricts = $stateData[0].properties.largestDistricts || []
+  }
 
   let neighborDistrictIds = []
   $: {
-    if ($selectedDistrict && $selectedDistrict.length > 0 && $selectedDistrictData && $selectedDistrictData.length > 0) {
-        neighborDistrictIds = $selectedDistrictData[0].properties.neighbors
+    if ($selectedDistricts && $selectedDistricts.length > 0 && $selectedDistrictsData && $selectedDistrictsData.length > 0) {
+        neighborDistrictIds = $selectedDistrictsData[0].properties.neighbors || []
     } else {
         neighborDistrictIds = []
     }
@@ -1769,113 +1937,65 @@ You can preview the production build with `npm run preview`.
 
   let highlightedDistricts = []
   $: {
-    if ($selectedDistrict && $selectedDistrict.length > 0) {
-      if (index < 4) {
-        highlightedDistricts = $selectedDistrict
-      } else if (index === 4) {
-        highlightedDistricts = [$selectedDistrict, ...largestDistricts]
-      } else if (index === 5) {
-        highlightedDistricts = [$selectedDistrict, ...neighborDistrictIds]
+      if ($selectedDistricts && $selectedDistricts.length > 0) {
+          if (index < 4) {
+              highlightedDistricts = [$primaryDistrictId]
+          } else if (index === 4) {
+              highlightedDistricts = [$primaryDistrictId, ...largestDistricts]
+          } else if (index === 5) {
+              highlightedDistricts = [$primaryDistrictId, ...neighborDistrictIds]
+          } else {
+              highlightedDistricts = filteredData.map(d => d.properties.GEOID)
+          }
       } else {
-        highlightedDistricts = filteredData.map(d => d.properties.GEOID)
+          highlightedDistricts = index < 7 ? [] : filteredData.map(d => d.properties.GEOID)
       }
-    } else {
-      highlightedDistricts = index < 7 ? [] : filteredData.map(d => d.properties.GEOID)
-    }
-  }
-
-  // Tweened values for transitions
-  let tweenedOpacity = tweened(0, { duration: fadeDuration })
-  $: {
-    if (index > 0) {
-      tweenedOpacity.set(0.85)
-    } else {
-      tweenedOpacity.set(0)
-    }
-  }
-
-  let tweenedRadii = tweened(new Array(filteredData.length).fill(defaultRadius), { duration: fadeDuration })
-  $: {
-    if (index >= 2) {
-      useScaledRadius = true
-      tweenedRadii.set(filteredData.map(d => rScale(d.properties['Total Student Count'])))
-    } else {
-      useScaledRadius = false
-      tweenedRadii.set(filteredData.map(d => 
-        $selectedDistrict && $selectedDistrict.includes(d.properties.GEOID) ? 12 : defaultRadius
-      ))
-    }
-  }
-
-  function interpolateColor(a, b) {
-    const interpolate = interpolateRgb(a, b)
-    return t => interpolate(t)
-  }
-
-  let tweenedColors = tweened(
-    filteredData.map(() => colors.colorLightGray),
-    {
-      duration: fadeDuration,
-      interpolate: (a, b) => {
-        return t => a.map((color, i) => interpolateColor(color, b[i])(t))
-      }
-    }
-  )
-  $: {
-    tweenedColors.set(
-      filteredData.map(d => {
-        if (index === 0) {
-          return colorScale(d.properties.quartile)
-        } else {
-          return highlightedDistricts.includes(d.properties.GEOID)
-            ? colorScale(d.properties.quartile)
-            : colors.colorLightGray
-        }
-      })
-    )
   }
 </script>
 
 <div class="districts-beeswarm" bind:clientWidth={width} bind:clientHeight={height}>
     <SVGChart dimensions={dimensions}>
       {#each nodes as node, i}
-          {#if !($selectedDistrict && $selectedDistrict.includes(node.properties.GEOID))}
+          {#if !($selectedDistricts && $selectedDistricts.includes(node.properties.GEOID))}
               <circle
                   cx={node.x}
                   cy={node.y}
-                  r={$tweenedRadii[i]}
-                  fill={$tweenedColors[i]}
+                  r={$tweenedRadii[i] || defaultRadius}
+                  fill={$tweenedColors[i] || colors.colorLightGray}
+                  opacity={$tweenedOpacities[i] || 0.9}
                   use:tooltipAction={tooltipContent(node.properties)}
-                  style="cursor: pointer;"
+                  style="cursor: pointer; transition: stroke-width 0.3s ease;"
               />
           {/if}
       {/each}
       
       {#each nodes as node, i}
-          {#if $selectedDistrict && $selectedDistrict.includes(node.properties.GEOID)}
+          {#if $selectedDistricts && $selectedDistricts.includes(node.properties.GEOID)}
               <circle
                   cx={node.x}
                   cy={node.y}
-                  r={$tweenedRadii[i] + 3}
+                  r={($tweenedRadii[i] || defaultRadius) + 3}
                   fill="none"
                   stroke={colors.colorDarkGray}
                   stroke-width={2}
                   stroke-opacity={0.3}
+                  style="transition: all 0.3s ease;"
               />
               <circle
                   cx={node.x}
                   cy={node.y}
-                  r={$tweenedRadii[i]}
-                  fill={$tweenedColors[i]}
+                  r={$tweenedRadii[i] || defaultRadius}
+                  fill={$tweenedColors[i] || colors.colorLightGray}
+                  opacity={$tweenedOpacities[i] || 1}
                   stroke={colors.colorWhite}
                   stroke-width={1}
                   use:tooltipAction={tooltipContent(node.properties)}
-                  style="cursor: pointer;"
+                  style="cursor: pointer; transition: all 0.3s ease;"
               />
           {/if}
       {/each}
 
-        {#each $visibleLabels as node}
+        {#each visibleLabels as node}
             <text
               x={node.x}
               y={node.y}
@@ -1885,6 +2005,7 @@ You can preview the production build with `npm run preview`.
               stroke="white"
               stroke-width="5"
               style="font-size: 14px; font-weight:400;"
+              transition:fade={{duration: fadeDuration}}
             >
               {node.properties["Institution Name"]}
             </text>
@@ -1895,6 +2016,7 @@ You can preview the production build with `npm run preview`.
               text-anchor="middle"
               fill="black"
               style="font-size: 14px; font-weight:400;"
+              transition:fade={{duration: fadeDuration}}
             >
               {node.properties["Institution Name"]}
             </text>
@@ -1912,7 +2034,7 @@ You can preview the production build with `npm run preview`.
             &#8592; Less inclusive
           </text>
           <text 
-            x={dimensions.width - dimensions.margin.right - dimensions.margin.left - 50}
+            x={Math.max(50, innerWidth - 50)}
             y={60} 
             text-anchor="end"
             font-size="14px"
@@ -1923,8 +2045,8 @@ You can preview the production build with `npm run preview`.
           </text>
         </g>
   
-        {#if index > 1}
-          <g class="legend" transform="translate({dimensions.width - legendWidth}, {dimensions.height - legendHeight})" transition:fade="{{ duration: fadeDuration}}">
+        {#if index > 1 && rScale && innerWidth > 0 && innerHeight > 0}
+          <g class="legend" transform="translate({Math.max(0, innerWidth - legendWidth)}, {Math.max(0, innerHeight - legendHeight)})" transition:fade="{{ duration: fadeDuration}}">
             <circle r={rScale(6000)} fill="none" stroke={colors.colorText} stroke-width="1" />
             <line 
               x1="0" x2={rScale(6000) + 5}
@@ -2599,6 +2721,8 @@ You can preview the production build with `npm run preview`.
   import { colors } from "$lib/styles/colorConfig.js";
 </script>
 
+
+<div class="color-bar"></div>
 <footer>
   <div class="footer-content">
     <div class="footer-column">
@@ -2620,11 +2744,18 @@ You can preview the production build with `npm run preview`.
   </div>
 </footer>
 
+
 <style>
   footer {
     background-color: var(--colorText);
     color: white;
     padding: 4rem 0;
+  }
+
+  .color-bar {
+        width: 100%;
+        height: 8px;
+        background-color: var(--colorInclusive);
   }
 
   .footer-content {
@@ -2862,7 +2993,7 @@ You can preview the production build with `npm run preview`.
         display: inline-block;
         transform: scale(0.7);
         transform-origin: top left;
-        color: var(--colorInclusiveDark);
+        color: var(--colorInclusive);
     }
 
     .logo a .subtitle {
@@ -3664,8 +3795,8 @@ You can preview the production build with `npm run preview`.
     // Legend data
     const categoricalLegend = [
         { category: 'Low Disadvantage', range: '<24%', color: '#01b6e1' },
-        { category: 'Medium Disadvantage', range: '24-31%', color: '#9acd32' },
-        { category: 'High Disadvantage', range: '32%+', color: '#ff9900' }
+        { category: 'Medium Disadvantage', range: '24-30%', color: '#9acd32' },
+        { category: 'High Disadvantage', range: '31%+', color: '#ff9900' }
     ];
 
     // Handle tooltip
@@ -3835,7 +3966,7 @@ You can preview the production build with `npm run preview`.
                     font-size="14px"
                     font-weight="600"
                 >
-                    Proficiency %
+                    Proficiency (ELA/Math Average)
                 </text>
             </g>
 
@@ -3945,13 +4076,13 @@ You can preview the production build with `npm run preview`.
     </div>
 
     <!-- Notes -->
-    <div class="notes">
+    <!-- <div class="notes">
         <p><strong>Notes:</strong></p>
         <ul>
             <li>Data includes all schools across three academic years (2021-2022, 2022-2023, 2023-2024)</li>
             <li>Proficiency is the average of ELA and Math proficiency rates</li>
         </ul>
-    </div>
+    </div> -->
 </div>
 
 <style>
@@ -5744,7 +5875,7 @@ You can preview the production build with `npm run preview`.
     </div>
     
     <button class="skip-button" on:click={onSkip}>
-      Skip
+      go to data table
     </button>
   </div>
   
@@ -5781,7 +5912,7 @@ You can preview the production build with `npm run preview`.
     }
   
     .progress-dot.completed {
-      background-color: var(--colorInclusiveGray);
+      background-color: var(--colorInclusive);
     }
   
     .skip-button {
@@ -5805,25 +5936,20 @@ You can preview the production build with `npm run preview`.
 # src/lib/components/SelectDistricts.svelte
 
 ```svelte
+<!-- src/lib/components/SelectDistricts.svelte -->
+
 <script>
-    import { data, selectedDistrict, hideSmallDistricts } from '$lib/stores/stores.js'
+    import { data, selectedDistricts, hideSmallDistricts } from '$lib/stores/stores.js'
     import Svelecte from 'svelecte'
 
-    // create array of objects with id and name value for each item in the data array
-	let districtNames = $data.map((district) => {
-		return { value: district.properties.GEOID, label: district.properties["Institution Name"] }
-	})
+    // Create array of objects with id and name value for each item in the data array
+    let districtNames = $data.map((district) => {
+        return { value: district.properties.GEOID, label: district.properties["Institution Name"] }
+    })
 
     function toggleHideSmallDistricts() {
-		hideSmallDistricts.update(value => !value)
-	}
-
-    function clearSelectedDistricts() {
-		selectedDistrict.set([])
-		minSize = 0;
-		maxSize = 9000
-		values = [minSize, maxSize]
-	}
+        hideSmallDistricts.update(value => !value)
+    }
 </script>
 
 <div class="search text-width">
@@ -5834,7 +5960,7 @@ You can preview the production build with `npm run preview`.
     <div class="search-container text-width">
         <Svelecte 
             options={districtNames} 
-            bind:value={$selectedDistrict} 
+            bind:value={$selectedDistricts} 
             multiple={true} 
             placeholder={"find a school district"}
             closeAfterSelect={true}
@@ -5842,29 +5968,13 @@ You can preview the production build with `npm run preview`.
     </div>
 </div>
 
-{#if $selectedDistrict}
-    <!-- <div class="filters">
-        <div class="hide-small-button">
-            <button on:click={toggleHideSmallDistricts} class="action-button" id="hide-button">
-                {$hideSmallDistricts ? 'show small districts' : 'hide small districts'}
-            </button>
-            <p class="asterisk">* small districts don't have as accurate of an inclusion score</p>
-        </div>
-
-        <button on:click={clearSelectedDistricts} class="action-button" id="select-none-button">
-            clear selected
-        </button>
-    </div> -->
-{/if}
-
-
 <style>
     .search h2 {
         margin: 1rem 0;
     }
 
     .search-description {
-        color: var(--colorText);
+        color: var(--colorInclusive);
         font-size: 1.4rem;
         letter-spacing: 0.01rem;
         font-weight: 700;
@@ -5884,33 +5994,11 @@ You can preview the production build with `npm run preview`.
         margin: 2rem 0 2rem 0;
         width: 100%;
         max-width: 72rem;
-        /* gap: 1rem; */
-    }
-
-    /* Fallback for older browsers */
-	.filters > *:not(:last-child) {
-		margin-right: 1rem; /* Horizontal spacing */
-	}
-
-	@supports (gap: 1rem) {
-		.filters {
-			gap: 1rem;
-		}
-		/* With gap supported, we no longer need the extra margin on buttons */
-		.filters > * {
-			margin: 0;
-		}
-	}
-
-    @media (max-width: 768px) {
-        .filters {
-            width: 100%;
-        }
+        gap: 1rem;
     }
 
     .action-button {
         padding: 0.25rem 0.5rem;
-        /* margin: 0; */
         border-radius: 20px;
         cursor: pointer;
         color: var(--colorText);
@@ -5922,31 +6010,61 @@ You can preview the production build with `npm run preview`.
         font-weight: 700;
         letter-spacing: 0.02rem;
         opacity: 0.85;
-        /* Added margin for fallback, will be overridden if gap is supported */
-        margin: 0; /* Resets any additional margin for the feature query to work properly */
+        margin: 0;
     }
 
     .action-button:hover {
         background-color: whitesmoke;
     }
 
-    #hide-button {
-        margin-bottom: -1rem;
-        width: 12rem;
-    }
-
-    .hide-small-button {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-	}
-
-	.asterisk {
+    .primary-district-info {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
         font-size: 0.9rem;
         color: var(--colorDarkGray);
-        margin-top: 1.8rem;
-        line-height: 1.2rem;
-        margin-left: 1rem;
+    }
+    
+    .info-text {
+        font-style: italic;
+        font-weight: 600;
+    }
+
+    .district-pills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .district-pill {
+        background-color: var(--colorLightGray);
+        border: 1px solid var(--colorMediumGray);
+        border-radius: 12px;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+    .district-pill:hover {
+        background-color: var(--colorMediumGray);
+        color: white;
+    }
+
+    @media (max-width: 768px) {
+        .filters {
+            width: 100%;
+            flex-direction: column;
+        }
+        
+        .primary-district-info {
+            margin: 0.5rem 0 0 0;
+        }
+        
+        .district-pills {
+            justify-content: center;
+        }
     }
 </style>
 ```
@@ -6038,7 +6156,7 @@ You can preview the production build with `npm run preview`.
       border: none;
       font-size: 2rem;
       cursor: pointer;
-      color: var(--colorDarkGray);
+      color: var(--colorInclusive);
       z-index: 20;
       padding: 0;
       margin: 0;
@@ -6166,14 +6284,14 @@ You can preview the production build with `npm run preview`.
     export let height = 800
 
     // Add school year selector with default value
-    let selectedYear = "2023-2024" // Default to newest year
-    
-    // Add subject selector with default value
-    let selectedSubject = "ELA" // Default to ELA
+    let selectedYear = "2022-2023" // Default to newest year
     
     // Get unique school years from the data
     let availableYears = [...new Set(smallSchoolsData.map(school => school["School Year"]))].sort().reverse()
 
+    // Toggle for showing/hiding school labels
+    let showLabels = true
+    
     // Tooltip related state
     let tooltipVisible = false
     let tooltipData = null
@@ -6272,7 +6390,7 @@ You can preview the production build with `npm run preview`.
         school["School Year"] === selectedYear
     );
 
-    // Process the data to parse numeric values
+    // Process the data to parse numeric values and calculate average proficiency
     $: processedData = filteredYearData.map(school => {
         // Create a derived name field for display that's more compact
         const shortName = school.School.replace(" Primary School", "");
@@ -6280,12 +6398,10 @@ You can preview the production build with `npm run preview`.
         // Parse individual metrics
         const expenditure = parseInt(school["Per Pupil Spending"].replace(/\$|,/g, ''));
         
-        // Use selected subject proficiency
-        const performanceField = selectedSubject === "ELA" 
-            ? "ELA Proficient & Above %" 
-            : "Math Proficient & Above %";
-            
-        const performance = parseInt(school[performanceField]?.replace(/%/g, '') || "0");
+        // Calculate average of ELA and Math proficiency
+        const elaProf = parseInt(school["ELA Proficient & Above %"]?.replace(/%/g, '') || "0");
+        const mathProf = parseInt(school["Math Proficient & Above %"]?.replace(/%/g, '') || "0");
+        const averageProficiency = (elaProf + mathProf) / 2;
         
         const disabilityPercent = parseInt(school["Students w/Disabilities %"]?.replace(/%/g, '') || "0");
         const economicDisadvantagePercent = parseInt(school["Economically Disadvantaged %"]?.replace(/%/g, '') || "0");
@@ -6298,7 +6414,7 @@ You can preview the production build with `npm run preview`.
             ...school,
             shortName,
             expenditure,
-            performance,
+            performance: averageProficiency,
             disabilityPercent,
             economicDisadvantagePercent,
             totalDisadvantagedPercent,
@@ -6366,60 +6482,6 @@ You can preview the production build with `npm run preview`.
             })
         })
     }
-    
-    // Define positions for leader line labels with more control options
-    // const leaderLineLabels = {
-    //     "Lowrie": { 
-    //         offsetX: 42, 
-    //         offsetY: 24,
-    //         lineStartX: 21,  // Offset from circle center where line begins
-    //         lineStartY: 14,
-    //         lineEndX: 40,  // Control where the leader line ends
-    //         lineEndY: 20,
-    //         anchor: "end"   // text-anchor: start, middle, or end
-    //     },
-    //     "Stafford": { 
-    //         offsetX: 60, 
-    //         offsetY: 15,
-    //         lineStartX: 20,
-    //         lineStartY: 2,
-    //         lineEndX: 58,
-    //         lineEndY: 11,
-    //         anchor: "end"
-    //     },
-    //     "Sunset": { 
-    //         offsetX: 65, 
-    //         offsetY: 10,
-    //         lineStartX: 18,
-    //         lineStartY: 8,
-    //         lineEndX: 63,
-    //         lineEndY: 6,
-    //         anchor: "start"
-    //     },
-    //     "Cedaroak Park": { 
-    //         offsetX: 30, 
-    //         offsetY: -25,
-    //         lineStartX: 13,
-    //         lineStartY: -13,
-    //         lineEndX: 28,
-    //         lineEndY: -28,
-    //         anchor: "middle"
-    //     },
-    //     "Willamette": { 
-    //         offsetX: 45, 
-    //         offsetY: 25,
-    //         lineStartX: 18,
-    //         lineStartY: 12,
-    //         lineEndX: 43,
-    //         lineEndY: 20,
-    //         anchor: "start"
-    //     }
-    // };
-    
-    // Check if a school needs a leader line
-    // function needsLeaderLine(schoolName) {
-    //     return Object.keys(leaderLineLabels).includes(schoolName);
-    // }
 
     // Handle tooltip display
     function showTooltip(school, event) {
@@ -6465,18 +6527,11 @@ You can preview the production build with `npm run preview`.
                 </select>
             </div>
             
-            <div class="subject-selector">
-                <label>Subject:</label>
-                <div class="radio-group">
-                    <label class="radio-label">
-                        <input type="radio" bind:group={selectedSubject} value="ELA" name="subject">
-                        <span>ELA</span>
-                    </label>
-                    <label class="radio-label">
-                        <input type="radio" bind:group={selectedSubject} value="Math" name="subject">
-                        <span>Math</span>
-                    </label>
-                </div>
+            <div class="toggle-container">
+                <label class="toggle-label">
+                    <input type="checkbox" bind:checked={showLabels} class="toggle-input">
+                    <span class="toggle-text">{showLabels ? 'Hide Labels' : 'Show Labels'}</span>
+                </label>
             </div>
         </div>
     </div>
@@ -6562,7 +6617,7 @@ You can preview the production build with `npm run preview`.
                     font-size="14px"
                     font-weight="600"
                 >
-                    {selectedSubject} Proficient & Above
+                    Proficiency (ELA/Math Average)
                 </text>
             </g>
 
@@ -6607,7 +6662,7 @@ You can preview the production build with `npm run preview`.
                     font-size="12px"
                     fill={colors.colorDarkGray}
                 >
-                    Avg {selectedSubject} Performance
+                    Avg Proficiency
                 </text>
             </g>
 
@@ -6653,44 +6708,11 @@ You can preview the production build with `npm run preview`.
                         stroke={colors.colorBackgroundWhite}
                         stroke-width="1"
                     />
-                    
-                    <!-- {#if needsLeaderLine(school.shortName)}
-                        <line 
-                            x1={xScale(school.expenditure) + leaderLineLabels[school.shortName].lineStartX}
-                            y1={yScale(school.performance) + leaderLineLabels[school.shortName].lineStartY}
-                            x2={xScale(school.expenditure) + leaderLineLabels[school.shortName].lineEndX}
-                            y2={yScale(school.performance) + leaderLineLabels[school.shortName].lineEndY}
-                            stroke={colors.colorDarkGray}
-                            stroke-width="0.5"
-                            stroke-dasharray="2,1"
-                        />
-                        <text
-                            x={xScale(school.expenditure) + leaderLineLabels[school.shortName].offsetX}
-                            y={yScale(school.performance) + leaderLineLabels[school.shortName].offsetY}
-                            text-anchor={leaderLineLabels[school.shortName].offsetX < 0 ? "end" : "start"}
-                            font-size="11px"
-                            fill={colors.colorText}
-                        >
-                            <tspan font-weight="600">{school.shortName}</tspan>
-                            <tspan> ({school.totalDisadvantagedPercent}% disadv)</tspan>
-                        </text>
-                    {:else} -->
-                        <!-- Regular inline label -->
-                        <!-- <text
-                            x={xScale(school.expenditure)}
-                            y={yScale(school.performance) - rScale(school.enrollment) - 8}
-                            text-anchor="middle"
-                            font-size="11px"
-                            fill={colors.colorText}
-                        >
-                            <tspan font-weight="600">{school.shortName}</tspan>
-                            <tspan> ({school.totalDisadvantagedPercent}% disadv)</tspan>
-                        </text> -->
-                    <!-- {/if} -->
                 </g>
             {/each}
 
             {#each processedData as school}
+                {#if showLabels}
                 <text
                     x={xScale(school.expenditure)}
                     y={yScale(school.performance) - rScale(school.enrollment) - 8}
@@ -6701,6 +6723,7 @@ You can preview the production build with `npm run preview`.
                     <tspan font-weight="600">{school.shortName}</tspan>
                     <tspan> ({school.totalDisadvantagedPercent}% disadv)</tspan>
                 </text>
+                {/if}
             {/each}
 
             <!-- School Size legend with adjusted circles to account for the stroke width -->
@@ -6755,6 +6778,10 @@ You can preview the production build with `npm run preview`.
         {#if tooltipVisible && tooltipData}
             <div class="tooltip" style="left: {tooltipX}px; top: {tooltipY}px">
                 <div class="tooltip-header">{tooltipData.School}</div>
+                <div class="tooltip-highlight-row">
+                    <span class="tooltip-highlight-label">Total Disadvantaged:</span>
+                    <span class="tooltip-highlight-value">{tooltipData.totalDisadvantagedPercent}%</span>
+                </div>
                 <div class="tooltip-content">
                     <div class="tooltip-row">
                         <span class="tooltip-label">Enrollment:</span>
@@ -6779,6 +6806,10 @@ You can preview the production build with `npm run preview`.
                     <div class="tooltip-row">
                         <span class="tooltip-label">Math Proficient:</span>
                         <span class="tooltip-value">{tooltipData["Math Proficient & Above %"]}</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Avg Proficiency:</span>
+                        <span class="tooltip-value">{tooltipData.performance.toFixed(1)}%</span>
                     </div>
                 </div>
             </div>
@@ -6806,13 +6837,13 @@ You can preview the production build with `npm run preview`.
         gap: 1.5rem;
     }
 
-    .year-selector, .subject-selector {
+    .year-selector {
         display: flex;
         align-items: center;
         gap: 0.5rem;
     }
 
-    .year-selector label, .subject-selector label {
+    .year-selector label {
         font-weight: 600;
         color: var(--colorText);
         white-space: nowrap;
@@ -6825,26 +6856,6 @@ You can preview the production build with `npm run preview`.
         font-size: 1rem;
         background-color: white;
         cursor: pointer;
-    }
-
-    .radio-group {
-        display: flex;
-        gap: 1rem;
-    }
-
-    .radio-label {
-        display: flex;
-        align-items: center;
-        gap: 0.25rem;
-        cursor: pointer;
-    }
-
-    .radio-label input {
-        cursor: pointer;
-    }
-
-    .radio-label span {
-        font-size: 1rem;
     }
 
     h2 {
@@ -6899,6 +6910,26 @@ You can preview the production build with `npm run preview`.
         font-size: 14px;
         color: var(--colorText);
     }
+    
+    .tooltip-highlight-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        padding: 5px 8px;
+        background-color: #f0f0f0;
+        border-radius: 4px;
+        font-weight: 600;
+    }
+    
+    .tooltip-highlight-label {
+        color: var(--colorText);
+        font-size: 13px;
+    }
+    
+    .tooltip-highlight-value {
+        color: var(--colorInclusiveDark);
+        font-size: 15px;
+    }
 
     .tooltip-content {
         font-size: 12px;
@@ -6920,6 +6951,28 @@ You can preview the production build with `npm run preview`.
         color: var(--colorText);
     }
 
+    .toggle-container {
+        display: flex;
+        align-items: center;
+    }
+    
+    .toggle-label {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        font-weight: 600;
+        color: var(--colorText);
+        gap: 0.5rem;
+    }
+    
+    .toggle-input {
+        cursor: pointer;
+    }
+    
+    .toggle-text {
+        white-space: nowrap;
+    }
+
     @media (max-width: 768px) {
         .controls {
             flex-direction: column;
@@ -6934,13 +6987,8 @@ You can preview the production build with `npm run preview`.
             width: 100%;
         }
 
-        .year-selector, .subject-selector {
+        .year-selector, .toggle-container {
             width: 100%;
-        }
-
-        .radio-group {
-            flex: 1;
-            justify-content: flex-start;
         }
         
         .tooltip {
@@ -6962,7 +7010,7 @@ You can preview the production build with `npm run preview`.
 
         <!-- <p><strong>Small districts</strong> have less than 500 students with IEPs. <strong>Large districts</strong> have 500 or more.</p> -->
 
-        <p>Data is from the <strong>2022-23 school year</strong> and comes from the <a href="https://www.ode.state.or.us/data/ReportCard/Media" target="_blank">Oregon Department of Education</a>. Map data comes from the <a href="https://www.census.gov/cgi-bin/geo/shapefiles/index.php?year=2023&layergroup=School+Districts" target="_blank">US Census</a>.</p>
+        <p>Data is from the <strong>2023-24 school year</strong> and comes from the <a href="https://www.ode.state.or.us/data/ReportCard/Media" target="_blank">Oregon Department of Education</a>. Map data comes from the <a href="https://www.census.gov/cgi-bin/geo/shapefiles/index.php?year=2023&layergroup=School+Districts" target="_blank">US Census</a>.</p>
 
         <!-- <p><a href="https://github.com/bronna/inclusion/tree/main/src/data" target="_blank">Methodology</a></p> -->
     </div>
@@ -6976,7 +7024,7 @@ You can preview the production build with `npm run preview`.
     }
 
     a {
-        color: var(--colorInclusiveDark);
+        color: var(--colorInclusive);
         font-weight: 600;
     }
 
@@ -7198,7 +7246,7 @@ You can preview the production build with `npm run preview`.
     import { extent } from 'd3-array'
     import { forceSimulation, forceX, forceY, forceCollide } from 'd3-force'
     import { colors } from '$lib/styles/colorConfig'
-    import { data, selectedDistrict } from '$lib/stores/stores.js'
+    import { data, selectedDistricts } from '$lib/stores/stores.js'
     import { Search } from 'lucide-svelte'
     import { writable, derived } from "svelte/store"
     import { goto } from '$app/navigation'
@@ -7236,7 +7284,7 @@ You can preview the production build with `npm run preview`.
 
     // Handle district selection
     function selectDistrict(districtGEOID) {
-        selectedDistrict.set(districtGEOID)
+        selectedDistricts.set(districtGEOID)
         clearSearch()
         // Navigate to district details if needed
         // goto(`/${districtGEOID}`)
@@ -7311,7 +7359,7 @@ You can preview the production build with `npm run preview`.
     let simulation;
 
     // Get the selected district data 
-    $: selectedDistrictData = $data.find(d => d.properties.GEOID === $selectedDistrict);
+    $: selectedDistrictData = $data.find(d => d.properties.GEOID === $selectedDistricts);
 
     function runSimulation() {
         if (!filteredData.length || !dimensions.innerWidth) return;
@@ -7364,11 +7412,11 @@ You can preview the production build with `npm run preview`.
 
     // Watch for changes to selectedDistrict and highlight it
     $: {
-        if (initialized && $selectedDistrict && nodes.length) {
+        if (initialized && $selectedDistricts && nodes.length) {
             // Update nodes to highlight the selected district
             nodes = nodes.map(node => ({
                 ...node,
-                isSelected: node.properties.GEOID === $selectedDistrict
+                isSelected: node.properties.GEOID === $selectedDistricts
             }));
         }
     }
@@ -7411,8 +7459,8 @@ You can preview the production build with `npm run preview`.
             {#each searchResults as result}
                 <!-- svelte-ignore a11y-click-events-have-key-events -->
                 <div 
-                    class="search-result-item {$selectedDistrict === result.properties.GEOID ? 'selected' : ''}"
-                    on:click={() => selectDistrict(result.properties.GEOID)}
+                    class="search-result-item {$selectedDistricts === result.properties.GEOID ? 'selected' : ''}"
+                    on:click={() => selectDistricts(result.properties.GEOID)}
                 >
                     <div class="result-name">{result.properties["Institution Name"]}</div>
                     <div class="result-details">
@@ -8029,10 +8077,16 @@ You can preview the production build with `npm run preview`.
                     {/if}
                 </td>
                 <td class="hide-mobile">
-                    {#if district.properties["nAlerts"]}
-                        <span class="underline-on-hover" style="font-weight: 900; font-size: 1.4rem; color: rgb(222, 84, 102);">{'!'.repeat(district.properties["nAlerts"])}</span>
+                    {#if district.properties["nAlerts"] !== null && district.properties["nAlerts"] !== undefined}
+                        {#if district.properties["nAlerts"] > 0}
+                            <span class="underline-on-hover" style="font-weight: 900; font-size: 1.4rem; color: rgb(222, 84, 102);">
+                                {'!'.repeat(district.properties["nAlerts"])}
+                            </span>
+                        {:else}
+                            <span class="no-data">0</span>
+                        {/if}
                     {:else}
-                        <span class="no-data">-</span>
+                        <span class="no-data">coming soon</span>
                     {/if}
                 </td>
                 <td class="hide-mobile settings-data">
@@ -8085,15 +8139,18 @@ You can preview the production build with `npm run preview`.
                     {/if}
                 </div>
 
-                <div class="mobile-alerts-row show-mobile">
-                    <div class="mobile-alerts">
-                        {#if district.properties["nAlerts"]}
-                            <span class="underline-on-hover" style="font-weight: 900; font-size: 1rem; color: rgb(222, 84, 102);">Alerts: {'!'.repeat(district.properties["nAlerts"])}</span>
+                <div class="mobile-alerts">
+                    {#if district.properties["nAlerts"] !== null && district.properties["nAlerts"] !== undefined}
+                        {#if district.properties["nAlerts"] > 0}
+                            <span class="underline-on-hover" style="font-weight: 900; font-size: 1rem; color: rgb(222, 84, 102);">
+                                Alerts: {'!'.repeat(district.properties["nAlerts"])}
+                            </span>
                         {:else}
-                            <span class="no-data">-</span>
+                            <span class="no-data">No alerts</span>
                         {/if}
-                    </div>
-                    <span class="mobile-more">more ></span>
+                    {:else}
+                        <span class="no-data">Alerts data coming soon</span>
+                    {/if}
                 </div>
             </tr>
         {/each}
@@ -8617,9 +8674,11 @@ You can preview the production build with `npm run preview`.
     import { fade } from 'svelte/transition'
     import { Map, BarChart2 } from 'lucide-svelte'
     import { colors } from '$lib/styles/colorConfig'
-    import { selectedDistrict, selectedDistrictData } from '$lib/stores/stores.js'
+    import { selectedDistricts, primaryDistrictData } from '$lib/stores/stores.js'
     
-    $: districtData = $selectedDistrictData?.[0]?.properties
+    // No need to extract the first item - primaryDistrictData is already a single object
+    $: districtData = $primaryDistrictData?.properties
+    
     import DistrictsBeeswarm from './DistrictsBeeswarm.svelte'
     import BubbleMap from './BubbleMap.svelte'
 
@@ -8643,7 +8702,7 @@ You can preview the production build with `npm run preview`.
                     size={20} 
                     color={currentView === 'beeswarm' ? colors.colorWhite : colors.colorText} 
                 />
-                <span>Beeswarm</span>
+                <span>Swarm</span>
             </button>
             <button 
                 class="toggle-btn {currentView === 'map' ? 'active' : ''}"
@@ -10125,7 +10184,7 @@ You can preview the production build with `npm run preview`.
 
 ```js
 import * as topojson from "topojson-client"
-import OregonData from "./oregon_data_23.json"
+import OregonData from "./oregon_data_24.json"
 
 let largeDistrictCutoff = 500
 
@@ -10193,7 +10252,7 @@ function calculateRanks(data) {
 }
 
 export const getData = () => {
-    const objectName = "OR_SDs_merged_23"
+    const objectName = "OR_SDs_merged_24"
     const geojsonData = topojson.feature(OregonData, OregonData.objects[objectName])
     let data = geojsonData.features
 
@@ -10239,12 +10298,12 @@ export const getData = () => {
             sumHigherEdTrainingEmployed += (district.properties["Higher Ed/Training/Employed"] / 100) * district.properties["Total Student Count"]
         }
 
-        if (typeof district.properties["IEP 4Yr Cohort Grad 18-19"] === "number" && !isNaN(district.properties["IEP 4Yr Cohort Grad 18-19"])) {
-            sumIEP4YrCohortGrad += (district.properties["IEP 4Yr Cohort Grad 18-19"] / 100) * district.properties["Total Student Count"]
+        if (typeof district.properties["Graduation Rate"] === "number" && !isNaN(district.properties["Graduation Rate"])) {
+            sumIEP4YrCohortGrad += (district.properties["Graduation Rate"] / 100) * district.properties["Total Student Count"]
         }
 
-        if (typeof district.properties["IEP Dropout 18-19"] === "number" && !isNaN(district.properties["IEP Dropout 18-19"])) {
-            sumIEPDropout += (district.properties["IEP Dropout 18-19"] / 100) * district.properties["Total Student Count"]
+        if (typeof district.properties["Dropout Rate"] === "number" && !isNaN(district.properties["Dropout Rate"])) {
+            sumIEPDropout += (district.properties["Dropout Rate"] / 100) * district.properties["Total Student Count"]
         }
 
         // Calculate the weighted inclusion
@@ -10261,7 +10320,12 @@ export const getData = () => {
                 alertsCount++
             }
         })
-        district.properties.nAlerts = alertsCount
+        // Only set nAlerts if we have alert data, otherwise set to null
+        const hasAlertData = alertColumns.some(column => 
+            district.properties[column] !== undefined && 
+            district.properties[column] !== null
+        )
+        district.properties.nAlerts = hasAlertData ? alertsCount : null
 
         // indicate if large or small district
         if (!district.properties["Total Student Count"]) {
@@ -10347,8 +10411,8 @@ export const getData = () => {
             "LRE Students <40%": (numNonInclusive / totalStudents) * 100,
             "LRE Students Separate Settings": (numSeparate / totalStudents) * 100,
             "Higher Ed/Training/Employed": sumHigherEdTrainingEmployed / totalStudents * 100,
-            "IEP 4Yr Cohort Grad 18-19": sumIEP4YrCohortGrad / totalStudents * 100,
-            "IEP Dropout 18-19": sumIEPDropout / totalStudents * 100,
+            "Graduation Rate": sumIEP4YrCohortGrad / totalStudents * 100,
+            "Dropout Rate": sumIEPDropout / totalStudents * 100,
             "minWeightedInclusion": minWeightedInclusion,
             "maxWeightedInclusion": maxWeightedInclusion,
             "minWeightedInclusionAll": minWeightedInclusionAll,
@@ -10561,7 +10625,7 @@ export const getData = () => {
     "School Year": "2021-2022",
     "Total School Enrollment": 459,
     "Per Pupil Spending": "$14529",
-    "Economically Disadvantaged %": "27.8%",
+    "Economically Disadvantaged %": "28%",
     "Students w/Disabilities %": "14%",
     "ELA Proficient & Above %": "46%",
     "Math Proficient & Above %": "42%"
@@ -10571,7 +10635,7 @@ export const getData = () => {
     "School Year": "2021-2022",
     "Total School Enrollment": 243,
     "Per Pupil Spending": "$19622",
-    "Economically Disadvantaged %": "10.7%",
+    "Economically Disadvantaged %": "11%",
     "Students w/Disabilities %": "12%",
     "ELA Proficient & Above %": "79%",
     "Math Proficient & Above %": "67%"
@@ -10581,7 +10645,7 @@ export const getData = () => {
     "School Year": "2021-2022",
     "Total School Enrollment": 492,
     "Per Pupil Spending": "$15566",
-    "Economically Disadvantaged %": "31.9%",
+    "Economically Disadvantaged %": "32%",
     "Students w/Disabilities %": "15%",
     "ELA Proficient & Above %": "37%",
     "Math Proficient & Above %": "34%"
@@ -10591,7 +10655,7 @@ export const getData = () => {
     "School Year": "2021-2022",
     "Total School Enrollment": 345,
     "Per Pupil Spending": "$14918",
-    "Economically Disadvantaged %": "9.4%",
+    "Economically Disadvantaged %": "9%",
     "Students w/Disabilities %": "11%",
     "ELA Proficient & Above %": "67%",
     "Math Proficient & Above %": "62%"
@@ -10601,7 +10665,7 @@ export const getData = () => {
     "School Year": "2021-2022",
     "Total School Enrollment": 473,
     "Per Pupil Spending": "$14708",
-    "Economically Disadvantaged %": "21.5%",
+    "Economically Disadvantaged %": "21%",
     "Students w/Disabilities %": "9%",
     "ELA Proficient & Above %": "59%",
     "Math Proficient & Above %": "53%"
@@ -10611,7 +10675,7 @@ export const getData = () => {
     "School Year": "2021-2022",
     "Total School Enrollment": 360,
     "Per Pupil Spending": "$14969",
-    "Economically Disadvantaged %": "7.1%",
+    "Economically Disadvantaged %": "7%",
     "Students w/Disabilities %": "13%",
     "ELA Proficient & Above %": "63%",
     "Math Proficient & Above %": "67%"
@@ -10621,7 +10685,7 @@ export const getData = () => {
     "School Year": "2021-2022",
     "Total School Enrollment": 367,
     "Per Pupil Spending": "$15387",
-    "Economically Disadvantaged %": "10.3%",
+    "Economically Disadvantaged %": "10%",
     "Students w/Disabilities %": "14%",
     "ELA Proficient & Above %": "69%",
     "Math Proficient & Above %": "63%"
@@ -10631,7 +10695,7 @@ export const getData = () => {
     "School Year": "2021-2022",
     "Total School Enrollment": 462,
     "Per Pupil Spending": "$14430",
-    "Economically Disadvantaged %": "6.6%",
+    "Economically Disadvantaged %": "7%",
     "Students w/Disabilities %": "10%",
     "ELA Proficient & Above %": "73%",
     "Math Proficient & Above %": "64%"
@@ -10641,7 +10705,7 @@ export const getData = () => {
     "School Year": "2021-2022",
     "Total School Enrollment": 424,
     "Per Pupil Spending": "$14599",
-    "Economically Disadvantaged %": "15.9%",
+    "Economically Disadvantaged %": "16%",
     "Students w/Disabilities %": "15%",
     "ELA Proficient & Above %": "56%",
     "Math Proficient & Above %": "48%"
@@ -10704,6 +10768,7 @@ export const quartileRanges = derived(data, $data => calculateQuartileRanges($da
 
 ```js
 // src/lib/stores/stores.js
+
 import { readable, writable, derived } from 'svelte/store'
 import { getData } from "$lib/data/processData.js"
 
@@ -10716,12 +10781,25 @@ export const stateData = derived(data, $data => $data.filter(d => d.properties.G
 export const minWeightedInclusion = derived(stateData, $stateData => $stateData[0].properties.minWeightedInclusion)
 export const maxWeightedInclusion = derived(stateData, $stateData => $stateData[0].properties.maxWeightedInclusion)
 
-// Change to array for multiple selection
-export const selectedDistrict = writable(["4110040"])
+// Array for multiple district selections
+export const selectedDistricts = writable(["4110040"])
 
-export const selectedDistrictData = derived([selectedDistrict, data], ([$selectedDistrict, $data]) => {
+// Array of data for all selected districts
+export const selectedDistrictsData = derived([selectedDistricts, data], ([$selectedDistricts, $data]) => {
     // Filter for all selected districts
-    return $data.filter(d => $selectedDistrict.includes(d.properties.GEOID))
+    return $data.filter(d => $selectedDistricts.includes(d.properties.GEOID))
+})
+
+// Single data object for the primary selected district (first in the array)
+export const primaryDistrictData = derived([selectedDistricts, data], ([$selectedDistricts, $data]) => {
+    if (!$selectedDistricts || $selectedDistricts.length === 0) return null
+    const primaryId = $selectedDistricts[0] // Always use the first district as primary
+    return $data.find(d => d.properties.GEOID === primaryId) || null
+})
+
+// Get the primary district ID (first in the selectedDistricts array)
+export const primaryDistrictId = derived(selectedDistricts, $selectedDistricts => {
+    return $selectedDistricts && $selectedDistricts.length > 0 ? $selectedDistricts[0] : null
 })
 
 export const highlightedDistricts = writable(null)
@@ -10767,10 +10845,10 @@ html, body {
 }
 
 h1 {
-    font-size: 3rem;
-	font-weight: 800;
+    font-size: 2.5rem;
+	font-weight: 900;
 	font-family: var(--font-headers);
-	line-height: 3.5rem;
+	line-height: 3rem;
     letter-spacing: 0.03rem;
 	text-align: center;
     padding-top: 2rem;
@@ -10863,6 +10941,12 @@ hr {
         margin-top: 0.5rem;
     }
 }
+
+.no-data {
+    color: var(--colorMediumGray);
+    font-style: italic;
+    font-size: 0.9rem;
+}
 ```
 
 # src/lib/utils/arrows.js
@@ -10928,6 +11012,12 @@ export const arrowRight = `
         {name: "Disproportionate representation by disability", value: districtData.DisPrptnRprsntnDsbltyFg},
     ]
 
+    // Check if any alert data exists
+    $: hasAnyAlertData = alerts.some(alert => 
+        alert.value !== undefined && 
+        alert.value !== null
+    )
+
     $: inclusionCategories = [
         {group: "inclusive", colorIdentifier: "colorInclusive", value: districtData["LRE Students >80%"], definition: "these students spend more than 80% of their day in a regular classroom"},
         {group: "semi-inclusive", colorIdentifier: "colorSemiInclusive", value: districtData["LRE Students >40% <80%"], definition: "these students spend 40% to 80% of their day in a regular classroom"},
@@ -10936,20 +11026,20 @@ export const arrowRight = `
     ]
 
     $: gradRates = [
-        {group: "graduated", value: districtData["IEP 4Yr Cohort Grad 18-19"]},
-        {group: "notGraduated", value: 100 - districtData["IEP 4Yr Cohort Grad 18-19"]},
+        {group: "graduated", value: districtData["Graduation Rate"]},
+        {group: "notGraduated", value: 100 - districtData["Graduation Rate"]},
     ]
 
     let gradDonutCenterText = ''
     $: if (districtData['IEP 4Yr Cohort Grad 18-19'] === 5) {
-        gradDonutCenterText = '<' + Math.round(districtData['IEP 4Yr Cohort Grad 18-19']) + '%';
+        gradDonutCenterText = '<' + Math.round(districtData['Graduation Rate']) + '%';
     } else if (districtData['IEP 4Yr Cohort Grad 18-19'] === 95) {
-        gradDonutCenterText = '>' + Math.round(districtData['IEP 4Yr Cohort Grad 18-19']) + '%';
+        gradDonutCenterText = '>' + Math.round(districtData['Graduation Rate']) + '%';
     } else {
-        gradDonutCenterText = Math.round(districtData['IEP 4Yr Cohort Grad 18-19']) + '%';
+        gradDonutCenterText = Math.round(districtData['Graduation Rate']) + '%';
     }
 
-    $: stateAvgGradRate = stateData['IEP 4Yr Cohort Grad 18-19']
+    $: stateAvgGradRate = stateData['Graduation Rate']
 </script>
 
 
@@ -11002,7 +11092,7 @@ export const arrowRight = `
                 </div>
     
                 <div class="text-width metric">
-                    <h3 class="header">Inclusion Breakdown</h3>
+                    <h3 class="header">Inclusion</h3>
                     <div class="inclusion-breakdown">
                         <DonutChart
                             data={inclusionCategories}
@@ -11017,9 +11107,10 @@ export const arrowRight = `
     
                 <div class="text-width metric">
                     <h3 class="header">Alerts</h3>
-                    <!-- <p class="asterisk">*discipline rates lower than usual due to remote learning</p> -->
-                    {#if districtData["Total Student Count"] && alerts}
+                    {#if hasAnyAlertData && districtData["Total Student Count"]}
                         <AlertsCards alertsData={alerts} />
+                    {:else if !hasAnyAlertData}
+                        <p class="no-data">Alert data not available for the current school year</p>
                     {:else}
                         <p>No data available</p>
                     {/if}
@@ -11067,6 +11158,17 @@ export const arrowRight = `
 
 
 <style>
+    .headline {
+        color: var(--colorInclusive);
+        max-width: 44rem;
+    }
+
+    @media (max-width: 768px) {
+        .headline {
+            margin-top: 3rem;
+        }
+    }
+
     .district-info {
         background-color: var(--colorBackgroundWhite);
         padding-top: 1rem;
@@ -11137,7 +11239,7 @@ export const arrowRight = `
 
     .iep-percent p {
         font-size: 1.1rem;
-        background-color: var(--colorDarkGray);
+        background-color: var(--colorNonInclusive);
         color: var(--colorBackgroundWhite);
         padding: 0.25rem 0.5rem;
         display: inline-block;
@@ -11153,10 +11255,10 @@ export const arrowRight = `
 # src/routes/+layout.svelte
 
 ```svelte
+<!-- src/routes/+layout.svelte -->
 <script>
     import '$lib/styles/styles.css'
     import { colors } from '$lib/styles/colorConfig.js'
-
     import Footer from '$lib/components/Footer.svelte'
 
     let cssColors = `
@@ -11179,8 +11281,10 @@ export const arrowRight = `
     `
 </script>
 
-
 <div class="app" style="{cssColors}">
+    <!-- Color bar inside app div so it can access CSS variables -->
+    <div class="color-bar"></div>
+    
     <main>
         <slot />
     </main>
@@ -11188,8 +11292,13 @@ export const arrowRight = `
     <Footer />
 </div>
 
-
 <style>
+    .color-bar {
+        width: 100%;
+        height: 8px;
+        background-color: var(--colorInclusive);
+    }
+
     :global(:root) {
         --font-body: 'Source Sans 3', sans-serif;
         --font-headers: 'Bitter', serif;
@@ -11218,7 +11327,7 @@ export const arrowRight = `
     }
 
     :global(.header) {
-        color: var(--colorText);
+        color: var(--colorInclusive);
         font-size: 1.3rem;
         letter-spacing: 0.01rem;
         font-weight: 700;
@@ -11244,6 +11353,7 @@ export const arrowRight = `
         min-height: 100vh;
         font-family: var(--font-body);
         color: var(--color-text);
+        /* Remove top padding since color bar is no longer fixed */
     }
 
     main {
@@ -11272,7 +11382,7 @@ export const prerender = true
 </svelte:head>
 
 <script>
-    import { data, selectedDistrict, selectedDistrictData } from "$lib/stores/stores.js"
+    import { data, selectedDistricts, selectedDistrictsData, primaryDistrictData } from "$lib/stores/stores.js"
     import SideHeader from '$lib/components/SideHeader.svelte'
     import Divider from "$lib/components/Divider.svelte"
     import { Search, Pencil, TableProperties } from 'lucide-svelte'
@@ -11285,9 +11395,6 @@ export const prerender = true
     import ScrollyCard from "$lib/components/ScrollyCard.svelte"
     import ScrollyProgress from "$lib/components/ScrollyProgress.svelte"
 
-    $: console.log("Selected district data:", $selectedDistrictData)
-    $: console.log("Selected district:", $selectedDistrict)
-
     let windowWidth = 0
 
     // Scroller variables
@@ -11296,8 +11403,8 @@ export const prerender = true
     let threshold = 0.5
     let bottom = 0.8
 
-    let isDistrictSelected = false
-    $: isDistrictSelected = $selectedDistrict && $selectedDistrict.length > 0
+    // Check if any districts are selected
+    $: isDistrictSelected = $selectedDistricts && $selectedDistricts.length > 0
 
     // Total number of scrolly sections
     $: totalScrollySections = isDistrictSelected ? 8 : 2
@@ -11326,7 +11433,7 @@ export const prerender = true
     <div class="header-headline-container">
         <div class="headline-container">
             <h1 class="headline">
-                Educational Access: How School Districts Support Students with Disabilities
+                Educational Access: How School Districts in Oregon Support Students with Disabilities
             </h1>
         </div>
 
@@ -11341,7 +11448,7 @@ export const prerender = true
     <div class="content-container">
         <div class="intro">
             <h3 class="byline text-width">
-                Updated with data from the 2022-23 school year
+                Updated with data from the 2023-24 school year
             </h3>
         
             <p class="text-width">
@@ -11387,7 +11494,9 @@ export const prerender = true
                         </section>
                         <section>
                             <ScrollyCard active={index === 2}>
-                                As an example, let's look at Portland Public Schools. This district serves <strong>{$selectedDistrictData[0].properties["Total Student Count"]} students with IEPs*</strong> <em>(note: you can select your local district at any time)</em>
+                                As an example, let's look at {$primaryDistrictData?.properties["Institution Name"]}. 
+                                This district serves <strong>{$primaryDistrictData?.properties["Total Student Count"]} students with IEPs*</strong>
+                                <em>(note: you can select your local district at any time)</em>
                                 <br>
                                 <br>
                                 <em>*An IEP is a document that outlines what supports a student with a disability will receive at school. It's personalized to each student</em>
@@ -11395,7 +11504,10 @@ export const prerender = true
                         </section>
                         <section>
                             <ScrollyCard active={index === 3}>
-                                Districts report on how much time students with IEPs spend in regular classrooms. Based on this, <strong>{$selectedDistrictData[0].properties["Institution Name"]}</strong> has an <strong>inclusion score</strong> of <strong>{$selectedDistrictData[0].properties["quartile"]} out of 4</strong>
+                                Districts report on how much time students with IEPs spend in regular classrooms. 
+                                Based on this, <strong>{$primaryDistrictData?.properties["Institution Name"]}</strong> 
+                                has an <strong>inclusion score</strong> of 
+                                <strong>{$primaryDistrictData?.properties["quartile"]} out of 4</strong>
                                 <br>
                                 <br>
                                 <SimpleAccordion title="How is the inclusion score calculated?">
@@ -11411,7 +11523,7 @@ export const prerender = true
                         </section>
                         <section>
                             <ScrollyCard active={index === 4}>
-                                Here's how {$selectedDistrictData[0].properties["Institution Name"]} compares to the <strong>largest districts</strong> in the state
+                                Here's how {$primaryDistrictData?.properties["Institution Name"]} compares to the <strong>largest districts</strong> in the state
                             </ScrollyCard>
                         </section>
                         <section>
@@ -11426,7 +11538,7 @@ export const prerender = true
                         </section>
                         <section>
                             <ScrollyCard active={index === 7}>
-                                Now it's your turn! Use the <strong>toggle</strong> to switch between <strong>map and bubble views</strong>. You can also find districts in the <strong>table below</strong>
+                                Now it's your turn! Use the <strong>toggle</strong> to switch between <strong>map and bubble swarm views</strong>. You can also find district overviews in the <strong>table below</strong>
                             </ScrollyCard>
                         </section>
                     {:else}
@@ -11470,18 +11582,30 @@ export const prerender = true
 
 <style>
     .headline {
-        color: var(--colorInclusiveDark);
+        color: var(--colorInclusive);
+        max-width: 44rem;
     }
 
     .intro {
+        margin-top: 2rem;
         margin-bottom: 1rem;
         position: relative;
+    }
+
+    @media (max-width: 768px) {
+        .headline {
+            margin-top: 3rem;
+        }
+
+        .intro {
+            margin-top: 0rem;
+        }
     }
 
     .byline {
         font-size: 1rem;
         margin-bottom: 0.75rem;
-        color: var(--colorInclusive);
+        color: var(--colorNonInclusive);
     }
 
     .content-wrapper {
@@ -11793,6 +11917,17 @@ export async function load({ params }) {
 </div>
 
 <style>
+    .headline {
+        color: var(--colorInclusive);
+        max-width: 44rem;
+    }
+
+    @media (max-width: 768px) {
+        .headline {
+            margin-top: 3rem;
+        }
+    }
+    
     a {
         color: var(--colorInclusiveDark);
         font-weight: 600;
@@ -11836,7 +11971,7 @@ export async function load({ params }) {
 </svelte:head>
 
 <script>
-    import { data, selectedDistrict, selectedDistrictData } from "$lib/stores/stores.js"
+    import { data, selectedDistricts, selectedDistrictsData, primaryDistrictData } from "$lib/stores/stores.js"
     import SideHeader from '$lib/components/SideHeader.svelte'
     import Divider from "$lib/components/Divider.svelte"
     import { Search, Pencil, TableProperties } from 'lucide-svelte'
@@ -11857,24 +11992,19 @@ export async function load({ params }) {
     let threshold = 0.5
     let bottom = 0.8
 
-    let isDistrictSelected = false
-    $: isDistrictSelected = $selectedDistrict && $selectedDistrict.length > 0
-    $: {
-        if ($selectedDistrict) {
-            index = 0;
-        }
-    }
+    // Check if any districts are selected
+    $: isDistrictSelected = $selectedDistricts && $selectedDistricts.length > 0
 
     // Total number of scrolly sections
     $: totalScrollySections = isDistrictSelected ? 8 : 2
 
     // Function to skip the scrolly experience
     function skipToEnd() {
-        index = totalScrollySections - 1;
+        index = totalScrollySections - 1
         // Scroll to the table section
         document.querySelector('.post-scroll-content').scrollIntoView({ 
             behavior: 'smooth' 
-        });
+        })
     }
 </script>
 
@@ -11892,7 +12022,7 @@ export async function load({ params }) {
     <div class="header-headline-container">
         <div class="headline-container">
             <h1 class="headline">
-                Find rates of inclusion, discipline, graduation and more for students with disabilities in Oregon
+                Educational Access: How School Districts in Oregon Support Students with Disabilities
             </h1>
         </div>
 
@@ -11907,17 +12037,14 @@ export async function load({ params }) {
     <div class="content-container">
         <div class="intro">
             <h3 class="byline text-width">
-                Updated with data from the 2022-23 school year
+                Updated with data from the 2023-24 school year
             </h3>
         
             <p class="text-width">
-                For families of students with disabilities, a common concern is not knowing what supports their child is eligible for from one area to the next. Moving from one place to another can mean drastic changes in services, even though the disability hasn't changed. These changes can have a huge impact on the well-being and developmental trajectory of a child.
+                For families of students with disabilities, location can dramatically impact educational services. This reality becomes especially apparent when moving from one area to another. Even when a child's disability remains unchanged, a change in district can trigger significant shifts in support services--shifts that can profoundly affect a child's well-being and developmental trajectory.
             </p>
             <p class="text-width">
-                Usually, families find that the process of how an agency or district evaluates a student's disability is not transparent, and how those evaluations are used to make decisions about services is even less so. However, data is reported to states and the federal government that helps give a view into how students, as a whole, are supported in different areas.
-            </p>
-            <p class="text-width">
-                Below, you can explore that data.
+                Navigating school district services can feel frustratingly opaque. Fortunately, under the Individuals with Disabilities Education Act (IDEA), districts must report annual data on how they support students with disabilities. This information provides valuable insights into how individual students might experience services in different locations. Below, you can explore this data.
             </p>
         </div>
         
@@ -11956,15 +12083,20 @@ export async function load({ params }) {
                         </section>
                         <section>
                             <ScrollyCard active={index === 2}>
-                                As an example, let's look at Portland Public Schools. This district serves <strong>{$selectedDistrictData[0].properties["Total Student Count"]} students with IEPs*</strong> <em>(note: you can select your local district at any time)</em>
+                                As an example, let's look at {$primaryDistrictData?.properties["Institution Name"]}. 
+                                This district serves <strong>{$primaryDistrictData?.properties["Total Student Count"]} students with IEPs*</strong>
+                                <em>(note: you can select your local district at any time)</em>
                                 <br>
                                 <br>
-                                <em>*An IEP is a document that outlines what supports a student with a disability will receive at school. It's personalized to each student who needs it</em>
+                                <em>*An IEP is a document that outlines what supports a student with a disability will receive at school. It's personalized to each student</em>
                             </ScrollyCard>
                         </section>
                         <section>
                             <ScrollyCard active={index === 3}>
-                                Districts report data on how much time students with IEPs spend in regular classrooms. Based on this, <strong>{$selectedDistrictData[0].properties["Institution Name"]}</strong> has an <strong>inclusion score</strong> of <strong>{$selectedDistrictData[0].properties["quartile"]} out of 4</strong>
+                                Districts report on how much time students with IEPs spend in regular classrooms. 
+                                Based on this, <strong>{$primaryDistrictData?.properties["Institution Name"]}</strong> 
+                                has an <strong>inclusion score</strong> of 
+                                <strong>{$primaryDistrictData?.properties["quartile"]} out of 4</strong>
                                 <br>
                                 <br>
                                 <SimpleAccordion title="How is the inclusion score calculated?">
@@ -11980,7 +12112,7 @@ export async function load({ params }) {
                         </section>
                         <section>
                             <ScrollyCard active={index === 4}>
-                                Here's how {$selectedDistrictData[0].properties["Institution Name"]} compares to the <strong>largest districts</strong> in the state
+                                Here's how {$primaryDistrictData?.properties["Institution Name"]} compares to the <strong>largest districts</strong> in the state
                             </ScrollyCard>
                         </section>
                         <section>
@@ -11990,12 +12122,12 @@ export async function load({ params }) {
                         </section>
                         <section>
                             <ScrollyCard active={index === 6}>
-                                You can also <strong>select multiple districts</strong> to compare them directly
+                                You can also <strong>select multiple districts</strong> to compare
                             </ScrollyCard>
                         </section>
                         <section>
                             <ScrollyCard active={index === 7}>
-                                Now it's your turn! Use the <strong>toggle</strong> to switch between <strong>map and bubble views</strong>. You can also find districts in the <strong>table below</strong>
+                                Now it's your turn! Use the <strong>toggle</strong> to switch between <strong>map and bubble swarm views</strong>. You can also find district overviews in the <strong>table below</strong>
                             </ScrollyCard>
                         </section>
                     {:else}
@@ -12038,9 +12170,25 @@ export async function load({ params }) {
 
 
 <style>
+    .headline {
+        color: var(--colorInclusive);
+        max-width: 44rem;
+    }
+
     .intro {
+        margin-top: 2rem;
         margin-bottom: 1rem;
         position: relative;
+    }
+
+    @media (max-width: 768px) {
+        .headline {
+            margin-top: 3rem;
+        }
+
+        .intro {
+            margin-top: 0rem;
+        }
     }
 
     .byline {
@@ -12186,7 +12334,7 @@ export async function load({ params }) {
     <div class="header-headline-container">
         <div class="headline-container">
             <h1 class="headline">
-                WLWV Primary School Size & Performance
+                WLWV Primary School Size, Spending, & Performance
             </h1>
         </div>
 
@@ -12260,10 +12408,15 @@ export async function load({ params }) {
 </div>
 
 <style>
-    h1 {
-        text-align: left;
-        color: var(--colorInclusiveDark);
-        margin-bottom: 1.5rem;
+    .headline {
+        color: var(--colorInclusive);
+        max-width: 44rem;
+    }
+
+    @media (max-width: 768px) {
+        .headline {
+            margin-top: 3rem;
+        }
     }
     
     .intro {

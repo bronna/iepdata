@@ -4,7 +4,7 @@
 </svelte:head>
 
 <script>
-    import { data, selectedDistrict, selectedDistrictData } from "$lib/stores/stores.js"
+    import { data, selectedDistricts, selectedDistrictsData, primaryDistrictData } from "$lib/stores/stores.js"
     import SideHeader from '$lib/components/SideHeader.svelte'
     import Divider from "$lib/components/Divider.svelte"
     import { Search, Pencil, TableProperties } from 'lucide-svelte'
@@ -17,9 +17,6 @@
     import ScrollyCard from "$lib/components/ScrollyCard.svelte"
     import ScrollyProgress from "$lib/components/ScrollyProgress.svelte"
 
-    $: console.log("Selected district data:", $selectedDistrictData)
-    $: console.log("Selected district:", $selectedDistrict)
-
     let windowWidth = 0
 
     // Scroller variables
@@ -28,8 +25,8 @@
     let threshold = 0.5
     let bottom = 0.8
 
-    let isDistrictSelected = false
-    $: isDistrictSelected = $selectedDistrict && $selectedDistrict.length > 0
+    // Check if any districts are selected
+    $: isDistrictSelected = $selectedDistricts && $selectedDistricts.length > 0
 
     // Total number of scrolly sections
     $: totalScrollySections = isDistrictSelected ? 8 : 2
@@ -58,7 +55,7 @@
     <div class="header-headline-container">
         <div class="headline-container">
             <h1 class="headline">
-                Educational Access: How School Districts Support Students with Disabilities
+                Educational Access: How School Districts in Oregon Support Students with Disabilities
             </h1>
         </div>
 
@@ -73,7 +70,7 @@
     <div class="content-container">
         <div class="intro">
             <h3 class="byline text-width">
-                Updated with data from the 2022-23 school year
+                Updated with data from the 2023-24 school year
             </h3>
         
             <p class="text-width">
@@ -119,7 +116,9 @@
                         </section>
                         <section>
                             <ScrollyCard active={index === 2}>
-                                As an example, let's look at Portland Public Schools. This district serves <strong>{$selectedDistrictData[0].properties["Total Student Count"]} students with IEPs*</strong> <em>(note: you can select your local district at any time)</em>
+                                As an example, let's look at {$primaryDistrictData?.properties["Institution Name"]}. 
+                                This district serves <strong>{$primaryDistrictData?.properties["Total Student Count"]} students with IEPs*</strong>
+                                <em>(note: you can select your local district at any time)</em>
                                 <br>
                                 <br>
                                 <em>*An IEP is a document that outlines what supports a student with a disability will receive at school. It's personalized to each student</em>
@@ -127,7 +126,10 @@
                         </section>
                         <section>
                             <ScrollyCard active={index === 3}>
-                                Districts report on how much time students with IEPs spend in regular classrooms. Based on this, <strong>{$selectedDistrictData[0].properties["Institution Name"]}</strong> has an <strong>inclusion score</strong> of <strong>{$selectedDistrictData[0].properties["quartile"]} out of 4</strong>
+                                Districts report on how much time students with IEPs spend in regular classrooms. 
+                                Based on this, <strong>{$primaryDistrictData?.properties["Institution Name"]}</strong> 
+                                has an <strong>inclusion score</strong> of 
+                                <strong>{$primaryDistrictData?.properties["quartile"]} out of 4</strong>
                                 <br>
                                 <br>
                                 <SimpleAccordion title="How is the inclusion score calculated?">
@@ -143,7 +145,7 @@
                         </section>
                         <section>
                             <ScrollyCard active={index === 4}>
-                                Here's how {$selectedDistrictData[0].properties["Institution Name"]} compares to the <strong>largest districts</strong> in the state
+                                Here's how {$primaryDistrictData?.properties["Institution Name"]} compares to the <strong>largest districts</strong> in the state
                             </ScrollyCard>
                         </section>
                         <section>
@@ -158,7 +160,7 @@
                         </section>
                         <section>
                             <ScrollyCard active={index === 7}>
-                                Now it's your turn! Use the <strong>toggle</strong> to switch between <strong>map and bubble views</strong>. You can also find districts in the <strong>table below</strong>
+                                Now it's your turn! Use the <strong>toggle</strong> to switch between <strong>map and bubble swarm views</strong>. You can also find district overviews in the <strong>table below</strong>
                             </ScrollyCard>
                         </section>
                     {:else}
@@ -202,18 +204,30 @@
 
 <style>
     .headline {
-        color: var(--colorInclusiveDark);
+        color: var(--colorInclusive);
+        max-width: 44rem;
     }
 
     .intro {
+        margin-top: 2rem;
         margin-bottom: 1rem;
         position: relative;
+    }
+
+    @media (max-width: 768px) {
+        .headline {
+            margin-top: 3rem;
+        }
+
+        .intro {
+            margin-top: 0rem;
+        }
     }
 
     .byline {
         font-size: 1rem;
         margin-bottom: 0.75rem;
-        color: var(--colorInclusive);
+        color: var(--colorNonInclusive);
     }
 
     .content-wrapper {

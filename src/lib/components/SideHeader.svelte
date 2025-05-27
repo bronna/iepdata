@@ -82,7 +82,7 @@
       border: none;
       font-size: 2rem;
       cursor: pointer;
-      color: var(--colorDarkGray);
+      color: var(--colorInclusive);
       z-index: 20;
       padding: 0;
       margin: 0;

@@ -34,6 +34,12 @@
         {name: "Disproportionate representation by disability", value: districtData.DisPrptnRprsntnDsbltyFg},
     ]
 
+    // Check if any alert data exists
+    $: hasAnyAlertData = alerts.some(alert => 
+        alert.value !== undefined && 
+        alert.value !== null
+    )
+
     $: inclusionCategories = [
         {group: "inclusive", colorIdentifier: "colorInclusive", value: districtData["LRE Students >80%"], definition: "these students spend more than 80% of their day in a regular classroom"},
         {group: "semi-inclusive", colorIdentifier: "colorSemiInclusive", value: districtData["LRE Students >40% <80%"], definition: "these students spend 40% to 80% of their day in a regular classroom"},
@@ -42,20 +48,20 @@
     ]
 
     $: gradRates = [
-        {group: "graduated", value: districtData["IEP 4Yr Cohort Grad 18-19"]},
-        {group: "notGraduated", value: 100 - districtData["IEP 4Yr Cohort Grad 18-19"]},
+        {group: "graduated", value: districtData["Graduation Rate"]},
+        {group: "notGraduated", value: 100 - districtData["Graduation Rate"]},
     ]
 
     let gradDonutCenterText = ''
     $: if (districtData['IEP 4Yr Cohort Grad 18-19'] === 5) {
-        gradDonutCenterText = '<' + Math.round(districtData['IEP 4Yr Cohort Grad 18-19']) + '%';
+        gradDonutCenterText = '<' + Math.round(districtData['Graduation Rate']) + '%';
     } else if (districtData['IEP 4Yr Cohort Grad 18-19'] === 95) {
-        gradDonutCenterText = '>' + Math.round(districtData['IEP 4Yr Cohort Grad 18-19']) + '%';
+        gradDonutCenterText = '>' + Math.round(districtData['Graduation Rate']) + '%';
     } else {
-        gradDonutCenterText = Math.round(districtData['IEP 4Yr Cohort Grad 18-19']) + '%';
+        gradDonutCenterText = Math.round(districtData['Graduation Rate']) + '%';
     }
 
-    $: stateAvgGradRate = stateData['IEP 4Yr Cohort Grad 18-19']
+    $: stateAvgGradRate = stateData['Graduation Rate']
 </script>
 
 
@@ -108,7 +114,7 @@
                 </div>
     
                 <div class="text-width metric">
-                    <h3 class="header">Inclusion Breakdown</h3>
+                    <h3 class="header">Inclusion</h3>
                     <div class="inclusion-breakdown">
                         <DonutChart
                             data={inclusionCategories}
@@ -123,9 +129,10 @@
     
                 <div class="text-width metric">
                     <h3 class="header">Alerts</h3>
-                    <!-- <p class="asterisk">*discipline rates lower than usual due to remote learning</p> -->
-                    {#if districtData["Total Student Count"] && alerts}
+                    {#if hasAnyAlertData && districtData["Total Student Count"]}
                         <AlertsCards alertsData={alerts} />
+                    {:else if !hasAnyAlertData}
+                        <p class="no-data">Alert data not available for the current school year</p>
                     {:else}
                         <p>No data available</p>
                     {/if}
@@ -173,6 +180,17 @@
 
 
 <style>
+    .headline {
+        color: var(--colorInclusive);
+        max-width: 44rem;
+    }
+
+    @media (max-width: 768px) {
+        .headline {
+            margin-top: 3rem;
+        }
+    }
+
     .district-info {
         background-color: var(--colorBackgroundWhite);
         padding-top: 1rem;
@@ -243,7 +261,7 @@
 
     .iep-percent p {
         font-size: 1.1rem;
-        background-color: var(--colorDarkGray);
+        background-color: var(--colorNonInclusive);
         color: var(--colorBackgroundWhite);
         padding: 0.25rem 0.5rem;
         display: inline-block;

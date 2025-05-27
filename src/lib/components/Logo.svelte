@@ -48,7 +48,7 @@
         display: inline-block;
         transform: scale(0.7);
         transform-origin: top left;
-        color: var(--colorInclusiveDark);
+        color: var(--colorInclusive);
     }
 
     .logo a .subtitle {

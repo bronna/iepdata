@@ -78,6 +78,17 @@
 </div>
 
 <style>
+    .headline {
+        color: var(--colorInclusive);
+        max-width: 44rem;
+    }
+
+    @media (max-width: 768px) {
+        .headline {
+            margin-top: 3rem;
+        }
+    }
+    
     a {
         color: var(--colorInclusiveDark);
         font-weight: 600;

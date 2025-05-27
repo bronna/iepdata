@@ -11,7 +11,7 @@
   
     export let data
     export let dimensions
-    export let selectedDistrict
+    export let selectedDistricts
     export let highlightedDistricts
     export let index
     export let quartileRanges
@@ -112,7 +112,7 @@
       } else {
         useScaledRadius = false
         tweenedRadii.set(data.map(d => 
-          selectedDistrict && selectedDistrict.includes(d.properties.GEOID) ? 16 : defaultRadius
+          selectedDistricts && selectedDistricts.includes(d.properties.GEOID) ? 16 : defaultRadius
         ))
       }
     }
@@ -156,8 +156,8 @@
         cy={node.y}
         r={$tweenedRadii[i]}
         fill={$tweenedColors[i]}
-        stroke={selectedDistrict && selectedDistrict.includes(node.properties.GEOID) ? colors.colorText : 'none'}
-        stroke-width={selectedDistrict && selectedDistrict.includes(node.properties.GEOID) ? 2 : 0}
+        stroke={selectedDistricts && selectedDistricts.includes(node.properties.GEOID) ? colors.colorText : 'none'}
+        stroke-width={selectedDistricts && selectedDistricts.includes(node.properties.GEOID) ? 2 : 0}
         use:tippy={tooltipContent(node.properties)}
       />
     {/each}

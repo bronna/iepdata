@@ -104,10 +104,15 @@
 </div>
 
 <style>
-    h1 {
-        text-align: left;
-        color: var(--colorInclusiveDark);
-        margin-bottom: 1.5rem;
+    .headline {
+        color: var(--colorInclusive);
+        max-width: 44rem;
+    }
+
+    @media (max-width: 768px) {
+        .headline {
+            margin-top: 3rem;
+        }
     }
     
     .intro {

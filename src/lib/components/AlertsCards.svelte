@@ -2,11 +2,17 @@
     import { colors } from "$lib/styles/colorConfig"
 
     export let alertsData
+    
+    // Filter out alerts with no data
+    $: validAlerts = alertsData.filter(alert => 
+        alert.value !== undefined && 
+        alert.value !== null
+    )
 </script>
 
 
 <div class="alerts">
-    {#each alertsData as alert}
+    {#each validAlerts as alert}
         <div class="alert-card">
             {#if alert.value === "Yes"}
                 <div class="svg-container">
