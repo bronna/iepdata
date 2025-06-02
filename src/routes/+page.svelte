@@ -55,7 +55,7 @@
     <div class="header-headline-container">
         <div class="headline-container">
             <h1 class="headline">
-                Educational Access: How School Districts in Oregon Support Students with Disabilities
+                How does your school district support students with disabilities? Compare and find out
             </h1>
         </div>
 
@@ -74,10 +74,10 @@
             </h3>
         
             <p class="text-width">
-                For families of students with disabilities, location can dramatically impact educational services. This reality becomes especially apparent when moving from one area to another. Even when a child's disability remains unchanged, a change in district can trigger significant shifts in support services--shifts that can profoundly affect a child's well-being and developmental trajectory.
+                Maybe you've had this experience: meeting with a team of educators, specialists, and administrators to discuss your student's Individualized Education Program (IEP), but you feel like the systems at play are opaque to you. No matter how much everyone wants to do the right thing, you get the sense that your child's classroom placement isn't really about your child, but about the existing structures. When the team suggests something like pulling your child out of regular classes for most of the day, something feels off.
             </p>
             <p class="text-width">
-                Navigating school district services can feel frustratingly opaque. Fortunately, under the Individuals with Disabilities Education Act (IDEA), districts must report annual data on how they support students with disabilities. This information provides valuable insights into how individual students might experience services in different locations. Below, you can explore this data.
+                Missing from these discussions is context: How do the services in your district compare to others? Are there districts doing a better job of including students with disabilities? This tool helps you explore these questions using the data reported by districts each year.
             </p>
         </div>
         
@@ -106,19 +106,18 @@
                     {#if isDistrictSelected}
                         <section>
                             <ScrollyCard active={index === 0}>
-                                Let's explore how special education services vary across <strong>Oregon</strong>'s school districts
+                                Let's explore how special education services vary across <strong>Oregon</strong>'s school districts, starting with the largest district, <strong>{$primaryDistrictData?.properties["Institution Name"]}</strong>
                             </ScrollyCard>
                         </section>
                         <section>
                             <ScrollyCard active={index === 1}>
-                                These circles represent all of the school districts in <strong>Oregon</strong>. Districts farther to the <strong>right</strong> are <strong><em>more inclusive</em></strong>, meaning that students with disabilities spend <strong>more time in general education classrooms</strong> with their peers
+                                These circles represent all of the school districts in <strong>Oregon</strong>. Districts farther to the <strong>right</strong> are <strong><em>more inclusive</em></strong>, meaning students with disabilities spend <strong>more time in general education classrooms</strong> with their peers
                             </ScrollyCard>
                         </section>
                         <section>
                             <ScrollyCard active={index === 2}>
-                                As an example, let's look at {$primaryDistrictData?.properties["Institution Name"]}. 
-                                This district serves <strong>{$primaryDistrictData?.properties["Total Student Count"]} students with IEPs*</strong>
-                                <em>(note: you can select your local district at any time)</em>
+                                <strong>{$primaryDistrictData?.properties["Institution Name"]}</strong> serves <strong>{$primaryDistrictData?.properties["Total Student Count"]} students with IEPs*</strong>
+                                <em>(note: select another district at any time)</em>
                                 <br>
                                 <br>
                                 <em>*An IEP is a document that outlines what supports a student with a disability will receive at school. It's personalized to each student</em>

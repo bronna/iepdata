@@ -110,7 +110,7 @@
                 </div>
 
                 <div class="text-width metric iep-percent">
-                    <p><strong>{districtData["Students with Disabilities"]}% </strong>of students in this district have an IEP</p>
+                    <p><strong style="font-size:1.2rem">{districtData["Students with Disabilities"]}% </strong>of students in this district <strong>have an IEP</strong></p>
                 </div>
     
                 <div class="text-width metric">
@@ -261,8 +261,8 @@
 
     .iep-percent p {
         font-size: 1.1rem;
-        background-color: var(--colorNonInclusive);
-        color: var(--colorBackgroundWhite);
+        background-color: color-mix(in srgb, var(--colorInclusive) 15%, transparent);
+        color: var(--colorInclusive);
         padding: 0.25rem 0.5rem;
         display: inline-block;
         margin: 0;
