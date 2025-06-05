@@ -12,7 +12,7 @@
     
     const sortKey = writable("Total Student Count")
     const sortOrder = writable(-1)
-    const visibleRows = writable(15) // Increased default to accommodate selected districts
+    const visibleRows = writable(8) // Increased default to accommodate selected districts
     const showAllRows = writable(false)
 
     function sortBy(key) {
@@ -84,7 +84,7 @@
         if($showAllRows) {
             visibleRows.set(displayData.length)
         } else {
-            visibleRows.set(15)
+            visibleRows.set(8)
         }
     }
 
@@ -299,7 +299,7 @@
         </tbody>
     </table>
 
-    {#if displayData.length > 15}
+    {#if displayData.length > 8}
         <div class="show-more-container">
             <button on:click={toggleShowMore} class="show-more-button">
                 {$showAllRows ? "show less" : "show more"}
