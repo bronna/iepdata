@@ -15,9 +15,9 @@
 </script>
 
 <div class="search text-width">
-    <h2 class="search-description text-width">
+    <!-- <h2 class="search-description text-width">
         Select a school district
-    </h2>
+    </h2> -->
 
     <div class="search-container text-width">
         <Svelecte 

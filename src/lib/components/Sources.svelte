@@ -1,6 +1,6 @@
 <div class="sources-container">
     <div class="data-source text-width">
-        <p><strong>* Inclusion scores</strong> are more accurate for large districts (more than 500 students with IEPs)</p>
+        <p><strong>* Inclusion scores</strong> are more accurate for larger districts (more than 500 students with IEPs)</p>
 
         <!-- <p><strong>Inclusion scores</strong> are based on reported rates of how much time students with disabilities spend in regular classrooms, compared to other districts in the state.</p> -->
 

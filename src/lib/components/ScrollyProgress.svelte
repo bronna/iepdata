@@ -14,9 +14,9 @@
       {/each}
     </div>
     
-    <button class="skip-button" on:click={onSkip}>
+    <!-- <button class="skip-button" on:click={onSkip}>
       go to data table
-    </button>
+    </button> -->
   </div>
   
   <style>

@@ -19,15 +19,12 @@
   $: filteredData = $data ? $data.filter(d => d.properties.weighted_inclusion !== null && d.properties.weighted_inclusion !== undefined) : []
   
   // Chart dimensions & initial values
-  let defaultRadius = 10
-  $: defaultRadius = width <= 768 ? 5 : 10
-
   let width = 800
-  let height = 400
+  let height = 500
   $: dimensions = { 
     width: width || 800, 
     height: height || 400, 
-    margin: (width && width <= 768) ? { top: 0, right: 20, bottom: 20, left: 20 } : { top: 0, right: 30, bottom: 20, left: 30 },
+    margin: (width && width <= 768) ? { top: 0, right: 20, bottom: 40, left: 20 } : { top: 0, right: 30, bottom: 40, left: 30 },
   }
 
   $: innerWidth = (dimensions.width || 800) - (dimensions.margin?.right || 30) - (dimensions.margin?.left || 30)
@@ -36,6 +33,11 @@
   $: xScale = filteredData.length > 0 && innerWidth > 0 ? scaleLinear()
     .domain(extent(filteredData, d => d.properties.weighted_inclusion))
     .range([0, innerWidth]) : scaleLinear().domain([0, 1]).range([0, 100])
+
+  $: separationTimeScale = filteredData.length > 0 && innerWidth > 0 ? scaleLinear()
+    .domain(extent(filteredData, d => d.properties.average_separation_time).reverse())
+    .range([0, innerWidth])
+    .nice() : scaleLinear().domain([100, 0]).range([0, 100])
 
   $: rScale = filteredData.length > 0 ? scaleSqrt()
     .domain(extent(filteredData, d => d.properties['Total Student Count']))
@@ -51,12 +53,7 @@
   let nodes = []
   let simulationInitialized = false
 
-  // Create tweened stores for animated values
-  const tweenedRadii = tweened([], {
-    duration: fadeDuration,
-    easing: cubicOut
-  })
-
+  // Create tweened stores for animated values (only colors and opacities now)
   const tweenedColors = tweened([], {
     duration: fadeDuration,
     interpolate: (a, b) => {
@@ -72,15 +69,6 @@
     easing: cubicOut
   })
 
-  // Helper function to calculate radius for a node
-  function getNodeRadius(node, currentIndex) {
-    if (currentIndex >= 2) {
-      return rScale(node.properties['Total Student Count'])
-    } else {
-      return $selectedDistricts && $selectedDistricts.includes(node.properties.GEOID) ? 12 : defaultRadius
-    }
-  }
-
   // SEPARATE: Simulation initialization (only runs when data/scales change, NOT index)
   $: {
     if (filteredData.length > 0 && width && height && xScale && rScale && !simulationInitialized) {
@@ -92,7 +80,7 @@
     // Create a copy of the data for the simulation
     const simData = filteredData.map(d => ({ ...d }))
     
-    // Create the simulation with consistent positioning logic
+    // Create the simulation with scaled collision detection from the start
     simulation = forceSimulation(simData)
       .force('x', 
         forceX(d => xScale(d.properties.weighted_inclusion))
@@ -103,7 +91,7 @@
           .strength(0.1)
       )
       .force('collide', 
-        forceCollide(d => defaultRadius + bubblePadding).strength(0.8)
+        forceCollide(d => rScale(d.properties['Total Student Count']) + bubblePadding).strength(0.8)
       )
       .alpha(0.5)
       .alphaMin(0.01)
@@ -132,38 +120,13 @@
     simulation.restart()
   }
 
-  // Track if we've updated collision for size-based view
-  let hasUpdatedCollisionForSize = false
-
   // SEPARATE: Visual updates when index, selection, or highlighted districts change
-  $: if (nodes.length > 0 && simulationInitialized && index !== undefined) {
-    updateRadii()
-  }
-
   $: if (nodes.length > 0 && simulationInitialized && highlightedDistricts && index !== undefined) {
     updateColors()
   }
 
   $: if (nodes.length > 0 && simulationInitialized && $selectedDistricts) {
     updateOpacities()
-  }
-
-  function updateRadii() {
-    const newRadii = nodes.map(node => getNodeRadius(node, index))
-    tweenedRadii.set(newRadii)
-
-    // Update collision force when transitioning to size-based view (index 2+)
-    if (index >= 2 && simulation && !hasUpdatedCollisionForSize) {
-      const newCollisionRadius = (d) => {
-        return rScale(d.properties['Total Student Count']) + bubblePadding
-      }
-      
-      simulation.force('collide', forceCollide(newCollisionRadius).strength(0.8))
-      simulation.alpha(0.3).restart()
-      hasUpdatedCollisionForSize = true
-    } else if (index < 2) {
-      hasUpdatedCollisionForSize = false
-    }
   }
 
   function updateColors() {
@@ -191,15 +154,12 @@
 
   // Function to initialize tweened values
   function initializeTweenedValues() {
-    const initialRadii = nodes.map(node => getNodeRadius(node, index))
-    
     const initialColors = nodes.map(node => {
       return colorScale(node.properties.quartile) // Start with all districts colored
     })
     
     const initialOpacities = nodes.map(() => 0.9)
     
-    tweenedRadii.set(initialRadii, { duration: 0 })
     tweenedColors.set(initialColors, { duration: 0 })
     tweenedOpacities.set(initialOpacities, { duration: 0 })
   }
@@ -208,7 +168,6 @@
   $: {
     if (simulationInitialized && (width || height)) {
       simulationInitialized = false
-      hasUpdatedCollisionForSize = false
     }
   }
 
@@ -218,7 +177,7 @@
       return []
     }
     
-    if (index < 6) {
+    if (index < 7) {
       return nodes.filter(node => highlightedDistricts.includes(node.properties.GEOID))
     } else if ($selectedDistricts && $selectedDistricts.length > 0) {
       return nodes.filter(node => $selectedDistricts.includes(node.properties.GEOID))
@@ -295,21 +254,59 @@
     }
   }
 
+  let highPerformingLargeDistricts = []
+  $: {
+    if (filteredData.length > 0) {
+      highPerformingLargeDistricts = filteredData
+        .filter(district => 
+          district.properties['Total Student Count'] >= 500 && 
+          district.properties.quartile === 4
+        )
+        .map(district => district.properties.GEOID)
+    }
+  }
+
+  let lowPerformingLargeDistricts = []
+  $: {
+    if (filteredData.length > 0) {
+      lowPerformingLargeDistricts = filteredData
+        .filter(district => 
+          district.properties['Total Student Count'] >= 500 && 
+          district.properties.quartile === 1
+        )
+        .map(district => district.properties.GEOID)
+    }
+  }
+
   let highlightedDistricts = []
   $: {
       if ($selectedDistricts && $selectedDistricts.length > 0) {
-          if (index < 4) {
+          if (index < 3) {
               highlightedDistricts = [$primaryDistrictId]
-          } else if (index === 4) {
+          } else if (index === 3) {
               highlightedDistricts = [$primaryDistrictId, ...largestDistricts]
-          } else if (index === 5) {
+          } else if (index === 4) {
               highlightedDistricts = [$primaryDistrictId, ...neighborDistrictIds]
+          } else if (index === 5) {
+              highlightedDistricts = [...highPerformingLargeDistricts]
+          } else if (index === 6) {
+              highlightedDistricts = [...lowPerformingLargeDistricts]
           } else {
               highlightedDistricts = filteredData.map(d => d.properties.GEOID)
           }
       } else {
           highlightedDistricts = index < 7 ? [] : filteredData.map(d => d.properties.GEOID)
       }
+  }
+
+  // Format function for separation time axis
+  const formatSeparationTime = (value) => `${Math.round(value)}%`
+
+  // Set dimensions context for Axis component
+  $: dimensionsWithInner = {
+    ...dimensions,
+    innerWidth,
+    innerHeight
   }
 </script>
 
@@ -320,7 +317,7 @@
               <circle
                   cx={node.x}
                   cy={node.y}
-                  r={$tweenedRadii[i] || defaultRadius}
+                  r={rScale(node.properties['Total Student Count'])}
                   fill={$tweenedColors[i] || colors.colorLightGray}
                   opacity={$tweenedOpacities[i] || 0.9}
                   use:tooltipAction={tooltipContent(node.properties)}
@@ -334,7 +331,7 @@
               <circle
                   cx={node.x}
                   cy={node.y}
-                  r={($tweenedRadii[i] || defaultRadius) + 3}
+                  r={rScale(node.properties['Total Student Count']) + 3}
                   fill="none"
                   stroke={colors.colorDarkGray}
                   stroke-width={2}
@@ -344,7 +341,7 @@
               <circle
                   cx={node.x}
                   cy={node.y}
-                  r={$tweenedRadii[i] || defaultRadius}
+                  r={rScale(node.properties['Total Student Count'])}
                   fill={$tweenedColors[i] || colors.colorLightGray}
                   opacity={$tweenedOpacities[i] || 1}
                   stroke={colors.colorWhite}
@@ -381,6 +378,61 @@
               {node.properties["Institution Name"]}
             </text>
         {/each}
+
+        {#if index > 1 && filteredData.length > 0}
+          <g class="separation-axis" transition:fade={{duration: fadeDuration}}>
+            <!-- Axis line -->
+            <line 
+              x1={0}
+              y1={innerHeight}
+              x2={innerWidth}
+              y2={innerHeight}
+              stroke={colors.colorLightGray}
+              stroke-width="1"
+            />
+            
+            <!-- Ticks and labels -->
+            {#each separationTimeScale.ticks(5) as tick}
+              <g transform="translate({separationTimeScale(tick)}, {innerHeight})">
+                <line 
+                  y2="6" 
+                  stroke={colors.colorLightGray}
+                  stroke-width="1"
+                />
+                <text 
+                  y="20" 
+                  text-anchor="middle"
+                  fill={colors.colorText}
+                  font-size="12px"
+                >
+                  {formatSeparationTime(tick)}
+                </text>
+              </g>
+            {/each}
+
+            <!-- Axis label -->
+            <text
+              x={dimensions.margin.left - 30}
+              y={innerHeight + 16}
+              text-anchor="start"
+              fill={colors.colorText}
+              font-size="14px"
+              font-weight="600"
+            >
+              average % of
+            </text>
+            <text
+              x={dimensions.margin.left - 30}
+              y={innerHeight + 32}
+              text-anchor="start"
+              fill={colors.colorText}
+              font-size="14px"
+              font-weight="600"
+            >
+              day separated
+            </text>
+          </g>
+        {/if}
   
         <g class="chart-labels" transition:fade="{{ duration: fadeDuration }}">
           <text 
@@ -405,8 +457,9 @@
           </text>
         </g>
   
-        {#if index > 1 && rScale && innerWidth > 0 && innerHeight > 0}
-          <g class="legend" transform="translate({Math.max(0, innerWidth - legendWidth)}, {Math.max(0, innerHeight - legendHeight)})" transition:fade="{{ duration: fadeDuration}}">
+        <!-- Circle size legend -->
+        {#if rScale && innerWidth > 0 && innerHeight > 0}
+          <g class="legend" transform="translate({Math.max(0, innerWidth - legendWidth)}, {Math.max(0, innerHeight - legendHeight - 40)})" transition:fade="{{ duration: fadeDuration}}">
             <circle r={rScale(6000)} fill="none" stroke={colors.colorText} stroke-width="1" />
             <line 
               x1="0" x2={rScale(6000) + 5}
@@ -421,7 +474,7 @@
               style="font-size: 12px; fill:{colors.colorText}" 
               dominant-baseline="middle"
             >
-              6,000 students
+              6,000
             </text>
           
             <circle r={rScale(3000)} cy={rScale(6000) - rScale(3000)} fill="none" stroke={colors.colorText} stroke-width="1" />
@@ -457,6 +510,14 @@
             >
               1,000
             </text>
+            <text 
+              x={rScale(6000) + 10} 
+              y={rScale(6000) - (rScale(1000) * 2) + 15} 
+              style="font-size: 12px; fill:{colors.colorText}" 
+              dominant-baseline="middle"
+            >
+              students with IEPs
+            </text>
           </g>
         {/if}
     </SVGChart>
@@ -464,7 +525,7 @@
 
 <style>
     .districts-beeswarm {
-      height: 400px;
+      height: 500px;
       width: 90%;
       margin: 0 auto;
     }

@@ -19,6 +19,41 @@ function weightedInclusion(district) {
     )
 }
 
+function averageSeparationTime(district) {
+    const separationRates = {
+        inclusive: 10,      // >80% in regular classroom = ~10% separated
+        semiInclusive: 40,  // 40-80% in regular classroom = ~40% separated
+        nonInclusive: 80,   // <40% in regular classroom = ~80% separated
+        separate: 100       // Separate settings = 100% separated
+    }
+    
+    const totalStudents = district["Total Student Count"]
+    
+    if (!totalStudents || totalStudents === 0) {
+        return null
+    }
+    
+    // Verify percentages add up to ~100% (allowing for rounding)
+    const totalPercentage = (district["LRE Students >80%"] || 0) + 
+                           (district["LRE Students >40% <80%"] || 0) + 
+                           (district["LRE Students <40%"] || 0) + 
+                           (district["LRE Students Separate Settings"] || 0)
+    
+    if (Math.abs(totalPercentage - 100) > 5) { // Allow 5% tolerance for rounding
+        console.warn(`District ${district["Institution Name"]}: LRE percentages sum to ${totalPercentage}%`)
+    }
+    
+    // Calculate weighted average
+    const weightedSeparation = (
+        (district["LRE Students >80%"] || 0) * separationRates.inclusive +
+        (district["LRE Students >40% <80%"] || 0) * separationRates.semiInclusive +
+        (district["LRE Students <40%"] || 0) * separationRates.nonInclusive +
+        (district["LRE Students Separate Settings"] || 0) * separationRates.separate
+    ) / 100  // Divide by 100 since we're working with percentages directly
+    
+    return weightedSeparation
+}
+
 // Calculate ranks and percent more inclusive
 function calculateRanks(data) {
     // Filter out districts without weighted_inclusion and sort by weighted_inclusion in descending order
@@ -126,6 +161,13 @@ export const getData = () => {
             district.properties.weighted_inclusion = null
         } else {
             district.properties.weighted_inclusion = weightedInclusion(district.properties)
+        }
+
+        // Calculate the average separation time
+        if (!district.properties["Total Student Count"]) {
+            district.properties.average_separation_time = null
+        } else {
+            district.properties.average_separation_time = averageSeparationTime(district.properties)
         }
 
         // Tallying up alerts for each district

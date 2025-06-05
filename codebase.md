@@ -258,221 +258,6 @@ You can preview the production build with `npm run preview`.
 </style>
 ```
 
-# src/lib/components/Axis.svelte
-
-```svelte
-<script>
-  import { getContext } from 'svelte'
-  import { format } from 'd3-format'
-  import { fade } from 'svelte/transition'
-
-  export let dimension = "x" // x or y axis
-  export let scale
-  export let label
-  export let formatTick = format(',.2s') // add commas and round to 2 sig figs
-  export let longTick = false
-  export let axisLine = false
-  export let tickValues = undefined
-  export let fadeDuration = 300 // New prop for fade duration
-
-  const { dimensions: dimensionsStore } = getContext('svg-chart')
-  $: dimensions = $dimensionsStore
-
-  $: numberOfTicks =
-  dimension == "x"
-    ? dimensions.innerWidth < 600
-      ? dimensions.innerWidth / 100
-      : dimensions.innerWidth / 250
-    : dimensions.innerHeight / 70
-
-  $: ticks = tickValues || scale.ticks(numberOfTicks)
-</script>
-
-<g
-  class="axis-{dimension}"
-  transform={`translate(0, ${dimension == "x" ? dimensions.innerHeight : 0})`}
-  transition:fade={{duration: fadeDuration}}
->
-  {#if axisLine}
-    <line
-      class="axis-line"
-      x1={dimension == "x" ? 0 : dimensions.margin.left}
-      y1={dimension == "y" ? dimensions.innerHeight: 0}
-      x2={dimension == "x" ? dimensions.innerWidth : 0}
-      y2={dimension == "y" ? dimensions.innerHeight: 0}
-    />
-  {/if} 
-
-  {#each ticks as tick, i}
-    <text 
-      class="axis-tick"
-      x={scale(tick)} 
-      y={0}
-      dy="6"
-      dominant-baseline="hanging"
-    >
-      {formatTick(tick)}
-    </text>
-    <line 
-      x1={scale(tick)} 
-      y1={0} 
-      x2={scale(tick)} 
-      y2={longTick ? -dimensions.innerHeight - dimensions.margin.top : -10}
-      stroke-dasharray={longTick ? "2 2" : "none"}
-      class="axis-line"
-    />
-  {/each}
-
-  {#if label}
-    <text 
-      class="axis-label"
-      style="transform: translate(1rem, 1rem)"
-    >
-      {label}
-    </text>
-  {/if}
-</g>
-
-<style>
-  .axis-line {
-    stroke: #d1d7db;
-  }
-
-  .axis-label {
-    text-anchor: middle;
-    font-size: 0.8em;
-    letter-spacing: 0.01em;
-  }
-
-  .axis-tick {
-    font-size: 0.9em;
-    transition: all 0.3s ease-out;
-  }
-
-  .axis-x .axis-tick {
-    text-anchor: middle;
-  }
-
-  .axis-y .axis-tick {
-    dominant-baseline: middle;
-    text-anchor: end;
-  }
-</style>
-```
-
-# src/lib/components/Axis2.svelte
-
-```svelte
-<script>
-    import { getContext } from 'svelte'
-    import { format } from 'd3-format'
-
-    export let dimension = "x" // x or y axis
-    export let scale
-    export let label
-    export let formatTick = format(',.2s') // add commas and round to 2 sig figs
-    export let longTick = false
-    export let axisLine = true
-
-    const { dimensions: dimensionsStore } = getContext('svg-chart')
-    $: dimensions = $dimensionsStore
-
-    $: numberOfTicks =
-    dimension == "x"
-      ? dimensions.innerWidth < 600
-        ? dimensions.innerWidth / 100
-        : dimensions.innerWidth / 250
-      : dimensions.innerHeight / 70;
-
-    $: ticks = scale.ticks(numberOfTicks)
-  </script>
-  
-  <g
-    class="axis-{dimension}"
-    transform={`translate(0, ${dimension == "x" ? dimensions.innerHeight : 0})`}
-  >
-    {#if axisLine}
-      <line
-        class="axis-line"
-        x1={dimension == "x" ? 0 : dimensions.margin.left}
-        y1={dimension == "y" ? dimensions.innerHeight: 0}
-        x2={dimension == "x" ? dimensions.innerWidth : 0}
-        y2={dimension == "y" ? dimensions.innerHeight: 0}
-      />
-    {/if} 
-
-    {#each ticks as tick}
-        <text 
-          class="axis-tick"
-          x={scale(tick)} 
-          y={0}
-          dy="8"
-          dominant-baseline="hanging"
-        >
-          {formatTick(tick)}
-        </text>
-
-        <line 
-          x1={scale(tick)} 
-          y1={0} 
-          x2={scale(tick)} 
-          y2={longTick ? -dimensions.innerHeight - dimensions.margin.top : -10}
-          stroke-dasharray={longTick ? "2 2" : "none"}
-          class="axis-line"
-        />
-
-        <circle 
-          cx={scale(tick)} 
-          cy={0} 
-          r="8" 
-          fill="white"
-        />
-        <circle 
-          cx={scale(tick)} 
-          cy={0} 
-          r="3.2" 
-          fill="#dde3e7"
-        />
-    {/each}
-
-    {#if label}
-      <text 
-        class="axis-label"
-        style="transform: translate(1rem, 1rem)"
-      >
-        {label}
-      </text>
-    {/if}
-  </g>
-
-
-  <style>
-    .axis-line {
-      stroke: #dde3e7;
-    }
-  
-    .axis-label {
-      text-anchor: middle;
-      font-size: 0.8em;
-      letter-spacing: 0.01em;
-    }
-  
-    .axis-tick {
-      font-size: 0.9em;
-      transition: all 0.3s ease-out;
-    }
-  
-    .axis-x .axis-tick {
-      text-anchor: middle;
-    }
-  
-    .axis-y .axis-tick {
-      dominant-baseline: middle;
-      text-anchor: end;
-    }
-  </style>
-```
-
 # src/lib/components/Beeswarm.svelte
 
 ```svelte
@@ -1659,11 +1444,8 @@ You can preview the production build with `npm run preview`.
   $: filteredData = $data ? $data.filter(d => d.properties.weighted_inclusion !== null && d.properties.weighted_inclusion !== undefined) : []
   
   // Chart dimensions & initial values
-  let defaultRadius = 10
-  $: defaultRadius = width <= 768 ? 5 : 10
-
   let width = 800
-  let height = 400
+  let height = 500
   $: dimensions = { 
     width: width || 800, 
     height: height || 400, 
@@ -1676,6 +1458,11 @@ You can preview the production build with `npm run preview`.
   $: xScale = filteredData.length > 0 && innerWidth > 0 ? scaleLinear()
     .domain(extent(filteredData, d => d.properties.weighted_inclusion))
     .range([0, innerWidth]) : scaleLinear().domain([0, 1]).range([0, 100])
+
+  $: separationTimeScale = filteredData.length > 0 && innerWidth > 0 ? scaleLinear()
+    .domain(extent(filteredData, d => d.properties.average_separation_time).reverse())
+    .range([0, innerWidth])
+    .nice() : scaleLinear().domain([100, 0]).range([0, 100])
 
   $: rScale = filteredData.length > 0 ? scaleSqrt()
     .domain(extent(filteredData, d => d.properties['Total Student Count']))
@@ -1691,12 +1478,7 @@ You can preview the production build with `npm run preview`.
   let nodes = []
   let simulationInitialized = false
 
-  // Create tweened stores for animated values
-  const tweenedRadii = tweened([], {
-    duration: fadeDuration,
-    easing: cubicOut
-  })
-
+  // Create tweened stores for animated values (only colors and opacities now)
   const tweenedColors = tweened([], {
     duration: fadeDuration,
     interpolate: (a, b) => {
@@ -1712,15 +1494,6 @@ You can preview the production build with `npm run preview`.
     easing: cubicOut
   })
 
-  // Helper function to calculate radius for a node
-  function getNodeRadius(node, currentIndex) {
-    if (currentIndex >= 2) {
-      return rScale(node.properties['Total Student Count'])
-    } else {
-      return $selectedDistricts && $selectedDistricts.includes(node.properties.GEOID) ? 12 : defaultRadius
-    }
-  }
-
   // SEPARATE: Simulation initialization (only runs when data/scales change, NOT index)
   $: {
     if (filteredData.length > 0 && width && height && xScale && rScale && !simulationInitialized) {
@@ -1732,7 +1505,7 @@ You can preview the production build with `npm run preview`.
     // Create a copy of the data for the simulation
     const simData = filteredData.map(d => ({ ...d }))
     
-    // Create the simulation with consistent positioning logic
+    // Create the simulation with scaled collision detection from the start
     simulation = forceSimulation(simData)
       .force('x', 
         forceX(d => xScale(d.properties.weighted_inclusion))
@@ -1743,7 +1516,7 @@ You can preview the production build with `npm run preview`.
           .strength(0.1)
       )
       .force('collide', 
-        forceCollide(d => defaultRadius + bubblePadding).strength(0.8)
+        forceCollide(d => rScale(d.properties['Total Student Count']) + bubblePadding).strength(0.8)
       )
       .alpha(0.5)
       .alphaMin(0.01)
@@ -1772,38 +1545,13 @@ You can preview the production build with `npm run preview`.
     simulation.restart()
   }
 
-  // Track if we've updated collision for size-based view
-  let hasUpdatedCollisionForSize = false
-
   // SEPARATE: Visual updates when index, selection, or highlighted districts change
-  $: if (nodes.length > 0 && simulationInitialized && index !== undefined) {
-    updateRadii()
-  }
-
   $: if (nodes.length > 0 && simulationInitialized && highlightedDistricts && index !== undefined) {
     updateColors()
   }
 
   $: if (nodes.length > 0 && simulationInitialized && $selectedDistricts) {
     updateOpacities()
-  }
-
-  function updateRadii() {
-    const newRadii = nodes.map(node => getNodeRadius(node, index))
-    tweenedRadii.set(newRadii)
-
-    // Update collision force when transitioning to size-based view (index 2+)
-    if (index >= 2 && simulation && !hasUpdatedCollisionForSize) {
-      const newCollisionRadius = (d) => {
-        return rScale(d.properties['Total Student Count']) + bubblePadding
-      }
-      
-      simulation.force('collide', forceCollide(newCollisionRadius).strength(0.8))
-      simulation.alpha(0.3).restart()
-      hasUpdatedCollisionForSize = true
-    } else if (index < 2) {
-      hasUpdatedCollisionForSize = false
-    }
   }
 
   function updateColors() {
@@ -1831,15 +1579,12 @@ You can preview the production build with `npm run preview`.
 
   // Function to initialize tweened values
   function initializeTweenedValues() {
-    const initialRadii = nodes.map(node => getNodeRadius(node, index))
-    
     const initialColors = nodes.map(node => {
       return colorScale(node.properties.quartile) // Start with all districts colored
     })
     
     const initialOpacities = nodes.map(() => 0.9)
     
-    tweenedRadii.set(initialRadii, { duration: 0 })
     tweenedColors.set(initialColors, { duration: 0 })
     tweenedOpacities.set(initialOpacities, { duration: 0 })
   }
@@ -1848,7 +1593,6 @@ You can preview the production build with `npm run preview`.
   $: {
     if (simulationInitialized && (width || height)) {
       simulationInitialized = false
-      hasUpdatedCollisionForSize = false
     }
   }
 
@@ -1858,7 +1602,7 @@ You can preview the production build with `npm run preview`.
       return []
     }
     
-    if (index < 6) {
+    if (index < 7) {
       return nodes.filter(node => highlightedDistricts.includes(node.properties.GEOID))
     } else if ($selectedDistricts && $selectedDistricts.length > 0) {
       return nodes.filter(node => $selectedDistricts.includes(node.properties.GEOID))
@@ -1935,21 +1679,59 @@ You can preview the production build with `npm run preview`.
     }
   }
 
+  let highPerformingLargeDistricts = []
+  $: {
+    if (filteredData.length > 0) {
+      highPerformingLargeDistricts = filteredData
+        .filter(district => 
+          district.properties['Total Student Count'] >= 500 && 
+          district.properties.quartile === 4
+        )
+        .map(district => district.properties.GEOID)
+    }
+  }
+
+  let lowPerformingLargeDistricts = []
+  $: {
+    if (filteredData.length > 0) {
+      lowPerformingLargeDistricts = filteredData
+        .filter(district => 
+          district.properties['Total Student Count'] >= 500 && 
+          district.properties.quartile === 1
+        )
+        .map(district => district.properties.GEOID)
+    }
+  }
+
   let highlightedDistricts = []
   $: {
       if ($selectedDistricts && $selectedDistricts.length > 0) {
-          if (index < 4) {
+          if (index < 3) {
               highlightedDistricts = [$primaryDistrictId]
-          } else if (index === 4) {
+          } else if (index === 3) {
               highlightedDistricts = [$primaryDistrictId, ...largestDistricts]
-          } else if (index === 5) {
+          } else if (index === 4) {
               highlightedDistricts = [$primaryDistrictId, ...neighborDistrictIds]
+          } else if (index === 5) {
+              highlightedDistricts = [...highPerformingLargeDistricts]
+          } else if (index === 6) {
+              highlightedDistricts = [...lowPerformingLargeDistricts]
           } else {
               highlightedDistricts = filteredData.map(d => d.properties.GEOID)
           }
       } else {
           highlightedDistricts = index < 7 ? [] : filteredData.map(d => d.properties.GEOID)
       }
+  }
+
+  // Format function for separation time axis
+  const formatSeparationTime = (value) => `${Math.round(value)}%`
+
+  // Set dimensions context for Axis component
+  $: dimensionsWithInner = {
+    ...dimensions,
+    innerWidth,
+    innerHeight
   }
 </script>
 
@@ -1960,7 +1742,7 @@ You can preview the production build with `npm run preview`.
               <circle
                   cx={node.x}
                   cy={node.y}
-                  r={$tweenedRadii[i] || defaultRadius}
+                  r={rScale(node.properties['Total Student Count'])}
                   fill={$tweenedColors[i] || colors.colorLightGray}
                   opacity={$tweenedOpacities[i] || 0.9}
                   use:tooltipAction={tooltipContent(node.properties)}
@@ -1974,7 +1756,7 @@ You can preview the production build with `npm run preview`.
               <circle
                   cx={node.x}
                   cy={node.y}
-                  r={($tweenedRadii[i] || defaultRadius) + 3}
+                  r={rScale(node.properties['Total Student Count']) + 3}
                   fill="none"
                   stroke={colors.colorDarkGray}
                   stroke-width={2}
@@ -1984,7 +1766,7 @@ You can preview the production build with `npm run preview`.
               <circle
                   cx={node.x}
                   cy={node.y}
-                  r={$tweenedRadii[i] || defaultRadius}
+                  r={rScale(node.properties['Total Student Count'])}
                   fill={$tweenedColors[i] || colors.colorLightGray}
                   opacity={$tweenedOpacities[i] || 1}
                   stroke={colors.colorWhite}
@@ -2021,6 +1803,51 @@ You can preview the production build with `npm run preview`.
               {node.properties["Institution Name"]}
             </text>
         {/each}
+
+        {#if index > 1 && filteredData.length > 0}
+          <g class="separation-axis" transition:fade={{duration: fadeDuration}}>
+            <!-- Axis line -->
+            <line 
+              x1={0}
+              y1={innerHeight}
+              x2={innerWidth}
+              y2={innerHeight}
+              stroke={colors.colorLightGray}
+              stroke-width="1"
+            />
+            
+            <!-- Ticks and labels -->
+            {#each separationTimeScale.ticks(5) as tick}
+              <g transform="translate({separationTimeScale(tick)}, {innerHeight})">
+                <line 
+                  y2="6" 
+                  stroke={colors.colorLightGray}
+                  stroke-width="1"
+                />
+                <text 
+                  y="20" 
+                  text-anchor="middle"
+                  fill={colors.colorText}
+                  font-size="12px"
+                >
+                  {formatSeparationTime(tick)}
+                </text>
+              </g>
+            {/each}
+
+            <!-- Axis label -->
+            <text
+              x={dimensions.margin.left + 30}
+              y={innerHeight + 16}
+              text-anchor="middle"
+              fill={colors.colorText}
+              font-size="14px"
+              font-weight="600"
+            >
+              % of day separated
+            </text>
+          </g>
+        {/if}
   
         <g class="chart-labels" transition:fade="{{ duration: fadeDuration }}">
           <text 
@@ -2045,8 +1872,9 @@ You can preview the production build with `npm run preview`.
           </text>
         </g>
   
-        {#if index > 1 && rScale && innerWidth > 0 && innerHeight > 0}
-          <g class="legend" transform="translate({Math.max(0, innerWidth - legendWidth)}, {Math.max(0, innerHeight - legendHeight)})" transition:fade="{{ duration: fadeDuration}}">
+        <!-- Circle size legend -->
+        {#if rScale && innerWidth > 0 && innerHeight > 0}
+          <g class="legend" transform="translate({Math.max(0, innerWidth - legendWidth)}, {Math.max(0, innerHeight - legendHeight - 40)})" transition:fade="{{ duration: fadeDuration}}">
             <circle r={rScale(6000)} fill="none" stroke={colors.colorText} stroke-width="1" />
             <line 
               x1="0" x2={rScale(6000) + 5}
@@ -2061,7 +1889,7 @@ You can preview the production build with `npm run preview`.
               style="font-size: 12px; fill:{colors.colorText}" 
               dominant-baseline="middle"
             >
-              6,000 students
+              6,000
             </text>
           
             <circle r={rScale(3000)} cy={rScale(6000) - rScale(3000)} fill="none" stroke={colors.colorText} stroke-width="1" />
@@ -2097,6 +1925,14 @@ You can preview the production build with `npm run preview`.
             >
               1,000
             </text>
+            <text 
+              x={rScale(6000) + 10} 
+              y={rScale(6000) - (rScale(1000) * 2) + 15} 
+              style="font-size: 12px; fill:{colors.colorText}" 
+              dominant-baseline="middle"
+            >
+              students with IEPs
+            </text>
           </g>
         {/if}
     </SVGChart>
@@ -2104,7 +1940,7 @@ You can preview the production build with `npm run preview`.
 
 <style>
     .districts-beeswarm {
-      height: 400px;
+      height: 500px;
       width: 90%;
       margin: 0 auto;
     }
@@ -5874,9 +5710,9 @@ You can preview the production build with `npm run preview`.
       {/each}
     </div>
     
-    <button class="skip-button" on:click={onSkip}>
+    <!-- <button class="skip-button" on:click={onSkip}>
       go to data table
-    </button>
+    </button> -->
   </div>
   
   <style>
@@ -5953,9 +5789,9 @@ You can preview the production build with `npm run preview`.
 </script>
 
 <div class="search text-width">
-    <h2 class="search-description text-width">
-        Select a district
-    </h2>
+    <!-- <h2 class="search-description text-width">
+        Select a school district
+    </h2> -->
 
     <div class="search-container text-width">
         <Svelecte 
@@ -7004,7 +6840,7 @@ You can preview the production build with `npm run preview`.
 ```svelte
 <div class="sources-container">
     <div class="data-source text-width">
-        <p><strong>* Inclusion scores</strong> are more accurate for large districts (more than 500 students with IEPs)</p>
+        <p><strong>* Inclusion scores</strong> are more accurate for larger districts (more than 500 students with IEPs)</p>
 
         <!-- <p><strong>Inclusion scores</strong> are based on reported rates of how much time students with disabilities spend in regular classrooms, compared to other districts in the state.</p> -->
 
@@ -8139,19 +7975,23 @@ You can preview the production build with `npm run preview`.
                     {/if}
                 </div>
 
-                <div class="mobile-alerts">
-                    {#if district.properties["nAlerts"] !== null && district.properties["nAlerts"] !== undefined}
-                        {#if district.properties["nAlerts"] > 0}
-                            <span class="underline-on-hover" style="font-weight: 900; font-size: 1rem; color: rgb(222, 84, 102);">
-                                Alerts: {'!'.repeat(district.properties["nAlerts"])}
-                            </span>
+                <div class="mobile-alerts-row show-mobile">
+                    <div class="mobile-alerts">
+                        {#if district.properties["nAlerts"] !== null && district.properties["nAlerts"] !== undefined}
+                            {#if district.properties["nAlerts"] > 0}
+                                <span class="underline-on-hover" style="font-weight: 900; font-size: 1rem; color: rgb(222, 84, 102);">
+                                    Alerts: {'!'.repeat(district.properties["nAlerts"])}
+                                </span>
+                            {:else}
+                                <span>No alerts</span>
+                            {/if}
                         {:else}
-                            <span class="no-data">No alerts</span>
+                            <span class="no-data">Alerts data coming soon</span>
                         {/if}
-                    {:else}
-                        <span class="no-data">Alerts data coming soon</span>
-                    {/if}
+                    </div>
+                    <span class="mobile-more">more ></span>
                 </div>
+                
             </tr>
         {/each}
     </tbody>
@@ -10204,6 +10044,41 @@ function weightedInclusion(district) {
     )
 }
 
+function averageSeparationTime(district) {
+    const separationRates = {
+        inclusive: 10,      // >80% in regular classroom = ~10% separated
+        semiInclusive: 40,  // 40-80% in regular classroom = ~40% separated
+        nonInclusive: 80,   // <40% in regular classroom = ~80% separated
+        separate: 100       // Separate settings = 100% separated
+    }
+    
+    const totalStudents = district["Total Student Count"]
+    
+    if (!totalStudents || totalStudents === 0) {
+        return null
+    }
+    
+    // Verify percentages add up to ~100% (allowing for rounding)
+    const totalPercentage = (district["LRE Students >80%"] || 0) + 
+                           (district["LRE Students >40% <80%"] || 0) + 
+                           (district["LRE Students <40%"] || 0) + 
+                           (district["LRE Students Separate Settings"] || 0)
+    
+    if (Math.abs(totalPercentage - 100) > 5) { // Allow 5% tolerance for rounding
+        console.warn(`District ${district["Institution Name"]}: LRE percentages sum to ${totalPercentage}%`)
+    }
+    
+    // Calculate weighted average
+    const weightedSeparation = (
+        (district["LRE Students >80%"] || 0) * separationRates.inclusive +
+        (district["LRE Students >40% <80%"] || 0) * separationRates.semiInclusive +
+        (district["LRE Students <40%"] || 0) * separationRates.nonInclusive +
+        (district["LRE Students Separate Settings"] || 0) * separationRates.separate
+    ) / 100  // Divide by 100 since we're working with percentages directly
+    
+    return weightedSeparation
+}
+
 // Calculate ranks and percent more inclusive
 function calculateRanks(data) {
     // Filter out districts without weighted_inclusion and sort by weighted_inclusion in descending order
@@ -10311,6 +10186,13 @@ export const getData = () => {
             district.properties.weighted_inclusion = null
         } else {
             district.properties.weighted_inclusion = weightedInclusion(district.properties)
+        }
+
+        // Calculate the average separation time
+        if (!district.properties["Total Student Count"]) {
+            district.properties.average_separation_time = null
+        } else {
+            district.properties.average_separation_time = averageSeparationTime(district.properties)
         }
 
         // Tallying up alerts for each district
@@ -10863,9 +10745,16 @@ h1 {
 }
 
 p {
-    font-size: 1.15rem;
+    font-size: 1.1rem;
     line-height: 1.6rem;
     margin-bottom: 0.6rem;
+}
+
+@media (max-width: 768px) {
+	p {
+        font-size: 1.05rem;
+        line-height: 1.5rem;
+	}
 }
 
 a { 
@@ -10938,7 +10827,6 @@ hr {
         margin-right: 1rem;
         font-size: 1.8rem;
         line-height: 2.2rem;
-        margin-top: 0.5rem;
     }
 }
 
@@ -11088,7 +10976,7 @@ export const arrowRight = `
                 </div>
 
                 <div class="text-width metric iep-percent">
-                    <p><strong>{districtData["Students with Disabilities"]}% </strong>of students in this district have an IEP</p>
+                    <p><strong style="font-size:1.2rem">{districtData["Students with Disabilities"]}% </strong>of students in this district <strong>have an IEP</strong></p>
                 </div>
     
                 <div class="text-width metric">
@@ -11239,8 +11127,8 @@ export const arrowRight = `
 
     .iep-percent p {
         font-size: 1.1rem;
-        background-color: var(--colorNonInclusive);
-        color: var(--colorBackgroundWhite);
+        background-color: color-mix(in srgb, var(--colorInclusive) 15%, transparent);
+        color: var(--colorInclusive);
         padding: 0.25rem 0.5rem;
         display: inline-block;
         margin: 0;
@@ -11400,7 +11288,7 @@ export const prerender = true
     // Scroller variables
     let index, offset, progress
     let top = 0
-    let threshold = 0.5
+    let threshold = 0.8
     let bottom = 0.8
 
     // Check if any districts are selected
@@ -11433,7 +11321,7 @@ export const prerender = true
     <div class="header-headline-container">
         <div class="headline-container">
             <h1 class="headline">
-                Educational Access: How School Districts in Oregon Support Students with Disabilities
+                How does your school district support students with disabilities? Compare and find out
             </h1>
         </div>
 
@@ -11452,10 +11340,10 @@ export const prerender = true
             </h3>
         
             <p class="text-width">
-                For families of students with disabilities, location can dramatically impact educational services. This reality becomes especially apparent when moving from one area to another. Even when a child's disability remains unchanged, a change in district can trigger significant shifts in support services--shifts that can profoundly affect a child's well-being and developmental trajectory.
+                Maybe you've had this experience: meeting with a team of educators, specialists, and administrators to discuss your student's Individualized Education Program (IEP), but you feel like the systems at play are opaque. No matter how much everyone wants to do the right thing, you get the sense that your child's classroom placement isn't really about your child, but about the existing structures. When the team suggests something like pulling your child out of regular classes for most of the day, something feels off.
             </p>
             <p class="text-width">
-                Navigating school district services can feel frustratingly opaque. Fortunately, under the Individuals with Disabilities Education Act (IDEA), districts must report annual data on how they support students with disabilities. This information provides valuable insights into how individual students might experience services in different locations. Below, you can explore this data.
+                Missing from these discussions is context: How do the services in your district compare to other districts? Are there districts doing a better job of including students with disabilities? This tool helps you explore these questions using data reported by school districts each year.
             </p>
         </div>
         
@@ -11470,9 +11358,9 @@ export const prerender = true
                 showHelpers={false}
             >
                 <div slot="background" class="background">
-                    <Divider>
+                    <!-- <Divider>
                         <Search />
-                    </Divider>
+                    </Divider> -->
         
                     <SelectDistricts />
         
@@ -11484,61 +11372,42 @@ export const prerender = true
                     {#if isDistrictSelected}
                         <section>
                             <ScrollyCard active={index === 0}>
-                                Let's explore how special education services vary across <strong>Oregon</strong>'s school districts
+                                Every dot here represents a school district in <strong>Oregon</strong>. But they're not randomly scattered--districts where students with disabilities spend <strong><em>more</em> time in a regular classroom</strong> are on the <strong>right</strong>. Districts where they spend <strong><em>less</em></strong> are on the <strong>left</strong>
                             </ScrollyCard>
                         </section>
                         <section>
                             <ScrollyCard active={index === 1}>
-                                These circles represent all of the school districts in <strong>Oregon</strong>. Districts farther to the <strong>right</strong> are <strong><em>more inclusive</em></strong>, meaning that students with disabilities spend <strong>more time in general education classrooms</strong> with their peers
+                                Right now the largest district, <strong>{$primaryDistrictData?.properties["Institution Name"]}</strong>, is selected. Change the selection at any point to see where your district lands
                             </ScrollyCard>
                         </section>
                         <section>
                             <ScrollyCard active={index === 2}>
-                                As an example, let's look at {$primaryDistrictData?.properties["Institution Name"]}. 
-                                This district serves <strong>{$primaryDistrictData?.properties["Total Student Count"]} students with IEPs*</strong>
-                                <em>(note: you can select your local district at any time)</em>
-                                <br>
-                                <br>
-                                <em>*An IEP is a document that outlines what supports a student with a disability will receive at school. It's personalized to each student</em>
+                                Based on state data, if your child has a disability in <strong>{$primaryDistrictData?.properties["Institution Name"]}</strong>, on average they're likely to <strong>spend {Math.round($primaryDistrictData?.properties["average_separation_time"] || 0)}%</strong> of their day <strong>separated from typical peers</strong>. This varies, of course, depending on the individual level of needs
                             </ScrollyCard>
                         </section>
                         <section>
                             <ScrollyCard active={index === 3}>
-                                Districts report on how much time students with IEPs spend in regular classrooms. 
-                                Based on this, <strong>{$primaryDistrictData?.properties["Institution Name"]}</strong> 
-                                has an <strong>inclusion score</strong> of 
-                                <strong>{$primaryDistrictData?.properties["quartile"]} out of 4</strong>
-                                <br>
-                                <br>
-                                <SimpleAccordion title="How is the inclusion score calculated?">
-                                    The inclusion score is based on the percent of children with disabilites who are in a regular classroom for:
-                                    <ul>
-                                        <li>- more than 80% of the day</li>
-                                        <li>- more than 40% and less than 80% of the day</li>
-                                        <li>- less than 40% of the day</li>
-                                    </ul>
-                                    Or, in a completely separate environment, like a hospital or detention facility.
-                                </SimpleAccordion>
+                                Let's look at <strong>{$primaryDistrictData?.properties["Institution Name"]}</strong> compared to the <strong>largest districts</strong> in the state
                             </ScrollyCard>
                         </section>
                         <section>
                             <ScrollyCard active={index === 4}>
-                                Here's how {$primaryDistrictData?.properties["Institution Name"]} compares to the <strong>largest districts</strong> in the state
+                                And to the <strong>ones that surround</strong> it. Though these districts are geographically touching, they can have completely different approaches to inclusion
                             </ScrollyCard>
                         </section>
                         <section>
                             <ScrollyCard active={index === 5}>
-                                And to the <strong>districts it touches</strong>
+                                This isn't even necessarily about resources or good intentions--we all want what's best for kids. It's about having examples of what's possible. Some districts have developed systems that <strong>prioritize inclusion</strong>
                             </ScrollyCard>
                         </section>
                         <section>
                             <ScrollyCard active={index === 6}>
-                                You can also <strong>select multiple districts</strong> to compare
+                                Others are <strong>still working on it</strong>
                             </ScrollyCard>
                         </section>
                         <section>
                             <ScrollyCard active={index === 7}>
-                                Now it's your turn! Use the <strong>toggle</strong> to switch between <strong>map and bubble swarm views</strong>. You can also find district overviews in the <strong>table below</strong>
+                                Now you can explore what's working and what's not in other districts. <strong>Dig in deeper</strong> for any district by <strong>selecting 'more'</strong> in the tooltip or table below
                             </ScrollyCard>
                         </section>
                     {:else}
@@ -11561,12 +11430,24 @@ export const prerender = true
             {/if}
         
             <div class="post-scroll-content">
-                <Divider>
+                <!-- <Divider>
                     <TableProperties />
-                </Divider>
+                </Divider> -->
             
                 <div class="table">
                     <TableOfDistricts data={$data} />
+                </div>
+
+                <div class="outro">
+                    <p class="text-width">
+                        Every piece of data on this chart represents real kids spending real days in classrooms alongside their peers, or elsewhere. Your child's placement doesn't have to be limited by "how we've always done things," it can be inspired by what's working elsewhere.
+                    </p>
+                    <p class="text-width">
+                        Now you have examples to share with your child's team.
+                    </p>
+                    <p class="text-width">
+                        <em>Ready to explore solutions? [Download district comparison sheets][Find successful inclusion models][Connect with other parents]</em>
+                    </p>
                 </div>
             
                 <Divider>
@@ -11587,14 +11468,14 @@ export const prerender = true
     }
 
     .intro {
-        margin-top: 2rem;
+        margin-top: 1.5rem;
         margin-bottom: 1rem;
         position: relative;
     }
 
     @media (max-width: 768px) {
         .headline {
-            margin-top: 3rem;
+            margin-top: 2rem;
         }
 
         .intro {
@@ -11604,7 +11485,7 @@ export const prerender = true
 
     .byline {
         font-size: 1rem;
-        margin-bottom: 0.75rem;
+        margin-bottom: 0.6rem;
         color: var(--colorNonInclusive);
     }
 
@@ -11642,6 +11523,26 @@ export const prerender = true
         z-index: 5;
     }
 </style>
+
+
+
+<!-- 
+<br>
+<br>
+<em>*An IEP is a document that outlines what supports a student with a disability will receive at school. It's personalized to each student</em>
+
+
+<br>
+<br>
+<SimpleAccordion title="How is the inclusion score calculated?">
+    The inclusion score is based on the percent of children with disabilites who are in a regular classroom for:
+    <ul>
+        <li>- more than 80% of the day</li>
+        <li>- more than 40% and less than 80% of the day</li>
+        <li>- less than 40% of the day</li>
+    </ul>
+    Or, in a completely separate environment, like a hospital or detention facility.
+</SimpleAccordion> -->
 ```
 
 # src/routes/about/+page.svelte

@@ -25,9 +25,16 @@ h1 {
 }
 
 p {
-    font-size: 1.15rem;
+    font-size: 1.1rem;
     line-height: 1.6rem;
     margin-bottom: 0.6rem;
+}
+
+@media (max-width: 768px) {
+	p {
+        font-size: 1.05rem;
+        line-height: 1.5rem;
+	}
 }
 
 a { 
@@ -100,7 +107,6 @@ hr {
         margin-right: 1rem;
         font-size: 1.8rem;
         line-height: 2.2rem;
-        margin-top: 0.5rem;
     }
 }
 
