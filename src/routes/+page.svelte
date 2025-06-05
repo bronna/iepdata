@@ -111,7 +111,7 @@
                         </section>
                         <section>
                             <ScrollyCard active={index === 1}>
-                                Right now the largest district, <strong>{$primaryDistrictData?.properties["Institution Name"]}</strong>, is selected. Change the selection at any point to see where your district lands
+                                Right now <strong>{$primaryDistrictData?.properties["Institution Name"]}</strong> is selected. Change the selection at any point to see where your district lands
                             </ScrollyCard>
                         </section>
                         <section>
@@ -126,7 +126,7 @@
                         </section>
                         <section>
                             <ScrollyCard active={index === 4}>
-                                And to the <strong>ones that surround</strong> it. Though these districts are geographically touching, they can have completely different approaches to inclusion
+                                And to the <strong>ones that surround</strong> it. Though these districts are touching, they can have completely different approaches to inclusion
                             </ScrollyCard>
                         </section>
                         <section>
