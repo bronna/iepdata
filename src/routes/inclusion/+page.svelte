@@ -22,7 +22,7 @@
     // Scroller variables
     let index, offset, progress
     let top = 0
-    let threshold = 0.5
+    let threshold = 0.8
     let bottom = 0.8
 
     // Check if any districts are selected
@@ -55,7 +55,7 @@
     <div class="header-headline-container">
         <div class="headline-container">
             <h1 class="headline">
-                Educational Access: How School Districts in Oregon Support Students with Disabilities
+                How does your school district support students with disabilities? Compare and find out
             </h1>
         </div>
 
@@ -74,10 +74,10 @@
             </h3>
         
             <p class="text-width">
-                For families of students with disabilities, location can dramatically impact educational services. This reality becomes especially apparent when moving from one area to another. Even when a child's disability remains unchanged, a change in district can trigger significant shifts in support services--shifts that can profoundly affect a child's well-being and developmental trajectory.
+                Maybe you've had this experience: meeting with a team of educators, specialists, and administrators to discuss your student's Individualized Education Program (IEP), but you feel like the systems at play are opaque. No matter how much everyone wants to do the right thing, you get the sense that your child's classroom placement isn't really about your child, but about the existing structures. When the team suggests something like pulling your child out of regular classes for most of the day, something feels off.
             </p>
             <p class="text-width">
-                Navigating school district services can feel frustratingly opaque. Fortunately, under the Individuals with Disabilities Education Act (IDEA), districts must report annual data on how they support students with disabilities. This information provides valuable insights into how individual students might experience services in different locations. Below, you can explore this data.
+                Missing from these discussions is context: How do the services in your district compare to other districts? Are there districts doing a better job of including students with disabilities? This tool helps you explore these questions using data reported by school districts each year.
             </p>
         </div>
         
@@ -92,9 +92,9 @@
                 showHelpers={false}
             >
                 <div slot="background" class="background">
-                    <Divider>
+                    <!-- <Divider>
                         <Search />
-                    </Divider>
+                    </Divider> -->
         
                     <SelectDistricts />
         
@@ -106,61 +106,42 @@
                     {#if isDistrictSelected}
                         <section>
                             <ScrollyCard active={index === 0}>
-                                Let's explore how special education services vary across <strong>Oregon</strong>'s school districts
+                                Every dot here represents a school district in <strong>Oregon</strong>. But they're not randomly scattered--districts where students with disabilities spend <strong><em>more</em> time in a regular classroom</strong> are on the <strong>right</strong>. Districts where they spend <strong><em>less</em></strong> are on the <strong>left</strong>
                             </ScrollyCard>
                         </section>
                         <section>
                             <ScrollyCard active={index === 1}>
-                                These circles represent all of the school districts in <strong>Oregon</strong>. Districts farther to the <strong>right</strong> are <strong><em>more inclusive</em></strong>, meaning that students with disabilities spend <strong>more time in general education classrooms</strong> with their peers
+                                Right now <strong>{$primaryDistrictData?.properties["Institution Name"]}</strong> is selected. Change the selection at any point to see where your district lands
                             </ScrollyCard>
                         </section>
                         <section>
                             <ScrollyCard active={index === 2}>
-                                As an example, let's look at {$primaryDistrictData?.properties["Institution Name"]}. 
-                                This district serves <strong>{$primaryDistrictData?.properties["Total Student Count"]} students with IEPs*</strong>
-                                <em>(note: you can select your local district at any time)</em>
-                                <br>
-                                <br>
-                                <em>*An IEP is a document that outlines what supports a student with a disability will receive at school. It's personalized to each student</em>
+                                Based on state data, if your child has a disability in <strong>{$primaryDistrictData?.properties["Institution Name"]}</strong>, on average they're likely to <strong>spend {Math.round($primaryDistrictData?.properties["average_separation_time"] || 0)}%</strong> of their day <strong>separated from typical peers</strong>. This varies, of course, depending on the individual level of needs
                             </ScrollyCard>
                         </section>
                         <section>
                             <ScrollyCard active={index === 3}>
-                                Districts report on how much time students with IEPs spend in regular classrooms. 
-                                Based on this, <strong>{$primaryDistrictData?.properties["Institution Name"]}</strong> 
-                                has an <strong>inclusion score</strong> of 
-                                <strong>{$primaryDistrictData?.properties["quartile"]} out of 4</strong>
-                                <br>
-                                <br>
-                                <SimpleAccordion title="How is the inclusion score calculated?">
-                                    The inclusion score is based on the percent of children with disabilites who are in a regular classroom for:
-                                    <ul>
-                                        <li>- more than 80% of the day</li>
-                                        <li>- more than 40% and less than 80% of the day</li>
-                                        <li>- less than 40% of the day</li>
-                                    </ul>
-                                    Or, in a completely separate environment, like a hospital or detention facility.
-                                </SimpleAccordion>
+                                Let's look at <strong>{$primaryDistrictData?.properties["Institution Name"]}</strong> compared to the <strong>largest districts</strong> in the state
                             </ScrollyCard>
                         </section>
                         <section>
                             <ScrollyCard active={index === 4}>
-                                Here's how {$primaryDistrictData?.properties["Institution Name"]} compares to the <strong>largest districts</strong> in the state
+                                And to the <strong>ones that surround</strong> it. Though these districts are touching, they can have completely different approaches to inclusion
                             </ScrollyCard>
                         </section>
                         <section>
                             <ScrollyCard active={index === 5}>
-                                And to the <strong>districts it touches</strong>
+                                This isn't even necessarily about resources or good intentions--we all want what's best for kids. It's about having examples of what's possible. Some districts have developed systems that <strong>prioritize inclusion</strong>
                             </ScrollyCard>
                         </section>
                         <section>
                             <ScrollyCard active={index === 6}>
-                                You can also <strong>select multiple districts</strong> to compare
+                                Others are <strong>still working on it</strong>
                             </ScrollyCard>
                         </section>
                         <section>
                             <ScrollyCard active={index === 7}>
-                                Now it's your turn! Use the <strong>toggle</strong> to switch between <strong>map and bubble swarm views</strong>. You can also find district overviews in the <strong>table below</strong>
+                                Now you can explore what's working and what's not in other districts. <strong>Dig in deeper</strong> for any district by <strong>selecting 'more'</strong> in the tooltip or table below
                             </ScrollyCard>
                         </section>
                     {:else}
@@ -190,6 +171,18 @@
                 <div class="table">
                     <TableOfDistricts data={$data} />
                 </div>
+
+                <div class="outro">
+                    <p class="text-width">
+                        Every piece of data on this chart represents real kids spending real days in classrooms alongside their peers, or elsewhere. Your child's placement doesn't have to be limited by "how we've always done things," it can be inspired by what's working elsewhere.
+                    </p>
+                    <!-- <p class="text-width">
+                        Now you have examples to share with your child's team.
+                    </p>
+                    <p class="text-width">
+                        <em>Ready to explore solutions? [Download district comparison sheets][Find successful inclusion models][Connect with other parents]</em>
+                    </p> -->
+                </div>
             
                 <Divider>
                     <Pencil />
@@ -209,14 +202,14 @@
     }
 
     .intro {
-        margin-top: 2rem;
+        margin-top: 1.5rem;
         margin-bottom: 1rem;
         position: relative;
     }
 
     @media (max-width: 768px) {
         .headline {
-            margin-top: 3rem;
+            margin-top: 2rem;
         }
 
         .intro {
@@ -226,7 +219,7 @@
 
     .byline {
         font-size: 1rem;
-        margin-bottom: 0.75rem;
+        margin-bottom: 0.6rem;
         color: var(--colorNonInclusive);
     }
 
@@ -264,3 +257,23 @@
         z-index: 5;
     }
 </style>
+
+
+
+<!-- 
+<br>
+<br>
+<em>*An IEP is a document that outlines what supports a student with a disability will receive at school. It's personalized to each student</em>
+
+
+<br>
+<br>
+<SimpleAccordion title="How is the inclusion score calculated?">
+    The inclusion score is based on the percent of children with disabilites who are in a regular classroom for:
+    <ul>
+        <li>- more than 80% of the day</li>
+        <li>- more than 40% and less than 80% of the day</li>
+        <li>- less than 40% of the day</li>
+    </ul>
+    Or, in a completely separate environment, like a hospital or detention facility.
+</SimpleAccordion> -->
