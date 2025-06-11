@@ -1449,7 +1449,7 @@ You can preview the production build with `npm run preview`.
   $: dimensions = { 
     width: width || 800, 
     height: height || 400, 
-    margin: (width && width <= 768) ? { top: 0, right: 20, bottom: 20, left: 20 } : { top: 0, right: 30, bottom: 20, left: 30 },
+    margin: (width && width <= 768) ? { top: 0, right: 20, bottom: 40, left: 20 } : { top: 0, right: 30, bottom: 40, left: 30 },
   }
 
   $: innerWidth = (dimensions.width || 800) - (dimensions.margin?.right || 30) - (dimensions.margin?.left || 30)
@@ -1837,14 +1837,24 @@ You can preview the production build with `npm run preview`.
 
             <!-- Axis label -->
             <text
-              x={dimensions.margin.left + 30}
+              x={dimensions.margin.left - 30}
               y={innerHeight + 16}
-              text-anchor="middle"
+              text-anchor="start"
               fill={colors.colorText}
               font-size="14px"
               font-weight="600"
             >
-              % of day separated
+              average % of
+            </text>
+            <text
+              x={dimensions.margin.left - 30}
+              y={innerHeight + 32}
+              text-anchor="start"
+              fill={colors.colorText}
+              font-size="14px"
+              font-weight="600"
+            >
+              day separated
             </text>
           </g>
         {/if}
@@ -7706,27 +7716,21 @@ You can preview the production build with `npm run preview`.
 # src/lib/components/TableOfDistricts.svelte
 
 ```svelte
+<!-- Enhanced TableOfDistricts.svelte -->
 <script>
     import { goto } from '$app/navigation'
     import { writable, derived } from "svelte/store"
     import { arrowUp, arrowDown } from "$lib/utils/arrows.js"
     import InclusionRing from "$lib/components/InclusionRing.svelte"
-    import { Search } from 'lucide-svelte'
+    import { selectedDistricts } from '$lib/stores/stores.js'
 
     export let data
 
     let width
-    const searchTermStore = writable('')
-    let searchInputValue = ''
-
-    $: dimensions = { 
-        width,
-        margin: width <= 768 ? { top: 0, right: 20, bottom: 20, left: 20 } : { top: 0, right: 30, bottom: 20, left: 30 },
-    }
-
+    
     const sortKey = writable("Total Student Count")
     const sortOrder = writable(-1)
-    const visibleRows = writable(9)
+    const visibleRows = writable(8) // Increased default to accommodate selected districts
     const showAllRows = writable(false)
 
     function sortBy(key) {
@@ -7734,46 +7738,60 @@ You can preview the production build with `npm run preview`.
         sortOrder.update(n => -n)
     }
 
-    const filteredAndSortedData = derived(
-        [sortKey, sortOrder, searchTermStore],
-        ([$sortKey, $sortOrder, $searchTerm]) => {
-            if (!data) return []
+    // Enhanced data processing that prioritizes selected districts
+    // Need to make this reactive to selectedDistricts changes
+    $: processedData = (() => {
+        if (!data) return { selectedData: [], otherData: [] }
 
-            let filteredData = data.filter(item => 
-                item.properties["Institution Name"] != null && 
-                item.properties["Institution Name"] !== "undefined" &&
-                item.properties["Institution Name"].trim() !== "" &&
-                item.properties["GEOID"] !== '999999'
-            )
+        // Filter out invalid districts
+        const validData = data.filter(item => 
+            item.properties["Institution Name"] != null && 
+            item.properties["Institution Name"] !== "undefined" &&
+            item.properties["Institution Name"].trim() !== "" &&
+            item.properties["GEOID"] !== '999999'
+        )
 
-            // Apply search filter
-            if ($searchTerm) {
-                const searchLower = $searchTerm.toLowerCase()
-                filteredData = filteredData.filter(item => 
-                    item.properties["Institution Name"].toLowerCase().includes(searchLower)
-                )
+        // Separate selected and non-selected districts
+        const selectedData = validData.filter(item => 
+            $selectedDistricts && $selectedDistricts.includes(item.properties.GEOID)
+        )
+        
+        const otherData = validData.filter(item => 
+            !$selectedDistricts || !$selectedDistricts.includes(item.properties.GEOID)
+        )
+
+        // Sort function
+        const sortFunction = (a, b) => {
+            let aValue = a.properties[$sortKey]
+            let bValue = b.properties[$sortKey]
+            
+            if (["Total Student Count", "weighted_inclusion", "Students with Disabilities", "nAlerts"].includes($sortKey)) {
+                aValue = aValue === null || aValue === undefined ? -Infinity : Number(aValue)
+                bValue = bValue === null || bValue === undefined ? -Infinity : Number(bValue)
+                return $sortOrder * (aValue - bValue)
             }
-
-            return filteredData.sort((a, b) => {
-                let aValue = a.properties[$sortKey]
-                let bValue = b.properties[$sortKey]
-                
-                if (["Total Student Count", "weighted_inclusion", "Students with Disabilities", "nAlerts"].includes($sortKey)) {
-                    aValue = aValue === null || aValue === undefined ? -Infinity : Number(aValue)
-                    bValue = bValue === null || bValue === undefined ? -Infinity : Number(bValue)
-                    return $sortOrder * (aValue - bValue)
-                }
-                
-                if (typeof aValue === 'string' && typeof bValue === 'string') {
-                    return $sortOrder * aValue.localeCompare(bValue)
-                }
-                
-                aValue = aValue === null || aValue === undefined ? '' : String(aValue)
-                bValue = bValue === null || bValue === undefined ? '' : String(bValue)
+            
+            if (typeof aValue === 'string' && typeof bValue === 'string') {
                 return $sortOrder * aValue.localeCompare(bValue)
-            })
+            }
+            
+            aValue = aValue === null || aValue === undefined ? '' : String(aValue)
+            bValue = bValue === null || bValue === undefined ? '' : String(bValue)
+            return $sortOrder * aValue.localeCompare(bValue)
         }
-    )
+
+        // Sort both arrays
+        selectedData.sort(sortFunction)
+        otherData.sort(sortFunction)
+
+        return { selectedData, otherData }
+    })()
+
+    // Combined data for display - also reactive
+    $: displayData = [
+        ...processedData.selectedData,
+        ...processedData.otherData
+    ]
 
     function navigateToDistrict(districtGEOID) {
         goto(`/${districtGEOID}`)
@@ -7782,298 +7800,319 @@ You can preview the production build with `npm run preview`.
     function toggleShowMore() {
         showAllRows.update(value => !value)
         if($showAllRows) {
-            visibleRows.set($filteredAndSortedData.length)
+            visibleRows.set(displayData.length)
         } else {
-            visibleRows.set(9)
+            visibleRows.set(8)
         }
     }
 
-    // Update search term store when input changes
-    $: {
-        searchTermStore.set(searchInputValue)
-    }
-
-    // Clear search function
-    function clearSearch() {
-        searchInputValue = ''
-        searchTermStore.set('')
-    }
+    // Check if we have selected districts to show the divider
+    $: hasSelectedDistricts = $selectedDistricts && $selectedDistricts.length > 0
 </script>
 
-
-<!-- Search bar above table -->
-<div class="search-container">
-    <div class="search-input-container">
-        <div class="search-icon-wrapper">
-            <Search size={20} color="var(--colorMediumGray)" />
+<div class="table-container">
+    <!-- {#if hasSelectedDistricts}
+        <div class="selected-districts-header">
+            <h3>Selected Districts ({$selectedDistricts.length})</h3>
+            <p>These districts are highlighted based on your selection above</p>
         </div>
-        <input
-            type="text"
-            bind:value={searchInputValue}
-            placeholder="Search for a district..."
-            class="search-input"
-        />
-        {#if searchInputValue}
-            <button class="clear-button" on:click={clearSearch}>✕</button>
-        {/if}
-    </div>
-</div>
+    {/if} -->
 
-<table class="district-table">
-    <thead>
-        <tr>
-            <th on:click={() => sortBy("Institution Name")} class:sorted={$sortKey === "Institution Name"}>
-                <span class="header-content">
-                    <span class="header-text">DISTRICT </span>
-                    <span class="sort-arrow">
-                        {@html $sortKey === "Institution Name" ? ($sortOrder === 1 ? arrowUp : arrowDown) : arrowDown}
+    <table class="district-table">
+        <thead>
+            <tr>
+                <th on:click={() => sortBy("Institution Name")} class:sorted={$sortKey === "Institution Name"}>
+                    <span class="header-content">
+                        <span class="header-text">DISTRICT </span>
+                        <span class="sort-arrow">
+                            {@html $sortKey === "Institution Name" ? ($sortOrder === 1 ? arrowUp : arrowDown) : arrowDown}
+                        </span>
                     </span>
-                </span>
-            </th>
-            <th on:click={() => sortBy("weighted_inclusion")} class:sorted={$sortKey === "weighted_inclusion"}>
-                <span class="header-content">
-                    <span class="header-text">INCLUSION SCORE</span>
-                    <span class="sort-arrow">
-                        {@html $sortKey === "weighted_inclusion" ? ($sortOrder === 1 ? arrowUp : arrowDown) : arrowDown}
+                </th>
+                <th on:click={() => sortBy("weighted_inclusion")} class:sorted={$sortKey === "weighted_inclusion"}>
+                    <span class="header-content">
+                        <span class="header-text">INCLUSION SCORE</span>
+                        <span class="sort-arrow">
+                            {@html $sortKey === "weighted_inclusion" ? ($sortOrder === 1 ? arrowUp : arrowDown) : arrowDown}
+                        </span>
                     </span>
-                </span>
-            </th>
-            <th on:click={() => sortBy("Total Student Count")} class:sorted={$sortKey === "Total Student Count"}>
-                <span class="header-content">
-                    <span class="header-text">STUDENTS WITH IEPs</span>
-                    <span class="sort-arrow">
-                        {@html $sortKey === "Total Student Count" ? ($sortOrder === 1 ? arrowUp : arrowDown) : arrowDown}
+                </th>
+                <th on:click={() => sortBy("Total Student Count")} class:sorted={$sortKey === "Total Student Count"}>
+                    <span class="header-content">
+                        <span class="header-text">STUDENTS WITH IEPs</span>
+                        <span class="sort-arrow">
+                            {@html $sortKey === "Total Student Count" ? ($sortOrder === 1 ? arrowUp : arrowDown) : arrowDown}
+                        </span>
                     </span>
-                </span>
-            </th>
-            <th class="hide-mobile" on:click={() => sortBy("Students with Disabilities")} class:sorted={$sortKey === "Students with Disabilities"}>
-                <span class="header-content">
-                    <span class="header-text">% OF STUDENTS IN DISTRICT WITH IEPs</span>
-                    <span class="sort-arrow">
-                        {@html $sortKey === "Students with Disabilities" ? ($sortOrder === 1 ? arrowUp : arrowDown) : arrowDown}
+                </th>
+                <th class="hide-mobile" on:click={() => sortBy("Students with Disabilities")} class:sorted={$sortKey === "Students with Disabilities"}>
+                    <span class="header-content">
+                        <span class="header-text">% OF STUDENTS IN DISTRICT WITH IEPs</span>
+                        <span class="sort-arrow">
+                            {@html $sortKey === "Students with Disabilities" ? ($sortOrder === 1 ? arrowUp : arrowDown) : arrowDown}
+                        </span>
                     </span>
-                </span>
-            </th>
-            <th class="hide-mobile" on:click={() => sortBy("nAlerts")} class:sorted={$sortKey === "nAlerts"}>
-                <span class="header-content">
-                    <span class="header-text">ALERTS</span>
-                    <span class="sort-arrow">
-                        {@html $sortKey === "nAlerts" ? ($sortOrder === 1 ? arrowUp : arrowDown) : arrowDown}
+                </th>
+                <th class="hide-mobile" on:click={() => sortBy("nAlerts")} class:sorted={$sortKey === "nAlerts"}>
+                    <span class="header-content">
+                        <span class="header-text">ALERTS</span>
+                        <span class="sort-arrow">
+                            {@html $sortKey === "nAlerts" ? ($sortOrder === 1 ? arrowUp : arrowDown) : arrowDown}
+                        </span>
                     </span>
-                </span>
-            </th>
-            <th class="hide-mobile settings-column">
-                <div class="settings-header">
-                    <div class="settings-title">
-                        % STUDENTS WITH IEPs IN A SETTING THAT IS:
-                    </div>
-                    <div class="settings-categories">
-                        <span>INCLUSIVE</span>
-                        <span>SEMI-INCL</span>
-                        <span>NON-INCL</span>
-                        <span>SEPARATE</span>
-                    </div>
-                </div>
-            </th>
-        </tr>
-    </thead>
-    <tbody>
-        {#each $filteredAndSortedData.slice(0, $visibleRows) as district (district.properties.GEOID)}
-            <tr 
-                on:click={() => navigateToDistrict(district.properties.GEOID)} 
-                tabindex="0" 
-                role="button"
-            >
-                <!-- Desktop View -->
-                <td class="district-name hide-mobile">
-                    <span class="underline-on-hover">{district.properties["Institution Name"]}</span>
-                </td>
-                <td class="district-metric hide-mobile">
-                    <div class="inclusion-ring-container">
-                        <div class="metric-content">
-                            <InclusionRing data={district.properties} />
+                </th>
+                <th class="hide-mobile settings-column">
+                    <div class="settings-header">
+                        <div class="settings-title">
+                            % STUDENTS WITH IEPs IN A SETTING THAT IS:
                         </div>
-                        {#if district.properties["Total Student Count"] < 500 && district.properties.weighted_inclusion}
-                            <span class="uncertainty">*</span>
-                        {/if}
+                        <div class="settings-categories">
+                            <span>INCLUSIVE</span>
+                            <span>SEMI-INCL</span>
+                            <span>NON-INCL</span>
+                            <span>SEPARATE</span>
+                        </div>
                     </div>
-                </td>
-                <td class="hide-mobile">
-                    {#if district.properties["Total Student Count"]}
-                        <span class="underline-on-hover">{district.properties["Total Student Count"].toLocaleString()}</span>
-                    {:else}
-                        <span class="no-data">-</span>
-                    {/if}
-                </td>
-                <td class="hide-mobile">
-                    {#if district.properties["Students with Disabilities"]}
-                        <span class="underline-on-hover">{district.properties["Students with Disabilities"].toLocaleString()}%</span>
-                    {:else}
-                        <span class="no-data">-</span>
-                    {/if}
-                </td>
-                <td class="hide-mobile">
-                    {#if district.properties["nAlerts"] !== null && district.properties["nAlerts"] !== undefined}
-                        {#if district.properties["nAlerts"] > 0}
-                            <span class="underline-on-hover" style="font-weight: 900; font-size: 1.4rem; color: rgb(222, 84, 102);">
-                                {'!'.repeat(district.properties["nAlerts"])}
-                            </span>
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            {#each displayData.slice(0, $visibleRows) as district, index (district.properties.GEOID)}
+                <!-- Show divider after selected districts -->
+                <!-- {#if hasSelectedDistricts && index === processedData.selectedData.length && processedData.otherData.length > 0}
+                    <tr class="section-divider">
+                        <td colspan="7">
+                            <div class="divider-content">
+                                <span>All Other Districts</span>
+                            </div>
+                        </td>
+                    </tr>
+                {/if} -->
+                
+                <tr 
+                    on:click={() => navigateToDistrict(district.properties.GEOID)} 
+                    tabindex="0" 
+                    role="button"
+                    class:selected-district={$selectedDistricts.includes(district.properties.GEOID)}
+                >
+                    <!-- Desktop View -->
+                    <td class="district-name hide-mobile">
+                        <div class="name-container">
+                            <!-- {#if $selectedDistricts.includes(district.properties.GEOID)}
+                                <span class="selected-indicator">★</span>
+                            {/if} -->
+                            <span class="underline-on-hover">{district.properties["Institution Name"]}</span>
+                        </div>
+                    </td>
+                    <td class="district-metric hide-mobile">
+                        <div class="inclusion-ring-container">
+                            <div class="metric-content">
+                                <InclusionRing data={district.properties} />
+                            </div>
+                            {#if district.properties["Total Student Count"] < 500 && district.properties.weighted_inclusion}
+                                <span class="uncertainty">*</span>
+                            {/if}
+                        </div>
+                    </td>
+                    <td class="hide-mobile">
+                        {#if district.properties["Total Student Count"]}
+                            <span class="underline-on-hover">{district.properties["Total Student Count"].toLocaleString()}</span>
                         {:else}
-                            <span class="no-data">0</span>
+                            <span class="no-data">-</span>
                         {/if}
-                    {:else}
-                        <span class="no-data">coming soon</span>
-                    {/if}
-                </td>
-                <td class="hide-mobile settings-data">
-                    {#if district.properties["LRE Students >80%"]}
-                        <div class="settings-values">
-                            <span>{district.properties["LRE Students >80%"].toFixed(1)}%</span>
-                            <span>{district.properties["LRE Students >40% <80%"].toFixed(1)}%</span>
-                            <span>{district.properties["LRE Students <40%"].toFixed(1)}%</span>
-                            <span>{district.properties["LRE Students Separate Settings"].toFixed(1)}%</span>
-                        </div>
-                    {:else}
-                        <span class="no-data">-</span>
-                    {/if}
-                </td>
-                <td class="arrow-cell hide-mobile">
-                    <span class="more underline-on-hover">more ></span>
-                </td>
-
-                <!-- Mobile View -->
-                <div class="mobile-district-column show-mobile">
-                    <span class="district-name">{district.properties["Institution Name"]}</span>
-                    <div class="district-stats">
-                        {#if district.properties["Total Student Count"] && district.properties["Students with Disabilities"]}
-                            <span class="stat-emphasis">{district.properties["Total Student Count"].toLocaleString()}</span>, or <span class="stat-emphasis">{district.properties["Students with Disabilities"].toLocaleString()}%</span>,
-                            of students have an IEP
+                    </td>
+                    <td class="hide-mobile">
+                        {#if district.properties["Students with Disabilities"]}
+                            <span class="underline-on-hover">{district.properties["Students with Disabilities"].toLocaleString()}%</span>
                         {:else}
-                            <span class="no-data">No data available</span>
+                            <span class="no-data">-</span>
                         {/if}
-                    </div>
-                </div>
-
-                <div class="mobile-inclusion-column show-mobile">
-                    <div class="inclusion-score">
-                        <InclusionRing data={district.properties} /> 
-                        {#if district.properties["Total Student Count"] < 500 && district.properties.weighted_inclusion}
-                            <span class="uncertainty">*</span>
-                        {/if}
-                        <span class="score-proportion"> / 4</span>
-                    </div>
-                    {#if district.properties["LRE Students >80%"]}
-                        <span class="settings-label">educational settings</span>
-                        <div class="settings-values">
-                            <span class="setting-info">{district.properties["LRE Students >80%"].toFixed(1)}% inclusive</span>
-                            <span class="setting-info">{district.properties["LRE Students >40% <80%"].toFixed(1)}% semi-incl</span>
-                            <span class="setting-info">{district.properties["LRE Students <40%"].toFixed(1)}% non-incl</span>
-                            <span class="setting-info">{district.properties["LRE Students Separate Settings"].toFixed(1)}% separate</span>
-                        </div>
-                    {:else}
-                        <span class="no-data">No settings data available</span>
-                    {/if}
-                </div>
-
-                <div class="mobile-alerts-row show-mobile">
-                    <div class="mobile-alerts">
+                    </td>
+                    <td class="hide-mobile">
                         {#if district.properties["nAlerts"] !== null && district.properties["nAlerts"] !== undefined}
                             {#if district.properties["nAlerts"] > 0}
-                                <span class="underline-on-hover" style="font-weight: 900; font-size: 1rem; color: rgb(222, 84, 102);">
-                                    Alerts: {'!'.repeat(district.properties["nAlerts"])}
+                                <span class="underline-on-hover" style="font-weight: 900; font-size: 1.4rem; color: rgb(222, 84, 102);">
+                                    {'!'.repeat(district.properties["nAlerts"])}
                                 </span>
                             {:else}
-                                <span>No alerts</span>
+                                <span class="no-data">0</span>
                             {/if}
                         {:else}
-                            <span class="no-data">Alerts data coming soon</span>
+                            <span class="no-data">coming soon</span>
+                        {/if}
+                    </td>
+                    <td class="hide-mobile settings-data">
+                        {#if district.properties["LRE Students >80%"]}
+                            <div class="settings-values">
+                                <span>{district.properties["LRE Students >80%"].toFixed(1)}%</span>
+                                <span>{district.properties["LRE Students >40% <80%"].toFixed(1)}%</span>
+                                <span>{district.properties["LRE Students <40%"].toFixed(1)}%</span>
+                                <span>{district.properties["LRE Students Separate Settings"].toFixed(1)}%</span>
+                            </div>
+                        {:else}
+                            <span class="no-data">-</span>
+                        {/if}
+                    </td>
+                    <td class="arrow-cell hide-mobile">
+                        <span class="more underline-on-hover">more ></span>
+                    </td>
+
+                    <!-- Mobile View -->
+                    <div class="mobile-district-column show-mobile">
+                        <div class="mobile-name-container">
+                            <!-- {#if $selectedDistricts.includes(district.properties.GEOID)}
+                                <span class="selected-indicator">★</span>
+                            {/if} -->
+                            <span class="district-name">{district.properties["Institution Name"]}</span>
+                        </div>
+                        <div class="district-stats">
+                            {#if district.properties["Total Student Count"] && district.properties["Students with Disabilities"]}
+                                <span class="stat-emphasis">{district.properties["Total Student Count"].toLocaleString()}</span>, or <span class="stat-emphasis">{district.properties["Students with Disabilities"].toLocaleString()}%</span>,
+                                of students have an IEP
+                            {:else}
+                                <span class="no-data">No data available</span>
+                            {/if}
+                        </div>
+                    </div>
+
+                    <div class="mobile-inclusion-column show-mobile">
+                        <div class="inclusion-score">
+                            <InclusionRing data={district.properties} /> 
+                            {#if district.properties["Total Student Count"] < 500 && district.properties.weighted_inclusion}
+                                <span class="uncertainty">*</span>
+                            {/if}
+                            <span class="score-proportion"> / 4</span>
+                        </div>
+                        {#if district.properties["LRE Students >80%"]}
+                            <span class="settings-label">educational settings</span>
+                            <div class="settings-values">
+                                <span class="setting-info">{district.properties["LRE Students >80%"].toFixed(1)}% inclusive</span>
+                                <span class="setting-info">{district.properties["LRE Students >40% <80%"].toFixed(1)}% semi-incl</span>
+                                <span class="setting-info">{district.properties["LRE Students <40%"].toFixed(1)}% non-incl</span>
+                                <span class="setting-info">{district.properties["LRE Students Separate Settings"].toFixed(1)}% separate</span>
+                            </div>
+                        {:else}
+                            <span class="no-data">No settings data available</span>
                         {/if}
                     </div>
-                    <span class="mobile-more">more ></span>
-                </div>
-                
-            </tr>
-        {/each}
-    </tbody>
-</table>
 
-{#if $filteredAndSortedData.length > 10}
-    <div class="show-more-container">
-        <button on:click={toggleShowMore} class="show-more-button">
-            {$showAllRows ? "show less" : "show more"}
-        </button>
-    </div>
-{/if}
+                    <div class="mobile-alerts-row show-mobile">
+                        <div class="mobile-alerts">
+                            {#if district.properties["nAlerts"] !== null && district.properties["nAlerts"] !== undefined}
+                                {#if district.properties["nAlerts"] > 0}
+                                    <span class="underline-on-hover" style="font-weight: 900; font-size: 1rem; color: rgb(222, 84, 102);">
+                                        Alerts: {'!'.repeat(district.properties["nAlerts"])}
+                                    </span>
+                                {:else}
+                                    <span>No alerts</span>
+                                {/if}
+                            {:else}
+                                <span class="no-data">Alerts data coming soon</span>
+                            {/if}
+                        </div>
+                        <span class="mobile-more">more ></span>
+                    </div>
+                </tr>
+            {/each}
+        </tbody>
+    </table>
+
+    {#if displayData.length > 8}
+        <div class="show-more-container">
+            <button on:click={toggleShowMore} class="show-more-button">
+                {$showAllRows ? "show less" : "show more"}
+            </button>
+        </div>
+    {/if}
+</div>
 
 <style>
-    /* search bar styles */
-    .search-container {
-        margin: 1rem auto;
-        max-width: 90%;
-        width: 100%;
-        display: flex;
-        justify-content: flex-end;
+    .table-container {
+        width: 90%;
+        margin: 0 auto;
     }
 
-    .search-input-container {
-        width: 300px;
+    .selected-districts-header {
+        margin: 2rem auto 1rem;
+        text-align: center;
+        max-width: 600px;
     }
 
-    @media (max-width: 768px) {
-        .search-input-container {
-            width: 100%;
-        }
+    .selected-districts-header h3 {
+        color: var(--colorInclusive);
+        font-family: var(--font-headers);
+        margin-bottom: 0.5rem;
     }
 
-    .search-input-container {
-        position: relative;
+    .selected-districts-header p {
+        color: var(--colorDarkGray);
+        font-size: 0.9rem;
+        margin: 0;
+    }
+
+    /* Selected district styling */
+    .selected-district {
+        background-color: color-mix(in srgb, var(--colorInclusive) 5%, transparent);
+        border-left: 4px solid var(--colorInclusive);
+    }
+
+    .selected-indicator {
+        color: var(--colorInclusive);
+        font-weight: 700;
+        margin-right: 0.5rem;
+        font-size: 1.1rem;
+    }
+
+    .name-container,
+    .mobile-name-container {
         display: flex;
         align-items: center;
-        max-width: 100%;
     }
 
-    .search-icon-wrapper {
-        position: absolute;
-        left: 1rem;
-        display: flex;
-        align-items: center;
-        pointer-events: none;
-    }
-
-    .search-input {
-        width: 100%;
-        padding: 0.8rem 2.5rem;
-        font-size: 1rem;
-        border: 2px solid var(--colorLightGray);
-        border-radius: 8px;
-        transition: border-color 0.3s ease;
-    }
-
-    .search-input:focus {
-        outline: none;
-        border-color: var(--colorInclusive);
-    }
-
-    .clear-button {
-        position: absolute;
-        right: 1rem;
-        background: none;
+    /* Section divider */
+    .section-divider {
         border: none;
-        color: var(--colorMediumGray);
-        cursor: pointer;
-        font-size: 1.2rem;
-        padding: 0.25rem;
+        background: none;
     }
 
-    .clear-button:hover {
-        color: var(--colorText);
+    .section-divider td {
+        padding: 1rem 0 0.5rem 0;
+        border-bottom: none;
     }
 
-    /* Base Table Styles */
+    .divider-content {
+        text-align: center;
+        font-size: 0.9rem;
+        color: var(--colorDarkGray);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.1rem;
+        position: relative;
+    }
+
+    .divider-content::before,
+    .divider-content::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        width: 30%;
+        height: 1px;
+        background-color: var(--colorLightGray);
+    }
+
+    .divider-content::before {
+        left: 0;
+    }
+
+    .divider-content::after {
+        right: 0;
+    }
+
+    /* Rest of existing styles... */
     table {
         border-collapse: collapse;
-        width: 90%;
-        margin: 2rem auto;
+        width: 100%;
+        margin: 2rem 0;
     }
 
     th, td {
@@ -8148,11 +8187,11 @@ You can preview the production build with `npm run preview`.
     }
 
     /* Table Body Styles */
-    tbody tr {
+    tbody tr:not(.section-divider) {
         transition: background-color 0.3s ease;
     }
 
-    tbody tr:hover {
+    tbody tr:not(.section-divider):hover {
         background-color: var(--colorLightLightGray);
     }
 
@@ -8353,9 +8392,8 @@ You can preview the production build with `npm run preview`.
 
     /* Mobile Styles */
     @media (max-width: 768px) {
-        table {
+        .table-container {
             width: 100%;
-            margin: 1rem 0;
         }
 
         .hide-mobile {
@@ -8370,13 +8408,18 @@ You can preview the production build with `npm run preview`.
             display: none;
         }
 
-        tbody tr {
+        tbody tr:not(.section-divider) {
             display: grid;
             grid-template-columns: 1fr 1fr;
             grid-template-rows: auto auto;
             gap: 1rem;
             padding: 1.5rem 1rem;
             border-bottom: 1px solid var(--colorLightGray);
+        }
+
+        .section-divider {
+            display: block;
+            grid-column: 1 / -1;
         }
 
         /* Left Column - District Info */
@@ -8471,7 +8514,6 @@ You can preview the production build with `npm run preview`.
             font-weight: 700;
         }
     }
-
 </style>
 ```
 
@@ -11377,7 +11419,7 @@ export const prerender = true
                         </section>
                         <section>
                             <ScrollyCard active={index === 1}>
-                                Right now the largest district, <strong>{$primaryDistrictData?.properties["Institution Name"]}</strong>, is selected. Change the selection at any point to see where your district lands
+                                Right now <strong>{$primaryDistrictData?.properties["Institution Name"]}</strong> is selected. Change the selection at any point to see where your district lands
                             </ScrollyCard>
                         </section>
                         <section>
@@ -11392,7 +11434,7 @@ export const prerender = true
                         </section>
                         <section>
                             <ScrollyCard active={index === 4}>
-                                And to the <strong>ones that surround</strong> it. Though these districts are geographically touching, they can have completely different approaches to inclusion
+                                And to the <strong>ones that surround</strong> it. Though these districts are touching, they can have completely different approaches to inclusion
                             </ScrollyCard>
                         </section>
                         <section>
@@ -11430,9 +11472,9 @@ export const prerender = true
             {/if}
         
             <div class="post-scroll-content">
-                <!-- <Divider>
+                <Divider>
                     <TableProperties />
-                </Divider> -->
+                </Divider>
             
                 <div class="table">
                     <TableOfDistricts data={$data} />
@@ -11442,12 +11484,12 @@ export const prerender = true
                     <p class="text-width">
                         Every piece of data on this chart represents real kids spending real days in classrooms alongside their peers, or elsewhere. Your child's placement doesn't have to be limited by "how we've always done things," it can be inspired by what's working elsewhere.
                     </p>
-                    <p class="text-width">
+                    <!-- <p class="text-width">
                         Now you have examples to share with your child's team.
                     </p>
                     <p class="text-width">
                         <em>Ready to explore solutions? [Download district comparison sheets][Find successful inclusion models][Connect with other parents]</em>
-                    </p>
+                    </p> -->
                 </div>
             
                 <Divider>
@@ -11890,7 +11932,7 @@ export async function load({ params }) {
     // Scroller variables
     let index, offset, progress
     let top = 0
-    let threshold = 0.5
+    let threshold = 0.8
     let bottom = 0.8
 
     // Check if any districts are selected
@@ -11923,7 +11965,7 @@ export async function load({ params }) {
     <div class="header-headline-container">
         <div class="headline-container">
             <h1 class="headline">
-                Educational Access: How School Districts in Oregon Support Students with Disabilities
+                How does your school district support students with disabilities? Compare and find out
             </h1>
         </div>
 
@@ -11942,10 +11984,10 @@ export async function load({ params }) {
             </h3>
         
             <p class="text-width">
-                For families of students with disabilities, location can dramatically impact educational services. This reality becomes especially apparent when moving from one area to another. Even when a child's disability remains unchanged, a change in district can trigger significant shifts in support services--shifts that can profoundly affect a child's well-being and developmental trajectory.
+                Maybe you've had this experience: meeting with a team of educators, specialists, and administrators to discuss your student's Individualized Education Program (IEP), but you feel like the systems at play are opaque. No matter how much everyone wants to do the right thing, you get the sense that your child's classroom placement isn't really about your child, but about the existing structures. When the team suggests something like pulling your child out of regular classes for most of the day, something feels off.
             </p>
             <p class="text-width">
-                Navigating school district services can feel frustratingly opaque. Fortunately, under the Individuals with Disabilities Education Act (IDEA), districts must report annual data on how they support students with disabilities. This information provides valuable insights into how individual students might experience services in different locations. Below, you can explore this data.
+                Missing from these discussions is context: How do the services in your district compare to other districts? Are there districts doing a better job of including students with disabilities? This tool helps you explore these questions using data reported by school districts each year.
             </p>
         </div>
         
@@ -11960,9 +12002,9 @@ export async function load({ params }) {
                 showHelpers={false}
             >
                 <div slot="background" class="background">
-                    <Divider>
+                    <!-- <Divider>
                         <Search />
-                    </Divider>
+                    </Divider> -->
         
                     <SelectDistricts />
         
@@ -11974,61 +12016,42 @@ export async function load({ params }) {
                     {#if isDistrictSelected}
                         <section>
                             <ScrollyCard active={index === 0}>
-                                Let's explore how special education services vary across <strong>Oregon</strong>'s school districts
+                                Every dot here represents a school district in <strong>Oregon</strong>. But they're not randomly scattered--districts where students with disabilities spend <strong><em>more</em> time in a regular classroom</strong> are on the <strong>right</strong>. Districts where they spend <strong><em>less</em></strong> are on the <strong>left</strong>
                             </ScrollyCard>
                         </section>
                         <section>
                             <ScrollyCard active={index === 1}>
-                                These circles represent all of the school districts in <strong>Oregon</strong>. Districts farther to the <strong>right</strong> are <strong><em>more inclusive</em></strong>, meaning that students with disabilities spend <strong>more time in general education classrooms</strong> with their peers
+                                Right now <strong>{$primaryDistrictData?.properties["Institution Name"]}</strong> is selected. Change the selection at any point to see where your district lands
                             </ScrollyCard>
                         </section>
                         <section>
                             <ScrollyCard active={index === 2}>
-                                As an example, let's look at {$primaryDistrictData?.properties["Institution Name"]}. 
-                                This district serves <strong>{$primaryDistrictData?.properties["Total Student Count"]} students with IEPs*</strong>
-                                <em>(note: you can select your local district at any time)</em>
-                                <br>
-                                <br>
-                                <em>*An IEP is a document that outlines what supports a student with a disability will receive at school. It's personalized to each student</em>
+                                Based on state data, if your child has a disability in <strong>{$primaryDistrictData?.properties["Institution Name"]}</strong>, on average they're likely to <strong>spend {Math.round($primaryDistrictData?.properties["average_separation_time"] || 0)}%</strong> of their day <strong>separated from typical peers</strong>. This varies, of course, depending on the individual level of needs
                             </ScrollyCard>
                         </section>
                         <section>
                             <ScrollyCard active={index === 3}>
-                                Districts report on how much time students with IEPs spend in regular classrooms. 
-                                Based on this, <strong>{$primaryDistrictData?.properties["Institution Name"]}</strong> 
-                                has an <strong>inclusion score</strong> of 
-                                <strong>{$primaryDistrictData?.properties["quartile"]} out of 4</strong>
-                                <br>
-                                <br>
-                                <SimpleAccordion title="How is the inclusion score calculated?">
-                                    The inclusion score is based on the percent of children with disabilites who are in a regular classroom for:
-                                    <ul>
-                                        <li>- more than 80% of the day</li>
-                                        <li>- more than 40% and less than 80% of the day</li>
-                                        <li>- less than 40% of the day</li>
-                                    </ul>
-                                    Or, in a completely separate environment, like a hospital or detention facility.
-                                </SimpleAccordion>
+                                Let's look at <strong>{$primaryDistrictData?.properties["Institution Name"]}</strong> compared to the <strong>largest districts</strong> in the state
                             </ScrollyCard>
                         </section>
                         <section>
                             <ScrollyCard active={index === 4}>
-                                Here's how {$primaryDistrictData?.properties["Institution Name"]} compares to the <strong>largest districts</strong> in the state
+                                And to the <strong>ones that surround</strong> it. Though these districts are touching, they can have completely different approaches to inclusion
                             </ScrollyCard>
                         </section>
                         <section>
                             <ScrollyCard active={index === 5}>
-                                And to the <strong>districts it touches</strong>
+                                This isn't even necessarily about resources or good intentions--we all want what's best for kids. It's about having examples of what's possible. Some districts have developed systems that <strong>prioritize inclusion</strong>
                             </ScrollyCard>
                         </section>
                         <section>
                             <ScrollyCard active={index === 6}>
-                                You can also <strong>select multiple districts</strong> to compare
+                                Others are <strong>still working on it</strong>
                             </ScrollyCard>
                         </section>
                         <section>
                             <ScrollyCard active={index === 7}>
-                                Now it's your turn! Use the <strong>toggle</strong> to switch between <strong>map and bubble swarm views</strong>. You can also find district overviews in the <strong>table below</strong>
+                                Now you can explore what's working and what's not in other districts. <strong>Dig in deeper</strong> for any district by <strong>selecting 'more'</strong> in the tooltip or table below
                             </ScrollyCard>
                         </section>
                     {:else}
@@ -12058,6 +12081,18 @@ export async function load({ params }) {
                 <div class="table">
                     <TableOfDistricts data={$data} />
                 </div>
+
+                <div class="outro">
+                    <p class="text-width">
+                        Every piece of data on this chart represents real kids spending real days in classrooms alongside their peers, or elsewhere. Your child's placement doesn't have to be limited by "how we've always done things," it can be inspired by what's working elsewhere.
+                    </p>
+                    <!-- <p class="text-width">
+                        Now you have examples to share with your child's team.
+                    </p>
+                    <p class="text-width">
+                        <em>Ready to explore solutions? [Download district comparison sheets][Find successful inclusion models][Connect with other parents]</em>
+                    </p> -->
+                </div>
             
                 <Divider>
                     <Pencil />
@@ -12077,14 +12112,14 @@ export async function load({ params }) {
     }
 
     .intro {
-        margin-top: 2rem;
+        margin-top: 1.5rem;
         margin-bottom: 1rem;
         position: relative;
     }
 
     @media (max-width: 768px) {
         .headline {
-            margin-top: 3rem;
+            margin-top: 2rem;
         }
 
         .intro {
@@ -12094,7 +12129,7 @@ export async function load({ params }) {
 
     .byline {
         font-size: 1rem;
-        margin-bottom: 0.75rem;
+        margin-bottom: 0.6rem;
         color: var(--colorNonInclusive);
     }
 
@@ -12132,6 +12167,26 @@ export async function load({ params }) {
         z-index: 5;
     }
 </style>
+
+
+
+<!-- 
+<br>
+<br>
+<em>*An IEP is a document that outlines what supports a student with a disability will receive at school. It's personalized to each student</em>
+
+
+<br>
+<br>
+<SimpleAccordion title="How is the inclusion score calculated?">
+    The inclusion score is based on the percent of children with disabilites who are in a regular classroom for:
+    <ul>
+        <li>- more than 80% of the day</li>
+        <li>- more than 40% and less than 80% of the day</li>
+        <li>- less than 40% of the day</li>
+    </ul>
+    Or, in a completely separate environment, like a hospital or detention facility.
+</SimpleAccordion> -->
 ```
 
 # src/routes/resources/+page.svelte

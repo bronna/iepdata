@@ -40,9 +40,9 @@
         searchResults = []
     }
 
-    // Handle district selection
+    // Handle district selection - Fixed function
     function selectDistrict(districtGEOID) {
-        selectedDistricts.set(districtGEOID)
+        selectedDistricts.set([districtGEOID]) // Set as array, not string
         clearSearch()
         // Navigate to district details if needed
         // goto(`/${districtGEOID}`)
@@ -116,8 +116,8 @@
     let nodes = [];
     let simulation;
 
-    // Get the selected district data 
-    $: selectedDistrictData = $data.find(d => d.properties.GEOID === $selectedDistricts);
+    // Get the selected district data - Fixed to use proper store syntax
+    $: selectedDistrictGEOID = $selectedDistricts && $selectedDistricts.length > 0 ? $selectedDistricts[0] : null;
 
     function runSimulation() {
         if (!filteredData.length || !dimensions.innerWidth) return;
@@ -168,13 +168,13 @@
         }
     }
 
-    // Watch for changes to selectedDistrict and highlight it
+    // Watch for changes to selectedDistrict and highlight it - Fixed
     $: {
-        if (initialized && $selectedDistricts && nodes.length) {
+        if (initialized && selectedDistrictGEOID && nodes.length) {
             // Update nodes to highlight the selected district
             nodes = nodes.map(node => ({
                 ...node,
-                isSelected: node.properties.GEOID === $selectedDistricts
+                isSelected: node.properties.GEOID === selectedDistrictGEOID
             }));
         }
     }
@@ -185,8 +185,6 @@
         largestDistricts.slice(0, 2) :
         // On desktop, show all large districts
         largestDistricts;
-
-    // No longer needed - using inline expressions instead
 
     onMount(() => {
         initialized = true;
@@ -217,8 +215,8 @@
             {#each searchResults as result}
                 <!-- svelte-ignore a11y-click-events-have-key-events -->
                 <div 
-                    class="search-result-item {$selectedDistricts === result.properties.GEOID ? 'selected' : ''}"
-                    on:click={() => selectDistricts(result.properties.GEOID)}
+                    class="search-result-item {selectedDistrictGEOID === result.properties.GEOID ? 'selected' : ''}"
+                    on:click={() => selectDistrict(result.properties.GEOID)}
                 >
                     <div class="result-name">{result.properties["Institution Name"]}</div>
                     <div class="result-details">

@@ -45,6 +45,10 @@
         </div>
 
         <div class="text-width last-text">
+            <h3 class="byline">
+                Updated with data from the 2023-24 school year
+            </h3>
+
             <p> 
                 Oregon's special education funding cap falls significantly short of meeting the needs of school districts across the state. The majority of Oregon's districts fall well above the threshold, with many more than 11% of their students needing Individualized Education Plans (IEPs).
             </p>
@@ -87,6 +91,12 @@
         .headline {
             margin-top: 3rem;
         }
+    }
+
+    .byline {
+        font-size: 1rem;
+        margin-bottom: 0.6rem;
+        color: var(--colorNonInclusive);
     }
     
     a {
