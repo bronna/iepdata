@@ -6892,7 +6892,7 @@ You can preview the production build with `npm run preview`.
 
         <!-- <p><strong>Small districts</strong> have less than 500 students with IEPs. <strong>Large districts</strong> have 500 or more.</p> -->
 
-        <p>Data is from the <strong>2021-22 school year</strong> and comes from the <a href="https://www.ode.state.or.us/data/ReportCard/Media" target="_blank">Oregon Department of Education</a>.</p>
+        <p>Data is from the <strong>2023-24 school year</strong> and comes from the <a href="https://www.ode.state.or.us/data/ReportCard/Media" target="_blank">Oregon Department of Education</a>.</p>
 
         <!-- Map data comes from the <a href="https://www.census.gov/cgi-bin/geo/shapefiles/index.php?year=2023&layergroup=School+Districts" target="_blank">US Census</a> -->
 
@@ -7128,9 +7128,9 @@ You can preview the production build with `npm run preview`.
         searchResults = []
     }
 
-    // Handle district selection
+    // Handle district selection - Fixed function
     function selectDistrict(districtGEOID) {
-        selectedDistricts.set(districtGEOID)
+        selectedDistricts.set([districtGEOID]) // Set as array, not string
         clearSearch()
         // Navigate to district details if needed
         // goto(`/${districtGEOID}`)
@@ -7204,8 +7204,8 @@ You can preview the production build with `npm run preview`.
     let nodes = [];
     let simulation;
 
-    // Get the selected district data 
-    $: selectedDistrictData = $data.find(d => d.properties.GEOID === $selectedDistricts);
+    // Get the selected district data - Fixed to use proper store syntax
+    $: selectedDistrictGEOID = $selectedDistricts && $selectedDistricts.length > 0 ? $selectedDistricts[0] : null;
 
     function runSimulation() {
         if (!filteredData.length || !dimensions.innerWidth) return;
@@ -7256,13 +7256,13 @@ You can preview the production build with `npm run preview`.
         }
     }
 
-    // Watch for changes to selectedDistrict and highlight it
+    // Watch for changes to selectedDistrict and highlight it - Fixed
     $: {
-        if (initialized && $selectedDistricts && nodes.length) {
+        if (initialized && selectedDistrictGEOID && nodes.length) {
             // Update nodes to highlight the selected district
             nodes = nodes.map(node => ({
                 ...node,
-                isSelected: node.properties.GEOID === $selectedDistricts
+                isSelected: node.properties.GEOID === selectedDistrictGEOID
             }));
         }
     }
@@ -7273,8 +7273,6 @@ You can preview the production build with `npm run preview`.
         largestDistricts.slice(0, 2) :
         // On desktop, show all large districts
         largestDistricts;
-
-    // No longer needed - using inline expressions instead
 
     onMount(() => {
         initialized = true;
@@ -7305,8 +7303,8 @@ You can preview the production build with `npm run preview`.
             {#each searchResults as result}
                 <!-- svelte-ignore a11y-click-events-have-key-events -->
                 <div 
-                    class="search-result-item {$selectedDistricts === result.properties.GEOID ? 'selected' : ''}"
-                    on:click={() => selectDistricts(result.properties.GEOID)}
+                    class="search-result-item {selectedDistrictGEOID === result.properties.GEOID ? 'selected' : ''}"
+                    on:click={() => selectDistrict(result.properties.GEOID)}
                 >
                     <div class="result-name">{result.properties["Institution Name"]}</div>
                     <div class="result-details">
@@ -11827,6 +11825,10 @@ export async function load({ params }) {
         </div>
 
         <div class="text-width last-text">
+            <h3 class="byline">
+                Updated with data from the 2023-24 school year
+            </h3>
+
             <p> 
                 Oregon's special education funding cap falls significantly short of meeting the needs of school districts across the state. The majority of Oregon's districts fall well above the threshold, with many more than 11% of their students needing Individualized Education Plans (IEPs).
             </p>
@@ -11869,6 +11871,12 @@ export async function load({ params }) {
         .headline {
             margin-top: 3rem;
         }
+    }
+
+    .byline {
+        font-size: 1rem;
+        margin-bottom: 0.6rem;
+        color: var(--colorNonInclusive);
     }
     
     a {

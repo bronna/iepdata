@@ -192,43 +192,42 @@
     });
 </script>
 
-<!-- Search bar above chart -->
-<div class="search-container">
-    <div class="search-input-container">
-        <div class="search-icon-wrapper">
-            <Search size={20} color="var(--colorMediumGray)" />
+<div class="swarmplot" bind:clientWidth={width} bind:clientHeight={height}>
+    <!-- Search bar positioned on the right side of the chart -->
+    <div class="search-container">
+        <div class="search-input-container">
+            <div class="search-icon-wrapper">
+                <Search size={20} color="var(--colorMediumGray)" />
+            </div>
+            <input
+                type="text"
+                bind:value={searchInputValue}
+                placeholder="Search for your district..."
+                class="search-input"
+            />
+            {#if searchInputValue}
+                <button class="clear-button" on:click={clearSearch}>✕</button>
+            {/if}
         </div>
-        <input
-            type="text"
-            bind:value={searchInputValue}
-            placeholder="Search for a district..."
-            class="search-input"
-        />
-        {#if searchInputValue}
-            <button class="clear-button" on:click={clearSearch}>✕</button>
+        
+        <!-- Search results dropdown -->
+        {#if searchResults.length > 0}
+            <div class="search-results">
+                {#each searchResults as result}
+                    <!-- svelte-ignore a11y-click-events-have-key-events -->
+                    <div 
+                        class="search-result-item {selectedDistrictGEOID === result.properties.GEOID ? 'selected' : ''}"
+                        on:click={() => selectDistrict(result.properties.GEOID)}
+                    >
+                        <div class="result-name">{result.properties["Institution Name"]}</div>
+                        <div class="result-details">
+                            {result.properties["Students with Disabilities"]}% students with IEPs
+                        </div>
+                    </div>
+                {/each}
+            </div>
         {/if}
     </div>
-    
-    <!-- Search results dropdown -->
-    {#if searchResults.length > 0}
-        <div class="search-results">
-            {#each searchResults as result}
-                <!-- svelte-ignore a11y-click-events-have-key-events -->
-                <div 
-                    class="search-result-item {selectedDistrictGEOID === result.properties.GEOID ? 'selected' : ''}"
-                    on:click={() => selectDistrict(result.properties.GEOID)}
-                >
-                    <div class="result-name">{result.properties["Institution Name"]}</div>
-                    <div class="result-details">
-                        {result.properties["Students with Disabilities"]}% students with IEPs
-                    </div>
-                </div>
-            {/each}
-        </div>
-    {/if}
-</div>
-
-<div class="swarmplot" bind:clientWidth={width} bind:clientHeight={height}>
     <!-- Use overflow: visible on the SVG to allow elements to render outside bounds -->
     <svg 
         width={dimensions.width} 
@@ -381,85 +380,9 @@
                 font-size={isMobile ? "12px" : "16px"}
                 font-weight="500"
             >
-                <tspan x={xScale(11)} dy="0"><tspan font-weight="bold">Oregon</tspan> limits special</tspan>
-                <tspan x={xScale(11)} dy={labelLineHeight}>education funding to</tspan>
-                <tspan x={xScale(11)} dy={labelLineHeight}><tspan font-weight="bold">11%</tspan> of students</tspan>
-                {#if !isMobile}
-                <tspan x={xScale(11)} dy={labelLineHeight}>needing services</tspan>
-                {/if}
+                <tspan x={xScale(11)} dy={labelLineHeight}>Current <tspan font-weight="bold">11%</tspan> special</tspan>
+                <tspan x={xScale(11)} dy={labelLineHeight}>education <tspan font-weight="bold">funding cap</tspan></tspan>
             </text>
-
-            <!-- Add line at proposed state funding - also responsive -->
-            <!-- <line
-                x1={xScale(15)}
-                y1={10}
-                x2={xScale(15)}
-                y2={dimensions.innerHeight}
-                stroke={colors.colorBackgroundWhite}
-                stroke-width="6"
-                opacity="0.3"
-                />
-            <line
-                x1={xScale(15)}
-                y1={10}
-                x2={xScale(15)}
-                y2={dimensions.innerHeight}
-                stroke={colors.colorDarkGray}
-                stroke-width="2"
-                opacity="0.5"
-                stroke-dasharray="4 2"
-            /> -->
-
-            {#if !isMobile}
-                <!-- Only show this on desktop -->
-                <text
-                    x={xScale(15)}
-                    y={10}
-                    text-anchor="middle"
-                    fill={colors.colorText}
-                    font-size="16px"
-                    font-weight="500"
-                >
-                    <tspan x={xScale(15.5)} dy="0">For most school</tspan>
-                    <tspan x={xScale(15.5)} dy={labelLineHeight}>districts, many more</tspan>
-                    <tspan x={xScale(15.5)} dy={labelLineHeight}>than <tspan font-weight="bold">11%</tspan> qualify</tspan>
-                </text>
-            {/if}
-
-            <!-- Portland/Salem annotation - more compact on mobile -->
-            {#if isMobile}
-                <!-- Mobile version - stacked and simplified -->
-                <text
-                    x={xScale(18)}
-                    y={20}
-                    text-anchor="start"
-                    fill={colors.colorText}
-                    font-size="12px"
-                    font-weight="500"
-                >
-                    <tspan x={xScale(18)} dy="0">Portland and</tspan>
-                    <tspan x={xScale(18)} dy={labelLineHeight}>Salem-Keizer: <tspan font-weight="bold">18%</tspan></tspan>
-                </text>
-            {:else}
-                <!-- Desktop version - full annotation -->
-                <text
-                    x={xScale(19)}
-                    y={10}
-                    text-anchor="start"
-                    fill={colors.colorText}
-                    font-size="16px"
-                    font-weight="500"
-                >
-                    <tspan x={xScale(19.25)} dy="0">In <tspan font-weight="bold">Portland</tspan> and</tspan>
-                    <tspan x={xScale(19.25)} dy={labelLineHeight}><tspan font-weight="bold">Salem-Keizer</tspan>, two of</tspan>
-                    <tspan x={xScale(19.25)} dy={labelLineHeight}>the largest districts,</tspan>
-                    <tspan x={xScale(19.25)} dy={labelLineHeight}><tspan font-weight="bold">18%</tspan> of students</tspan>
-                    <tspan x={xScale(19.25)} dy={labelLineHeight}>require services.</tspan>
-                    <tspan x={xScale(19.25)} dy={labelLineHeight}>Those districts don't</tspan>
-                    <tspan x={xScale(19.25)} dy={labelLineHeight}>receive funding for</tspan>
-                    <tspan x={xScale(19.25)} dy={labelLineHeight}>the remaining 7%</tspan>
-                </text>
-            {/if}
 
             <!-- Note for districts not pictured -->
             {#if !isMobile}
@@ -482,34 +405,22 @@
 </div>
 
 <style>
-    /* search bar styles */
+    /* search bar styles - positioned on the right side of the chart */
     .search-container {
-        margin: 2rem 0 0.5rem 0;
-        max-width: 90%;
-        width: 100%;
+        position: absolute;
+        top: 2rem;
+        right: 2rem;
+        width: 300px;
         display: flex;
         flex-direction: column;
-        justify-content: center;
-        position: relative;
-    }
-
-    .search-input-container {
-        width: 300px;
-        margin: 0 3rem;
-    }
-
-    @media (max-width: 768px) {
-        .search-input-container {
-            width: 100%;
-            margin: 0 1rem;
-        }
+        z-index: 10;
     }
 
     .search-input-container {
         position: relative;
         display: flex;
         align-items: center;
-        max-width: 100%;
+        width: 100%;
     }
 
     .search-icon-wrapper {
@@ -527,6 +438,8 @@
         border: 2px solid var(--colorLightGray);
         border-radius: 8px;
         transition: border-color 0.3s ease;
+        background-color: white;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
 
     .search-input:focus {
@@ -553,8 +466,6 @@
     .search-results {
         position: absolute;
         top: 100%;
-        width: 300px;
-        margin: 0 3rem;
         left: 0;
         right: 0;
         background-color: white;
@@ -615,9 +526,26 @@
     }
 
     /* Mobile-specific styles */
-    @media (max-width: 640px) {
+    @media (max-width: 768px) {
+        .search-container {
+            top: 1rem;
+            right: 1rem;
+            left: 1rem;
+            width: auto;
+        }
+        
         .swarmplot {
             height: 400px; /* Smaller height on mobile */
+        }
+    }
+
+    @media (max-width: 640px) {
+        .search-container {
+            position: relative;
+            top: 0;
+            right: 0;
+            left: 0;
+            margin: 2rem 1rem 0.5rem 1rem;
         }
     }
 </style>
