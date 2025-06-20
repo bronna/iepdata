@@ -74,7 +74,7 @@
             </h3>
         
             <p class="text-width">
-                Maybe you've had this experience: meeting with a team of educators, specialists, and administrators to discuss your student's Individualized Education Program (IEP), but you feel like the systems at play are opaque. No matter how much everyone wants to do the right thing, you get the sense that your child's classroom placement isn't really about your child, but about the existing structures. When the team suggests something like pulling your child out of regular classes for most of the day, something feels off.
+                Maybe you've had this experience: meeting with a team of educators, specialists, and administrators to discuss your student's Individualized Education Program (IEP), but you feel like the systems you're navigating aren't transparent. No matter how much everyone wants to do the right thing, you get the sense that your child's classroom placement isn't actually about your child, but about existing structures. When the team suggests something like pulling your child out of regular classes for most of the day, something feels off.
             </p>
             <p class="text-width">
                 Missing from these discussions is context: How do the services in your district compare to other districts? Are there districts doing a better job of including students with disabilities? This tool helps you explore these questions using data reported by school districts each year.
@@ -106,7 +106,7 @@
                     {#if isDistrictSelected}
                         <section>
                             <ScrollyCard active={index === 0}>
-                                Every dot here represents a school district in <strong>Oregon</strong>. But they're not randomly scattered--districts where students with disabilities spend <strong><em>more</em> time in a regular classroom</strong> are on the <strong>right</strong>. Districts where they spend <strong><em>less</em></strong> are on the <strong>left</strong>
+                                Every dot here represents a school district in <strong>Oregon</strong>. But they're not randomly scattered...districts where students with disabilities spend <strong><em>more</em> time in a regular classroom</strong> are on the <strong>right</strong>. Districts where they spend <strong><em>less</em></strong> are on the <strong>left</strong>
                             </ScrollyCard>
                         </section>
                         <section>
@@ -116,7 +116,7 @@
                         </section>
                         <section>
                             <ScrollyCard active={index === 2}>
-                                Based on state data, if your child has a disability in <strong>{$primaryDistrictData?.properties["Institution Name"]}</strong>, on average they're likely to <strong>spend {Math.round($primaryDistrictData?.properties["average_separation_time"] || 0)}%</strong> of their day <strong>separated from typical peers</strong>. This varies, of course, depending on the individual level of needs
+                                Based on state data, if your child has a disability in <strong>{$primaryDistrictData?.properties["Institution Name"]}</strong>, on average they're likely to <strong>spend {Math.round($primaryDistrictData?.properties["average_separation_time"] || 0)}%</strong> of their day <strong>separated from typical peers</strong>. This varies, of course, depending on individual level of needs
                             </ScrollyCard>
                         </section>
                         <section>
@@ -131,7 +131,7 @@
                         </section>
                         <section>
                             <ScrollyCard active={index === 5}>
-                                This isn't even necessarily about resources or good intentions--we all want what's best for kids. It's about having examples of what's possible. Some districts have developed systems that <strong>prioritize inclusion</strong>
+                                This isn't even necessarily about resources or good intentions; we all want what's best for kids. It's about having examples of what's possible. Some districts have developed systems that <strong>prioritize inclusion</strong>
                             </ScrollyCard>
                         </section>
                         <section>
@@ -141,7 +141,7 @@
                         </section>
                         <section>
                             <ScrollyCard active={index === 7}>
-                                Now you can explore what's working and what's not in other districts. <strong>Dig in deeper</strong> for any district by <strong>selecting 'more'</strong> in the tooltip or table below
+                                Now you can explore what's working, and what's not, in other districts. <strong>Dig in deeper</strong> for any district by <strong>selecting 'more'</strong> in the tooltip or table below
                             </ScrollyCard>
                         </section>
                     {:else}

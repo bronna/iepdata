@@ -21,7 +21,7 @@
     
     <div class="header-headline-container">
         <div class="headline-container">
-            <h1 class="headline">The 11% cap: is it enough for Oregon's students?</h1>
+            <h1 class="headline">The 11% cap: is it enough for Oregon's students with disabilities?</h1>
         </div>
         
         {#if windowWidth > 768}
@@ -40,11 +40,11 @@
             </h3>
 
             <p> 
-                Oregon caps special education funding at 11% of each district's enrollment. Any students beyond that number? <strong>Districts fund those services themselves.</strong>
+                Oregon caps special education funding at 11% of each school district's enrollment. If there are any students beyond that number, the <strong>districts have to fund those services themselves.</strong>
             </p>
 
             <p>
-                Want to know how many Oregon districts actually stay under this 11% cap?
+                Want to see how many districts fall under that cap?
             </p>
         </div>
 
@@ -64,29 +64,23 @@
             </p>
 
             <h3>
-                The funding reality
+                The funding shortfall
             </h3>
             <p> 
-                When districts serve students beyond the 11% threshold, they absorb those costs locally. This creates a funding shortfall that districts must address through other means.
+                When districts serve students beyond the 11% threshold, they absorb those costs locally. This creates a funding gap that districts must address through other means.
             </p>
             <p>
-                What does this mean for students? These are educators looking at real kids with real needs, knowing that every month of delay makes intervention harder. The cruel irony? The earlier you intervene, the less expensive and more effective support becomes. Oregon's system punishes exactly the approach that works best for kids and costs less in the long run.
+                What does this mean for students? Educators know that every month of delay makes intervention harder, and that the earlier you intervene, the less expensive and more effective support becomes. That's why you see so many districts continuing to identify students beyond, in many cases way beyond, the 11% cap. Oregon's system punishes exactly the approach that works best for kids, and costs less in the long run.
             </p>
 
             <h3>
-                The lonely 11% club
+                The lonely funding cap club
             </h3>
             <p>
-                Here's something that might surprise you: only <strong>five other states</strong> in the entire country cap special education funding like Oregon does.
+                Turns out, only <strong>five other states</strong> in the entire country cap special education funding. Not only that, but Oregon's cap is the lowest of all of them. By a lot.
             </p>
             <p>
-                Want to know how Oregon's 11% cap compares to those other states?
-            </p>
-            <p>
-                It's the lowest. By far.
-            </p>
-            <p>
-                This cap was set in the early 1990s, back when we understood far less about learning differences and intervention strategies. It hasn't budged since, even as our knowledge about supporting students with disabilities has transformed completely.
+                The cap was set in the early 1990s, back when we understood far less about learning differences and intervention strategies. It hasn't budged since, even as our knowledge about supporting students with disabilities has transformed completely.
             </p>
 
             <h3>
