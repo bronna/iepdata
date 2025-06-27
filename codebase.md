@@ -3450,41 +3450,60 @@ You can preview the production build with `npm run preview`.
 
 ```svelte
 <script>
-    import { onMount } from 'svelte';
-    import { scaleLinear, scaleSqrt } from 'd3-scale';
-    import { extent } from 'd3-array';
-    import { colors } from '$lib/styles/colorConfig';
-    import SVGChart from '$lib/components/SVGChart.svelte';
+    import { scaleLinear } from 'd3-scale'
+    import { extent } from 'd3-array'
+    import { colors } from '$lib/styles/colorConfig'
+    import SVGChart from '$lib/components/SVGChart.svelte'
     
     // Import the small schools data
-    import smallSchoolsData from '$lib/data/small_schools.json';
+    import smallSchoolsData from '$lib/data/small_schools_expanded.json';
 
     export let width = 800;
     export let height = 500;
 
     // State variables
     let showSchoolLines = false;
-    let selectedCategories = []; // Array to track multiple selected categories
+    let selectedCategories = ['Low', 'Medium', 'High']; // Array to track multiple selected categories
+    let selectedPeriod = 'post-covid'; // 'pre-covid' or 'post-covid'
+    
+    // Define the periods based on our methodological discussion
+    const periods = {
+        'pre-covid': {
+            label: 'Pre-COVID (2016-2019)',
+            years: ['2016-2017', '2017-2018', '2018-2019'],
+            description: 'Data collected using pre-2021 ODE methodology'
+        },
+        'post-covid': {
+            label: 'Post-COVID (2021-2024)',
+            years: ['2021-2022', '2022-2023', '2023-2024'],
+            description: 'Data collected using updated ODE methodology'
+        }
+    };
     
     // Process the imported data to match our component's needs
-    $: schoolData = smallSchoolsData.map(school => {
+    $: allSchoolData = smallSchoolsData.map(school => {
         // Parse numeric values and calculate proficiency as average of ELA and Math
-        const elaProf = parseInt(school["ELA Proficient & Above %"]?.replace(/%/g, '') || "0");
-        const mathProf = parseInt(school["Math Proficient & Above %"]?.replace(/%/g, '') || "0");
+        const elaProf = parseFloat(school["ELA Proficient & Above %"]?.replace(/%/g, '') || "0");
+        const mathProf = parseFloat(school["Math Proficient & Above %"]?.replace(/%/g, '') || "0");
         const proficiency = (elaProf + mathProf) / 2;
         
         // Parse other numeric fields
-        const econDisadv = parseInt(school["Economically Disadvantaged %"]?.replace(/%/g, '') || "0");
-        const disability = parseInt(school["Students w/Disabilities %"]?.replace(/%/g, '') || "0");
-        const spending = parseInt(school["Per Pupil Spending"].replace(/\$|,/g, ''));
+        const econDisadv = parseFloat(school["Economically Disadvantaged %"]?.replace(/%/g, '') || "0");
+        const disability = parseFloat(school["Students w/Disabilities %"]?.replace(/%/g, '') || "0");
+        const spendingStr = school["Per Pupil Spending"]?.replace(/\$|,/g, '') || "0";
+        const spending = spendingStr === "" || spendingStr === "x" ? 0 : parseInt(spendingStr);
         const students = school["Total School Enrollment"];
         
         // Create simplified school name
         const shortName = school.School.replace(" Primary School", "");
         
-        // Assign year order for connecting lines
-        const yearOrder = school["School Year"] === "2021-2022" ? 1 : 
-                         school["School Year"] === "2022-2023" ? 2 : 3;
+        // Assign year order for connecting lines within each period
+        let yearOrder;
+        if (periods['pre-covid'].years.includes(school["School Year"])) {
+            yearOrder = periods['pre-covid'].years.indexOf(school["School Year"]) + 1;
+        } else if (periods['post-covid'].years.includes(school["School Year"])) {
+            yearOrder = periods['post-covid'].years.indexOf(school["School Year"]) + 1;
+        }
         
         return {
             school: shortName,
@@ -3494,9 +3513,13 @@ You can preview the production build with `npm run preview`.
             disability: disability,
             proficiency: proficiency,
             spending: spending,
-            yearOrder: yearOrder
+            yearOrder: yearOrder,
+            period: periods['pre-covid'].years.includes(school["School Year"]) ? 'pre-covid' : 'post-covid'
         };
     });
+
+    // Filter data based on selected period
+    $: schoolData = allSchoolData.filter(school => school.period === selectedPeriod);
     
     // Tooltip state
     let tooltipVisible = false;
@@ -3507,7 +3530,7 @@ You can preview the production build with `npm run preview`.
     let dimensions = {
         width,
         height,
-        margin: { top: 40, right: 150, bottom: 80, left: 70 },
+        margin: { top: 40, right: 350, bottom: 80, left: 70 },
         innerWidth: 0,
         innerHeight: 0
     };
@@ -3517,17 +3540,41 @@ You can preview the production build with `npm run preview`.
         dimensions.innerHeight = height - dimensions.margin.top - dimensions.margin.bottom;
     }
 
-    // Define disadvantage categories with colors
-    const getDisadvantageCategory = (totalDisadv) => {
-        if (totalDisadv < 24) return { category: 'Low', color: '#01b6e1' }; // Blue
-        if (totalDisadv < 31) return { category: 'Medium', color: '#9acd32' }; // Green
+    // Calculate dynamic thresholds for equal distribution across categories
+    $: periodThresholds = (() => {
+        const periodData = allSchoolData.filter(school => school.period === selectedPeriod);
+        const totalDisadvValues = periodData.map(school => school.econDisadv + school.disability).sort((a, b) => a - b);
+        
+        if (totalDisadvValues.length === 0) return { low: 0, high: 100 };
+        
+        const n = totalDisadvValues.length;
+        
+        // For equal tertiles, we want as close to n/3 in each group as possible
+        // Calculate the exact indices for tertile splits
+        const lowIndex = Math.floor(n / 3) - 1; // Index of last item in low group
+        const highIndex = Math.floor(2 * n / 3) - 1; // Index of last item in medium group
+        
+        // The thresholds are the values at these positions
+        // We add a small amount to ensure clean breaks
+        const lowThreshold = totalDisadvValues[lowIndex] + 0.001;
+        const highThreshold = totalDisadvValues[highIndex] + 0.001;
+        
+        return { low: lowThreshold, high: highThreshold };
+    })();
+
+    // Define disadvantage categories with equal distribution
+    const getDisadvantageCategory = (totalDisadv, period) => {
+        const thresholds = periodThresholds;
+        
+        if (totalDisadv < thresholds.low) return { category: 'Low', color: '#01b6e1' }; // Blue
+        if (totalDisadv < thresholds.high) return { category: 'Medium', color: '#9acd32' }; // Green
         return { category: 'High', color: '#ff9900' }; // Orange
     };
 
     // Process data
     $: coloredData = schoolData.map(item => {
         const totalDisadv = item.econDisadv + item.disability;
-        const { category, color } = getDisadvantageCategory(totalDisadv);
+        const { category, color } = getDisadvantageCategory(totalDisadv, item.period);
         return {
             ...item,
             totalDisadv,
@@ -3536,14 +3583,17 @@ You can preview the production build with `npm run preview`.
         };
     });
 
-    // Create scales
+    // Create scales - dynamic based on data
+    $: xExtent = extent(coloredData, d => d.students);
+    $: yExtent = extent(coloredData, d => d.proficiency);
+    
     $: xScale = scaleLinear()
-        .domain([200, 550])
+        .domain([Math.max(200, xExtent[0] - 50), xExtent[1] + 50])
         .range([0, dimensions.innerWidth])
         .nice();
 
     $: yScale = scaleLinear()
-        .domain([30, 80])
+        .domain([Math.max(30, yExtent[0] - 5), Math.min(85, yExtent[1] + 5)])
         .range([dimensions.innerHeight, 0])
         .nice();
 
@@ -3630,20 +3680,22 @@ You can preview the production build with `npm run preview`.
             };
         }).filter(Boolean); // Remove null entries
         
-        console.log('Category trendlines:', trendlines); // Debug log
         return trendlines;
     })();
 
     // Format functions
     const formatNumber = num => num.toLocaleString();
-    const formatMoney = value => `$${value.toLocaleString()}`;
+    const formatMoney = value => value > 0 ? `$${value.toLocaleString()}` : 'N/A';
 
-    // Legend data
-    const categoricalLegend = [
-        { category: 'Low Disadvantage', range: '<24%', color: '#01b6e1' },
-        { category: 'Medium Disadvantage', range: '24-30%', color: '#9acd32' },
-        { category: 'High Disadvantage', range: '31%+', color: '#ff9900' }
-    ];
+    // Legend data - dynamic based on period and actual thresholds
+    $: categoricalLegend = (() => {
+        const thresholds = periodThresholds;
+        return [
+            { category: 'Low Disadvantage', range: `<${thresholds.low.toFixed(1)}%`, color: '#01b6e1' },
+            { category: 'Medium Disadvantage', range: `${thresholds.low.toFixed(1)}%-${(thresholds.high - 0.001).toFixed(1)}%`, color: '#9acd32' },
+            { category: 'High Disadvantage', range: `≥${thresholds.high.toFixed(1)}%`, color: '#ff9900' }
+        ];
+    })();
 
     // Handle tooltip
     function showTooltip(item, event) {
@@ -3672,8 +3724,16 @@ You can preview the production build with `npm run preview`.
 
 <div class="chart-container" bind:clientWidth={width}>
     <div class="controls">
-        <h2 class="text-width">School Size, % Disadvantaged and Proficiency (All Years)</h2>
-        <p class="subtitle">Color indicates total disadvantaged % (economic + disability)</p>
+        <h2 class="text-width">School Size, % Disadvantaged and Proficiency</h2>
+        
+        <!-- Period selector -->
+        <div class="period-selector">
+            <label for="period-select" class="period-label">Data Period:</label>
+            <select id="period-select" bind:value={selectedPeriod} class="period-dropdown">
+                <option value="post-covid">{periods['post-covid'].label}</option>
+                <option value="pre-covid">{periods['pre-covid'].label}</option>
+            </select>
+        </div>
         
         <!-- Legend with integrated checkboxes -->
         <div class="legend-container">
@@ -3902,15 +3962,15 @@ You can preview the production build with `npm run preview`.
                     </div>
                     <div class="tooltip-row">
                         <span class="tooltip-label">Econ. Disadvantaged:</span>
-                        <span class="tooltip-value">{tooltipData.econDisadv}%</span>
+                        <span class="tooltip-value">{tooltipData.econDisadv.toFixed(1)}%</span>
                     </div>
                     <div class="tooltip-row">
                         <span class="tooltip-label">Students w/ Disabilities:</span>
-                        <span class="tooltip-value">{tooltipData.disability}%</span>
+                        <span class="tooltip-value">{tooltipData.disability.toFixed(1)}%</span>
                     </div>
                     <div class="tooltip-row">
                         <span class="tooltip-label">Total Disadvantaged:</span>
-                        <span class="tooltip-value">{tooltipData.totalDisadv}% ({tooltipData.disadvCategory})</span>
+                        <span class="tooltip-value">{tooltipData.totalDisadv.toFixed(1)}% ({tooltipData.disadvCategory})</span>
                     </div>
                     <div class="tooltip-row">
                         <span class="tooltip-label">Per Pupil Spending:</span>
@@ -3920,15 +3980,6 @@ You can preview the production build with `npm run preview`.
             </div>
         {/if}
     </div>
-
-    <!-- Notes -->
-    <!-- <div class="notes">
-        <p><strong>Notes:</strong></p>
-        <ul>
-            <li>Data includes all schools across three academic years (2021-2022, 2022-2023, 2023-2024)</li>
-            <li>Proficiency is the average of ELA and Math proficiency rates</li>
-        </ul>
-    </div> -->
 </div>
 
 <style>
@@ -3949,11 +4000,50 @@ You can preview the production build with `npm run preview`.
         text-align: center;
     }
 
+    .period-selector {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .period-label {
+        font-weight: 600;
+        color: var(--colorText);
+    }
+
+    .period-dropdown {
+        padding: 0.5rem 1rem;
+        border: 2px solid var(--colorLightGray);
+        border-radius: 6px;
+        background: white;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: border-color 0.2s ease;
+    }
+
+    .period-dropdown:focus {
+        outline: none;
+        border-color: var(--colorPrimary);
+    }
+
     .subtitle {
         text-align: center;
         color: var(--colorDarkGray);
         margin-bottom: 1rem;
         font-size: 0.9rem;
+    }
+
+    .methodology-notice {
+        background-color: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 6px;
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+        text-align: center;
+        font-size: 0.85rem;
+        color: #856404;
     }
 
     .legend-container {
@@ -4045,22 +4135,6 @@ You can preview the production build with `npm run preview`.
         position: relative;
     }
 
-    .notes {
-        margin-top: 2rem;
-        font-size: 0.85rem;
-        color: var(--colorDarkGray);
-        max-width: 100%;
-    }
-
-    .notes ul {
-        margin-left: 1.5rem;
-        line-height: 1.5;
-    }
-
-    .notes li {
-        margin-bottom: 0.5rem;
-    }
-
     /* Tooltip styles */
     .tooltip {
         position: absolute;
@@ -4112,6 +4186,11 @@ You can preview the production build with `npm run preview`.
     }
 
     @media (max-width: 768px) {
+        .period-selector {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
         .chart-controls {
             flex-direction: column;
             align-items: center;
@@ -7280,43 +7359,42 @@ You can preview the production build with `npm run preview`.
     });
 </script>
 
-<!-- Search bar above chart -->
-<div class="search-container">
-    <div class="search-input-container">
-        <div class="search-icon-wrapper">
-            <Search size={20} color="var(--colorMediumGray)" />
+<div class="swarmplot" bind:clientWidth={width} bind:clientHeight={height}>
+    <!-- Search bar positioned on the right side of the chart -->
+    <div class="search-container">
+        <div class="search-input-container">
+            <div class="search-icon-wrapper">
+                <Search size={20} color="var(--colorMediumGray)" />
+            </div>
+            <input
+                type="text"
+                bind:value={searchInputValue}
+                placeholder="Search for your district..."
+                class="search-input"
+            />
+            {#if searchInputValue}
+                <button class="clear-button" on:click={clearSearch}>✕</button>
+            {/if}
         </div>
-        <input
-            type="text"
-            bind:value={searchInputValue}
-            placeholder="Search for a district..."
-            class="search-input"
-        />
-        {#if searchInputValue}
-            <button class="clear-button" on:click={clearSearch}>✕</button>
+        
+        <!-- Search results dropdown -->
+        {#if searchResults.length > 0}
+            <div class="search-results">
+                {#each searchResults as result}
+                    <!-- svelte-ignore a11y-click-events-have-key-events -->
+                    <div 
+                        class="search-result-item {selectedDistrictGEOID === result.properties.GEOID ? 'selected' : ''}"
+                        on:click={() => selectDistrict(result.properties.GEOID)}
+                    >
+                        <div class="result-name">{result.properties["Institution Name"]}</div>
+                        <div class="result-details">
+                            {result.properties["Students with Disabilities"]}% students with IEPs
+                        </div>
+                    </div>
+                {/each}
+            </div>
         {/if}
     </div>
-    
-    <!-- Search results dropdown -->
-    {#if searchResults.length > 0}
-        <div class="search-results">
-            {#each searchResults as result}
-                <!-- svelte-ignore a11y-click-events-have-key-events -->
-                <div 
-                    class="search-result-item {selectedDistrictGEOID === result.properties.GEOID ? 'selected' : ''}"
-                    on:click={() => selectDistrict(result.properties.GEOID)}
-                >
-                    <div class="result-name">{result.properties["Institution Name"]}</div>
-                    <div class="result-details">
-                        {result.properties["Students with Disabilities"]}% students with IEPs
-                    </div>
-                </div>
-            {/each}
-        </div>
-    {/if}
-</div>
-
-<div class="swarmplot" bind:clientWidth={width} bind:clientHeight={height}>
     <!-- Use overflow: visible on the SVG to allow elements to render outside bounds -->
     <svg 
         width={dimensions.width} 
@@ -7469,85 +7547,9 @@ You can preview the production build with `npm run preview`.
                 font-size={isMobile ? "12px" : "16px"}
                 font-weight="500"
             >
-                <tspan x={xScale(11)} dy="0"><tspan font-weight="bold">Oregon</tspan> limits special</tspan>
-                <tspan x={xScale(11)} dy={labelLineHeight}>education funding to</tspan>
-                <tspan x={xScale(11)} dy={labelLineHeight}><tspan font-weight="bold">11%</tspan> of students</tspan>
-                {#if !isMobile}
-                <tspan x={xScale(11)} dy={labelLineHeight}>needing services</tspan>
-                {/if}
+                <tspan x={xScale(11)} dy={labelLineHeight}>Current <tspan font-weight="bold">11%</tspan> special</tspan>
+                <tspan x={xScale(11)} dy={labelLineHeight}>education <tspan font-weight="bold">funding cap</tspan></tspan>
             </text>
-
-            <!-- Add line at proposed state funding - also responsive -->
-            <!-- <line
-                x1={xScale(15)}
-                y1={10}
-                x2={xScale(15)}
-                y2={dimensions.innerHeight}
-                stroke={colors.colorBackgroundWhite}
-                stroke-width="6"
-                opacity="0.3"
-                />
-            <line
-                x1={xScale(15)}
-                y1={10}
-                x2={xScale(15)}
-                y2={dimensions.innerHeight}
-                stroke={colors.colorDarkGray}
-                stroke-width="2"
-                opacity="0.5"
-                stroke-dasharray="4 2"
-            /> -->
-
-            {#if !isMobile}
-                <!-- Only show this on desktop -->
-                <text
-                    x={xScale(15)}
-                    y={10}
-                    text-anchor="middle"
-                    fill={colors.colorText}
-                    font-size="16px"
-                    font-weight="500"
-                >
-                    <tspan x={xScale(15.5)} dy="0">For most school</tspan>
-                    <tspan x={xScale(15.5)} dy={labelLineHeight}>districts, many more</tspan>
-                    <tspan x={xScale(15.5)} dy={labelLineHeight}>than <tspan font-weight="bold">11%</tspan> qualify</tspan>
-                </text>
-            {/if}
-
-            <!-- Portland/Salem annotation - more compact on mobile -->
-            {#if isMobile}
-                <!-- Mobile version - stacked and simplified -->
-                <text
-                    x={xScale(18)}
-                    y={20}
-                    text-anchor="start"
-                    fill={colors.colorText}
-                    font-size="12px"
-                    font-weight="500"
-                >
-                    <tspan x={xScale(18)} dy="0">Portland and</tspan>
-                    <tspan x={xScale(18)} dy={labelLineHeight}>Salem-Keizer: <tspan font-weight="bold">18%</tspan></tspan>
-                </text>
-            {:else}
-                <!-- Desktop version - full annotation -->
-                <text
-                    x={xScale(19)}
-                    y={10}
-                    text-anchor="start"
-                    fill={colors.colorText}
-                    font-size="16px"
-                    font-weight="500"
-                >
-                    <tspan x={xScale(19.25)} dy="0">In <tspan font-weight="bold">Portland</tspan> and</tspan>
-                    <tspan x={xScale(19.25)} dy={labelLineHeight}><tspan font-weight="bold">Salem-Keizer</tspan>, two of</tspan>
-                    <tspan x={xScale(19.25)} dy={labelLineHeight}>the largest districts,</tspan>
-                    <tspan x={xScale(19.25)} dy={labelLineHeight}><tspan font-weight="bold">18%</tspan> of students</tspan>
-                    <tspan x={xScale(19.25)} dy={labelLineHeight}>require services.</tspan>
-                    <tspan x={xScale(19.25)} dy={labelLineHeight}>Those districts don't</tspan>
-                    <tspan x={xScale(19.25)} dy={labelLineHeight}>receive funding for</tspan>
-                    <tspan x={xScale(19.25)} dy={labelLineHeight}>the remaining 7%</tspan>
-                </text>
-            {/if}
 
             <!-- Note for districts not pictured -->
             {#if !isMobile}
@@ -7570,34 +7572,22 @@ You can preview the production build with `npm run preview`.
 </div>
 
 <style>
-    /* search bar styles */
+    /* search bar styles - positioned on the right side of the chart */
     .search-container {
-        margin: 2rem 0 0.5rem 0;
-        max-width: 90%;
-        width: 100%;
+        position: absolute;
+        top: 2rem;
+        right: 2rem;
+        width: 300px;
         display: flex;
         flex-direction: column;
-        justify-content: center;
-        position: relative;
-    }
-
-    .search-input-container {
-        width: 300px;
-        margin: 0 3rem;
-    }
-
-    @media (max-width: 768px) {
-        .search-input-container {
-            width: 100%;
-            margin: 0 1rem;
-        }
+        z-index: 10;
     }
 
     .search-input-container {
         position: relative;
         display: flex;
         align-items: center;
-        max-width: 100%;
+        width: 100%;
     }
 
     .search-icon-wrapper {
@@ -7615,6 +7605,8 @@ You can preview the production build with `npm run preview`.
         border: 2px solid var(--colorLightGray);
         border-radius: 8px;
         transition: border-color 0.3s ease;
+        background-color: white;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
 
     .search-input:focus {
@@ -7641,8 +7633,6 @@ You can preview the production build with `npm run preview`.
     .search-results {
         position: absolute;
         top: 100%;
-        width: 300px;
-        margin: 0 3rem;
         left: 0;
         right: 0;
         background-color: white;
@@ -7703,9 +7693,26 @@ You can preview the production build with `npm run preview`.
     }
 
     /* Mobile-specific styles */
-    @media (max-width: 640px) {
+    @media (max-width: 768px) {
+        .search-container {
+            top: 1rem;
+            right: 1rem;
+            left: 1rem;
+            width: auto;
+        }
+        
         .swarmplot {
             height: 400px; /* Smaller height on mobile */
+        }
+    }
+
+    @media (max-width: 640px) {
+        .search-container {
+            position: relative;
+            top: 0;
+            right: 0;
+            left: 0;
+            margin: 2rem 1rem 0.5rem 1rem;
         }
     }
 </style>
@@ -10358,6 +10365,607 @@ export const getData = () => {
 }
 ```
 
+# src/lib/data/small_schools_expanded.json
+
+```json
+[
+  {
+    "School": "Boeckman Creek Primary School",
+    "School Year": "2023-2024",
+    "Total School Enrollment": 470.0,
+    "Per Pupil Spending": "$16935",
+    "Economically Disadvantaged %": "22.2%",
+    "Students w/Disabilities %": "16%",
+    "ELA Proficient & Above %": "54%",
+    "Math Proficient & Above %": "48%"
+  },
+  {
+    "School": "Bolton Primary School",
+    "School Year": "2023-2024",
+    "Total School Enrollment": 236.0,
+    "Per Pupil Spending": "$21306",
+    "Economically Disadvantaged %": "6.7%",
+    "Students w/Disabilities %": "16%",
+    "ELA Proficient & Above %": "80%",
+    "Math Proficient & Above %": "74%"
+  },
+  {
+    "School": "Boones Ferry Primary School",
+    "School Year": "2023-2024",
+    "Total School Enrollment": 475.0,
+    "Per Pupil Spending": "$18367",
+    "Economically Disadvantaged %": "25.9%",
+    "Students w/Disabilities %": "15%",
+    "ELA Proficient & Above %": "41%",
+    "Math Proficient & Above %": "37%"
+  },
+  {
+    "School": "Cedaroak Park Primary School",
+    "School Year": "2023-2024",
+    "Total School Enrollment": 336.0,
+    "Per Pupil Spending": "$17304",
+    "Economically Disadvantaged %": "11.1%",
+    "Students w/Disabilities %": "14%",
+    "ELA Proficient & Above %": "66%",
+    "Math Proficient & Above %": "72%"
+  },
+  {
+    "School": "Lowrie Primary School",
+    "School Year": "2023-2024",
+    "Total School Enrollment": 460.0,
+    "Per Pupil Spending": "$16388",
+    "Economically Disadvantaged %": "17.0%",
+    "Students w/Disabilities %": "11%",
+    "ELA Proficient & Above %": "56%",
+    "Math Proficient & Above %": "55%"
+  },
+  {
+    "School": "Stafford Primary School",
+    "School Year": "2023-2024",
+    "Total School Enrollment": 346.0,
+    "Per Pupil Spending": "$16759",
+    "Economically Disadvantaged %": "3.2%",
+    "Students w/Disabilities %": "14%",
+    "ELA Proficient & Above %": "69%",
+    "Math Proficient & Above %": "69%"
+  },
+  {
+    "School": "Sunset Primary School",
+    "School Year": "2023-2024",
+    "Total School Enrollment": 380.0,
+    "Per Pupil Spending": "$16951",
+    "Economically Disadvantaged %": "9.9%",
+    "Students w/Disabilities %": "20%",
+    "ELA Proficient & Above %": "66%",
+    "Math Proficient & Above %": "61%"
+  },
+  {
+    "School": "Trillium Creek Primary School",
+    "School Year": "2023-2024",
+    "Total School Enrollment": 491.0,
+    "Per Pupil Spending": "$16018",
+    "Economically Disadvantaged %": "4.7%",
+    "Students w/Disabilities %": "13%",
+    "ELA Proficient & Above %": "64%",
+    "Math Proficient & Above %": "62%"
+  },
+  {
+    "School": "Willamette Primary School",
+    "School Year": "2023-2024",
+    "Total School Enrollment": 388.0,
+    "Per Pupil Spending": "$16786",
+    "Economically Disadvantaged %": "13.1%",
+    "Students w/Disabilities %": "18%",
+    "ELA Proficient & Above %": "70%",
+    "Math Proficient & Above %": "68%"
+  },
+  {
+    "School": "Boeckman Creek Primary School",
+    "School Year": "2022-2023",
+    "Total School Enrollment": 472.0,
+    "Per Pupil Spending": "$16935",
+    "Economically Disadvantaged %": "25.6%",
+    "Students w/Disabilities %": "16%",
+    "ELA Proficient & Above %": "51%",
+    "Math Proficient & Above %": "42%"
+  },
+  {
+    "School": "Bolton Primary School",
+    "School Year": "2022-2023",
+    "Total School Enrollment": 216.0,
+    "Per Pupil Spending": "$21306",
+    "Economically Disadvantaged %": "9.9%",
+    "Students w/Disabilities %": "18%",
+    "ELA Proficient & Above %": "73%",
+    "Math Proficient & Above %": "69%"
+  },
+  {
+    "School": "Boones Ferry Primary School",
+    "School Year": "2022-2023",
+    "Total School Enrollment": 497.0,
+    "Per Pupil Spending": "$18367",
+    "Economically Disadvantaged %": "32.6%",
+    "Students w/Disabilities %": "16%",
+    "ELA Proficient & Above %": "48%",
+    "Math Proficient & Above %": "43%"
+  },
+  {
+    "School": "Cedaroak Park Primary School",
+    "School Year": "2022-2023",
+    "Total School Enrollment": 336.0,
+    "Per Pupil Spending": "$17304",
+    "Economically Disadvantaged %": "8.7%",
+    "Students w/Disabilities %": "16%",
+    "ELA Proficient & Above %": "67%",
+    "Math Proficient & Above %": "62%"
+  },
+  {
+    "School": "Lowrie Primary School",
+    "School Year": "2022-2023",
+    "Total School Enrollment": 476.0,
+    "Per Pupil Spending": "$16388",
+    "Economically Disadvantaged %": "21.1%",
+    "Students w/Disabilities %": "10%",
+    "ELA Proficient & Above %": "59%",
+    "Math Proficient & Above %": "54%"
+  },
+  {
+    "School": "Stafford Primary School",
+    "School Year": "2022-2023",
+    "Total School Enrollment": 355.0,
+    "Per Pupil Spending": "$16759",
+    "Economically Disadvantaged %": "6.8%",
+    "Students w/Disabilities %": "15%",
+    "ELA Proficient & Above %": "65%",
+    "Math Proficient & Above %": "70%"
+  },
+  {
+    "School": "Sunset Primary School",
+    "School Year": "2022-2023",
+    "Total School Enrollment": 371.0,
+    "Per Pupil Spending": "$16951",
+    "Economically Disadvantaged %": "10.4%",
+    "Students w/Disabilities %": "19%",
+    "ELA Proficient & Above %": "66%",
+    "Math Proficient & Above %": "58%"
+  },
+  {
+    "School": "Trillium Creek Primary School",
+    "School Year": "2022-2023",
+    "Total School Enrollment": 470.0,
+    "Per Pupil Spending": "$16018",
+    "Economically Disadvantaged %": "5.6%",
+    "Students w/Disabilities %": "12%",
+    "ELA Proficient & Above %": "68%",
+    "Math Proficient & Above %": "62%"
+  },
+  {
+    "School": "Willamette Primary School",
+    "School Year": "2022-2023",
+    "Total School Enrollment": 425.0,
+    "Per Pupil Spending": "$16786",
+    "Economically Disadvantaged %": "13.8%",
+    "Students w/Disabilities %": "18%",
+    "ELA Proficient & Above %": "62%",
+    "Math Proficient & Above %": "47%"
+  },
+  {
+    "School": "Boeckman Creek Primary School",
+    "School Year": "2021-2022",
+    "Total School Enrollment": 459,
+    "Per Pupil Spending": "$14529",
+    "Economically Disadvantaged %": "28%",
+    "Students w/Disabilities %": "14%",
+    "ELA Proficient & Above %": "46%",
+    "Math Proficient & Above %": "42%"
+  },
+  {
+    "School": "Bolton Primary School",
+    "School Year": "2021-2022",
+    "Total School Enrollment": 243,
+    "Per Pupil Spending": "$19622",
+    "Economically Disadvantaged %": "11%",
+    "Students w/Disabilities %": "12%",
+    "ELA Proficient & Above %": "79%",
+    "Math Proficient & Above %": "67%"
+  },
+  {
+    "School": "Boones Ferry Primary School",
+    "School Year": "2021-2022",
+    "Total School Enrollment": 492,
+    "Per Pupil Spending": "$15566",
+    "Economically Disadvantaged %": "32%",
+    "Students w/Disabilities %": "15%",
+    "ELA Proficient & Above %": "37%",
+    "Math Proficient & Above %": "34%"
+  },
+  {
+    "School": "Cedaroak Park Primary School",
+    "School Year": "2021-2022",
+    "Total School Enrollment": 345,
+    "Per Pupil Spending": "$14918",
+    "Economically Disadvantaged %": "9%",
+    "Students w/Disabilities %": "11%",
+    "ELA Proficient & Above %": "67%",
+    "Math Proficient & Above %": "62%"
+  },
+  {
+    "School": "Lowrie Primary School",
+    "School Year": "2021-2022",
+    "Total School Enrollment": 473,
+    "Per Pupil Spending": "$14708",
+    "Economically Disadvantaged %": "21%",
+    "Students w/Disabilities %": "9%",
+    "ELA Proficient & Above %": "59%",
+    "Math Proficient & Above %": "53%"
+  },
+  {
+    "School": "Stafford Primary School",
+    "School Year": "2021-2022",
+    "Total School Enrollment": 360,
+    "Per Pupil Spending": "$14969",
+    "Economically Disadvantaged %": "7%",
+    "Students w/Disabilities %": "13%",
+    "ELA Proficient & Above %": "63%",
+    "Math Proficient & Above %": "67%"
+  },
+  {
+    "School": "Sunset Primary School",
+    "School Year": "2021-2022",
+    "Total School Enrollment": 367,
+    "Per Pupil Spending": "$15387",
+    "Economically Disadvantaged %": "10%",
+    "Students w/Disabilities %": "14%",
+    "ELA Proficient & Above %": "69%",
+    "Math Proficient & Above %": "63%"
+  },
+  {
+    "School": "Trillium Creek Primary School",
+    "School Year": "2021-2022",
+    "Total School Enrollment": 462,
+    "Per Pupil Spending": "$14430",
+    "Economically Disadvantaged %": "7%",
+    "Students w/Disabilities %": "10%",
+    "ELA Proficient & Above %": "73%",
+    "Math Proficient & Above %": "64%"
+  },
+  {
+    "School": "Willamette Primary School",
+    "School Year": "2021-2022",
+    "Total School Enrollment": 424,
+    "Per Pupil Spending": "$14599",
+    "Economically Disadvantaged %": "16%",
+    "Students w/Disabilities %": "15%",
+    "ELA Proficient & Above %": "56%",
+    "Math Proficient & Above %": "48%"
+  },
+  {
+    "School": "Boeckman Creek Primary School",
+    "School Year": "2018-2019",
+    "Total School Enrollment": 545,
+    "Per Pupil Spending": "$",
+    "Per Pupil Spending Data Source": "",
+    "Economically Disadvantaged %": "33%",
+    "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
+    "Students w/Disabilities %": "15%",
+    "ELA Proficient & Above %": "63%",
+    "Math Proficient & Above %": "58%"
+  },
+  {
+    "School": "Bolton Primary School",
+    "School Year": "2018-2019",
+    "Total School Enrollment": 348,
+    "Per Pupil Spending": "$",
+    "Per Pupil Spending Data Source": "",
+    "Economically Disadvantaged %": "13%",
+    "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
+    "Students w/Disabilities %": "11%",
+    "ELA Proficient & Above %": "75%",
+    "Math Proficient & Above %": "60%"
+  },
+  {
+    "School": "Boones Ferry Primary School",
+    "School Year": "2018-2019",
+    "Total School Enrollment": 623,
+    "Per Pupil Spending": "$",
+    "Per Pupil Spending Data Source": "",
+    "Economically Disadvantaged %": "37%",
+    "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
+    "Students w/Disabilities %": "14%",
+    "ELA Proficient & Above %": "60%",
+    "Math Proficient & Above %": "49%"
+  },
+  {
+    "School": "Cedaroak Park Primary School",
+    "School Year": "2018-2019",
+    "Total School Enrollment": 287,
+    "Per Pupil Spending": "$",
+    "Per Pupil Spending Data Source": "",
+    "Economically Disadvantaged %": "8%",
+    "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
+    "Students w/Disabilities %": "17%",
+    "ELA Proficient & Above %": "76%",
+    "Math Proficient & Above %": "66%"
+  },
+  {
+    "School": "Lowrie Primary School",
+    "School Year": "2018-2019",
+    "Total School Enrollment": 551,
+    "Per Pupil Spending": "$",
+    "Per Pupil Spending Data Source": "",
+    "Economically Disadvantaged %": "24%",
+    "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
+    "Students w/Disabilities %": "11%",
+    "ELA Proficient & Above %": "64%",
+    "Math Proficient & Above %": "55%"
+  },
+  {
+    "School": "Stafford Primary School",
+    "School Year": "2018-2019",
+    "Total School Enrollment": 433,
+    "Per Pupil Spending": "$",
+    "Per Pupil Spending Data Source": "",
+    "Economically Disadvantaged %": "10%",
+    "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
+    "Students w/Disabilities %": "16%",
+    "ELA Proficient & Above %": "74%",
+    "Math Proficient & Above %": "65%"
+  },
+  {
+    "School": "Sunset Primary School",
+    "School Year": "2018-2019",
+    "Total School Enrollment": 347,
+    "Per Pupil Spending": "$",
+    "Per Pupil Spending Data Source": "",
+    "Economically Disadvantaged %": "13%",
+    "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
+    "Students w/Disabilities %": "12%",
+    "ELA Proficient & Above %": "78%",
+    "Math Proficient & Above %": "73%"
+  },
+  {
+    "School": "Trillium Creek Primary School",
+    "School Year": "2018-2019",
+    "Total School Enrollment": 582,
+    "Per Pupil Spending": "$",
+    "Per Pupil Spending Data Source": "",
+    "Economically Disadvantaged %": "6%",
+    "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
+    "Students w/Disabilities %": "11%",
+    "ELA Proficient & Above %": "78%",
+    "Math Proficient & Above %": "69%"
+  },
+  {
+    "School": "Willamette Primary School",
+    "School Year": "2018-2019",
+    "Total School Enrollment": 525,
+    "Per Pupil Spending": "$",
+    "Per Pupil Spending Data Source": "",
+    "Economically Disadvantaged %": "15%",
+    "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
+    "Students w/Disabilities %": "14%",
+    "ELA Proficient & Above %": "76%",
+    "Math Proficient & Above %": "67%"
+  },
+  {
+    "School": "Boeckman Creek Primary School",
+    "School Year": "2017-2018",
+    "Total School Enrollment": 522,
+    "Per Pupil Spending": "$x",
+    "Per Pupil Spending Data Source": "",
+    "Economically Disadvantaged %": "32%",
+    "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
+    "Students w/Disabilities %": "15%",
+    "ELA Proficient & Above %": "59%",
+    "Math Proficient & Above %": "52%"
+  },
+  {
+    "School": "Bolton Primary School",
+    "School Year": "2017-2018",
+    "Total School Enrollment": 378,
+    "Per Pupil Spending": "$x",
+    "Per Pupil Spending Data Source": "",
+    "Economically Disadvantaged %": "11%",
+    "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
+    "Students w/Disabilities %": "10%",
+    "ELA Proficient & Above %": "80%",
+    "Math Proficient & Above %": "69%"
+  },
+  {
+    "School": "Boones Ferry Primary School",
+    "School Year": "2017-2018",
+    "Total School Enrollment": 597,
+    "Per Pupil Spending": "$x",
+    "Per Pupil Spending Data Source": "",
+    "Economically Disadvantaged %": "38%",
+    "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
+    "Students w/Disabilities %": "15%",
+    "ELA Proficient & Above %": "62%",
+    "Math Proficient & Above %": "49%"
+  },
+  {
+    "School": "Cedaroak Park Primary School",
+    "School Year": "2017-2018",
+    "Total School Enrollment": 291,
+    "Per Pupil Spending": "$x",
+    "Per Pupil Spending Data Source": "",
+    "Economically Disadvantaged %": "10%",
+    "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
+    "Students w/Disabilities %": "15%",
+    "ELA Proficient & Above %": "71%",
+    "Math Proficient & Above %": "64%"
+  },
+  {
+    "School": "Lowrie Primary School",
+    "School Year": "2017-2018",
+    "Total School Enrollment": 573,
+    "Per Pupil Spending": "$x",
+    "Per Pupil Spending Data Source": "",
+    "Economically Disadvantaged %": "27%",
+    "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
+    "Students w/Disabilities %": "13%",
+    "ELA Proficient & Above %": "66%",
+    "Math Proficient & Above %": "61%"
+  },
+  {
+    "School": "Stafford Primary School",
+    "School Year": "2017-2018",
+    "Total School Enrollment": 451,
+    "Per Pupil Spending": "$x",
+    "Per Pupil Spending Data Source": "",
+    "Economically Disadvantaged %": "6%",
+    "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
+    "Students w/Disabilities %": "13%",
+    "ELA Proficient & Above %": "77%",
+    "Math Proficient & Above %": "70%"
+  },
+  {
+    "School": "Sunset Primary School",
+    "School Year": "2017-2018",
+    "Total School Enrollment": 329,
+    "Per Pupil Spending": "$x",
+    "Per Pupil Spending Data Source": "",
+    "Economically Disadvantaged %": "16%",
+    "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
+    "Students w/Disabilities %": "12%",
+    "ELA Proficient & Above %": "80%",
+    "Math Proficient & Above %": "82%"
+  },
+  {
+    "School": "Trillium Creek Primary School",
+    "School Year": "2017-2018",
+    "Total School Enrollment": 609,
+    "Per Pupil Spending": "$x",
+    "Per Pupil Spending Data Source": "",
+    "Economically Disadvantaged %": "6%",
+    "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
+    "Students w/Disabilities %": "10%",
+    "ELA Proficient & Above %": "77%",
+    "Math Proficient & Above %": "75%"
+  },
+  {
+    "School": "Willamette Primary School",
+    "School Year": "2017-2018",
+    "Total School Enrollment": 562,
+    "Per Pupil Spending": "$x",
+    "Per Pupil Spending Data Source": "",
+    "Economically Disadvantaged %": "16%",
+    "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
+    "Students w/Disabilities %": "12%",
+    "ELA Proficient & Above %": "73%",
+    "Math Proficient & Above %": "66%"
+  },
+  {
+    "School": "Boeckman Creek Primary School",
+    "School Year": "2016-2017",
+    "Total School Enrollment": 508,
+    "Per Pupil Spending": "$",
+    "Per Pupil Spending Data Source": "",
+    "Economically Disadvantaged %": "33%",
+    "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
+    "Students w/Disabilities %": "14%",
+    "ELA Proficient & Above %": "64.9%",
+    "Math Proficient & Above %": "61.7%"
+  },
+  {
+    "School": "Bolton Primary School",
+    "School Year": "2016-2017",
+    "Total School Enrollment": 386,
+    "Per Pupil Spending": "$",
+    "Per Pupil Spending Data Source": "",
+    "Economically Disadvantaged %": "13%",
+    "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
+    "Students w/Disabilities %": "10%",
+    "ELA Proficient & Above %": "82.8%",
+    "Math Proficient & Above %": "70.4%"
+  },
+  {
+    "School": "Boones Ferry Primary School",
+    "School Year": "2016-2017",
+    "Total School Enrollment": 559,
+    "Per Pupil Spending": "$",
+    "Per Pupil Spending Data Source": "",
+    "Economically Disadvantaged %": "40%",
+    "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
+    "Students w/Disabilities %": "14%",
+    "ELA Proficient & Above %": "61.8%",
+    "Math Proficient & Above %": "53.2%"
+  },
+  {
+    "School": "Cedaroak Park Primary School",
+    "School Year": "2016-2017",
+    "Total School Enrollment": 309,
+    "Per Pupil Spending": "$",
+    "Per Pupil Spending Data Source": "",
+    "Economically Disadvantaged %": "17%",
+    "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
+    "Students w/Disabilities %": "12%",
+    "ELA Proficient & Above %": "71.3%",
+    "Math Proficient & Above %": "66.5%"
+  },
+  {
+    "School": "Lowrie Primary School",
+    "School Year": "2016-2017",
+    "Total School Enrollment": 562,
+    "Per Pupil Spending": "$",
+    "Per Pupil Spending Data Source": "",
+    "Economically Disadvantaged %": "32%",
+    "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
+    "Students w/Disabilities %": "12%",
+    "ELA Proficient & Above %": "61.1%",
+    "Math Proficient & Above %": "54.8%"
+  },
+  {
+    "School": "Stafford Primary School",
+    "School Year": "2016-2017",
+    "Total School Enrollment": 449,
+    "Per Pupil Spending": "$",
+    "Per Pupil Spending Data Source": "",
+    "Economically Disadvantaged %": "8%",
+    "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
+    "Students w/Disabilities %": "10%",
+    "ELA Proficient & Above %": "78.8%",
+    "Math Proficient & Above %": "68.2%"
+  },
+  {
+    "School": "Sunset Primary School",
+    "School Year": "2016-2017",
+    "Total School Enrollment": 326,
+    "Per Pupil Spending": "$",
+    "Per Pupil Spending Data Source": "",
+    "Economically Disadvantaged %": "21%",
+    "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
+    "Students w/Disabilities %": "9%",
+    "ELA Proficient & Above %": "80.1%",
+    "Math Proficient & Above %": "71.3%"
+  },
+  {
+    "School": "Trillium Creek Primary School",
+    "School Year": "2016-2017",
+    "Total School Enrollment": 612,
+    "Per Pupil Spending": "$",
+    "Per Pupil Spending Data Source": "",
+    "Economically Disadvantaged %": "8%",
+    "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
+    "Students w/Disabilities %": "9%",
+    "ELA Proficient & Above %": "73.4%",
+    "Math Proficient & Above %": "65.2%"
+  },
+  {
+    "School": "Willamette Primary School",
+    "School Year": "2016-2017",
+    "Total School Enrollment": 571,
+    "Per Pupil Spending": "$",
+    "Per Pupil Spending Data Source": "",
+    "Economically Disadvantaged %": "13%",
+    "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
+    "Students w/Disabilities %": "10%",
+    "ELA Proficient & Above %": "79.8%",
+    "Math Proficient & Above %": "75.5%"
+  }
+]
+```
+
 # src/lib/data/small_schools.json
 
 ```json
@@ -11380,7 +11988,7 @@ export const prerender = true
             </h3>
         
             <p class="text-width">
-                Maybe you've had this experience: meeting with a team of educators, specialists, and administrators to discuss your student's Individualized Education Program (IEP), but you feel like the systems at play are opaque. No matter how much everyone wants to do the right thing, you get the sense that your child's classroom placement isn't really about your child, but about the existing structures. When the team suggests something like pulling your child out of regular classes for most of the day, something feels off.
+                Maybe you've had this experience: meeting with a team of educators, specialists, and administrators to discuss your student's Individualized Education Program (IEP), but you feel like the systems you're navigating aren't transparent. No matter how much everyone wants to do the right thing, you get the sense that your child's classroom placement isn't actually about your child, but about existing structures. When the team suggests something like pulling your child out of regular classes for most of the day, something feels off.
             </p>
             <p class="text-width">
                 Missing from these discussions is context: How do the services in your district compare to other districts? Are there districts doing a better job of including students with disabilities? This tool helps you explore these questions using data reported by school districts each year.
@@ -11412,7 +12020,7 @@ export const prerender = true
                     {#if isDistrictSelected}
                         <section>
                             <ScrollyCard active={index === 0}>
-                                Every dot here represents a school district in <strong>Oregon</strong>. But they're not randomly scattered--districts where students with disabilities spend <strong><em>more</em> time in a regular classroom</strong> are on the <strong>right</strong>. Districts where they spend <strong><em>less</em></strong> are on the <strong>left</strong>
+                                Every dot here represents a school district in <strong>Oregon</strong>. But they're not randomly scattered...districts where students with disabilities spend <strong><em>more</em> time in a regular classroom</strong> are on the <strong>right</strong>. Districts where they spend <strong><em>less</em></strong> are on the <strong>left</strong>
                             </ScrollyCard>
                         </section>
                         <section>
@@ -11422,7 +12030,7 @@ export const prerender = true
                         </section>
                         <section>
                             <ScrollyCard active={index === 2}>
-                                Based on state data, if your child has a disability in <strong>{$primaryDistrictData?.properties["Institution Name"]}</strong>, on average they're likely to <strong>spend {Math.round($primaryDistrictData?.properties["average_separation_time"] || 0)}%</strong> of their day <strong>separated from typical peers</strong>. This varies, of course, depending on the individual level of needs
+                                Based on state data, if your child has a disability in <strong>{$primaryDistrictData?.properties["Institution Name"]}</strong>, on average they're likely to <strong>spend {Math.round($primaryDistrictData?.properties["average_separation_time"] || 0)}%</strong> of their day <strong>separated from typical peers</strong>. This varies, of course, depending on individual level of needs
                             </ScrollyCard>
                         </section>
                         <section>
@@ -11437,7 +12045,7 @@ export const prerender = true
                         </section>
                         <section>
                             <ScrollyCard active={index === 5}>
-                                This isn't even necessarily about resources or good intentions--we all want what's best for kids. It's about having examples of what's possible. Some districts have developed systems that <strong>prioritize inclusion</strong>
+                                This isn't even necessarily about resources or good intentions; we all want what's best for kids. It's about having examples of what's possible. Some districts have developed systems that <strong>prioritize inclusion</strong>
                             </ScrollyCard>
                         </section>
                         <section>
@@ -11447,7 +12055,7 @@ export const prerender = true
                         </section>
                         <section>
                             <ScrollyCard active={index === 7}>
-                                Now you can explore what's working and what's not in other districts. <strong>Dig in deeper</strong> for any district by <strong>selecting 'more'</strong> in the tooltip or table below
+                                Now you can explore what's working, and what's not, in other districts. <strong>Dig in deeper</strong> for any district by <strong>selecting 'more'</strong> in the tooltip or table below
                             </ScrollyCard>
                         </section>
                     {:else}
@@ -11801,7 +12409,7 @@ export async function load({ params }) {
     
     <div class="header-headline-container">
         <div class="headline-container">
-            <h1 class="headline">Oregon's special education funding problem: the 11% cap</h1>
+            <h1 class="headline">The 11% cap: is it enough for Oregon's students with disabilities?</h1>
         </div>
         
         {#if windowWidth > 768}
@@ -11814,6 +12422,20 @@ export async function load({ params }) {
 
     <div class="content-container">
 
+        <div class="text-width">
+            <h3 class="byline">
+                Updated with data from the 2023-24 school year
+            </h3>
+
+            <p> 
+                Oregon caps special education funding at 11% of each school district's enrollment. If there are any students beyond that number, the <strong>districts have to fund those services themselves.</strong>
+            </p>
+
+            <p>
+                Want to see how many districts fall under that cap?
+            </p>
+        </div>
+
         <div class="map-container">
             <div>
                 <SwarmIdentificationSize />
@@ -11825,31 +12447,49 @@ export async function load({ params }) {
         </div>
 
         <div class="text-width last-text">
-            <h3 class="byline">
-                Updated with data from the 2023-24 school year
-            </h3>
+            <p>
+                Almost none of them.
+            </p>
 
+            <h3>
+                The funding shortfall
+            </h3>
             <p> 
-                Oregon's special education funding cap falls significantly short of meeting the needs of school districts across the state. The majority of Oregon's districts fall well above the threshold, with many more than 11% of their students needing Individualized Education Plans (IEPs).
+                When districts serve students beyond the 11% threshold, they absorb those costs locally. This creates a funding gap that districts must address through other means.
+            </p>
+            <p>
+                What does this mean for students? Educators know that every month of delay makes intervention harder, and that the earlier you intervene, the less expensive and more effective support becomes. That's why you see so many districts continuing to identify students beyond, in many cases way beyond, the 11% cap. Oregon's system punishes exactly the approach that works best for kids, and costs less in the long run.
             </p>
 
             <h3>
-                What does this mean?
+                The lonely funding cap club
             </h3>
             <p>
-                This funding structure creates a disincentive for districts to identify students with disabilities. When districts identify students beyond the 11% cap, they must absorb costs not funded by the state. Despite this disincentive, districts are still identifying many more students as needing supports. When a student receives supports sooner rather than later, their trajectory improves dramatically.
+                Turns out, only <strong>five other states</strong> in the entire country cap special education funding. Not only that, but Oregon's cap is the lowest of all of them. By a lot.
             </p>
-            <h3>
-                How does this compare to other states?
-            </h3>
             <p>
-                Only seven other states have a cap on special education funding. None of them are as low as Oregon's 11%. This cap was set in the early 1990s and hasn't changed since.
+                The cap was set in the early 1990s, back when we understood far less about learning differences and intervention strategies. It hasn't budged since, even as our knowledge about supporting students with disabilities has transformed completely.
             </p>
+
             <h3>
-                Next steps
+                What this means
             </h3>
             <p>
-                Talk to your legislators (find them <a href="https://geo.maps.arcgis.com/apps/instant/lookup/index.html?appid=fd070b56c975456ea2a25f7e3f4289d1" target="_blank">here</a>). There is a bill moving through the state legislature to <a href="https://olis.oregonlegislature.gov/liz/2025R1/Measures/Overview/HB2953" target="_blank">remove the special education funding cap</a>. Another one would <a href="https://olis.oregonlegislature.gov/liz/2025R1/Measures/Overview/HB2448" target="_blank">increase funds to the High Cost Disabilities Account</a>. <a href="https://www.myactionalerts.com/action/specialeducationfunding" target="_blank">Tell your legislators</a> that you support these bills and want to see them passed.
+                The consistent gap between the funding cap and actual student need suggests a structural mismatch. Districts across Oregon are identifying students who need special education services at rates significantly higher than what the state funds.
+            </p>
+            <p>
+                This isn't about any single district's approach, it's a statewide pattern.
+            </p>
+
+            <h3>
+                What can you do?
+            </h3>
+            <p>
+                Legislators are currently considering bills to address this funding gap, but with a revenue forecast much lower than expected, the bills are at risk of being sidelined. They need to hear from you that this is a priority for Oregon's students and families.
+            </p>
+            <p>
+                 Let <a href="https://geo.maps.arcgis.com/apps/instant/lookup/index.html?appid=fd070b56c975456ea2a25f7e3f4289d1" target="_blank">your legislators</a> know you support
+                 <a href="https://olis.oregonlegislature.gov/liz/2025R1/Measures/Overview/HB2953" target="_blank">HB 2953</a> to remove the special education funding cap and <a href="https://olis.oregonlegislature.gov/liz/2025R1/Measures/Overview/HB2448" target="_blank">HB 2448</a> to increase funds to the High Cost Disabilities Account. <a href="https://www.myactionalerts.com/action/specialeducationfunding" target="_blank">Here's an easy-to-email form.</a>
             </p>
         </div>
 
@@ -12381,10 +13021,6 @@ export async function load({ params }) {
         .headline {
             margin-top: 3rem;
         }
-    }
-    
-    .intro {
-        margin: 1rem auto 2rem;
     }
     
     .viz-container {

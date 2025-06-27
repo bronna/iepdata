@@ -40,7 +40,7 @@
             </h3>
 
             <p> 
-                Oregon caps special education funding at 11% of each school district's enrollment. If there are any students beyond that number, the <strong>districts have to fund those services themselves.</strong>
+                Oregon caps special education funding at 11% of each school district's enrollment. If there are any students beyond that number, <strong>districts have to fund those services themselves.</strong>
             </p>
 
             <p>
@@ -97,11 +97,10 @@
                 What can you do?
             </h3>
             <p>
-                Legislators are currently considering bills to address this funding gap, but with a revenue forecast much lower than expected, the bills are at risk of being sidelined. They need to hear from you that this is a priority for Oregon's students and families.
+                Unfortunately, legislators decided not to modify the funding cap in the 2025 session.  <a href="https://olis.oregonlegislature.gov/liz/2025R1/Measures/Overview/HB2953" target="_blank">HB 2953</a> would have removed the cap, and <a href="https://olis.oregonlegislature.gov/liz/2025R1/Measures/Overview/HB2448" target="_blank">HB 2448</a> would have increased funding to the High Cost Disabilities Account, but neither bill passed.
             </p>
             <p>
-                 Let <a href="https://geo.maps.arcgis.com/apps/instant/lookup/index.html?appid=fd070b56c975456ea2a25f7e3f4289d1" target="_blank">your legislators</a> know you support
-                 <a href="https://olis.oregonlegislature.gov/liz/2025R1/Measures/Overview/HB2953" target="_blank">HB 2953</a> to remove the special education funding cap and <a href="https://olis.oregonlegislature.gov/liz/2025R1/Measures/Overview/HB2448" target="_blank">HB 2448</a> to increase funds to the High Cost Disabilities Account. <a href="https://www.myactionalerts.com/action/specialeducationfunding" target="_blank">Here's an easy-to-email form.</a>
+                This is not the end of the road, however. Your state representative and senator need to hear from you about the impact of the funding cap on your students and your district. If you want to see change, <a href="https://geo.maps.arcgis.com/apps/instant/lookup/index.html?appid=fd070b56c975456ea2a25f7e3f4289d1" target="_blank">reach out</a> to them and let them know how this affects you.
             </p>
         </div>
 

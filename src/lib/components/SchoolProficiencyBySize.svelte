@@ -1,39 +1,75 @@
 <script>
-    import { onMount } from 'svelte';
-    import { scaleLinear, scaleSqrt } from 'd3-scale';
-    import { extent } from 'd3-array';
-    import { colors } from '$lib/styles/colorConfig';
-    import SVGChart from '$lib/components/SVGChart.svelte';
+    import { scaleLinear } from 'd3-scale'
+    import { extent } from 'd3-array'
+    import { colors } from '$lib/styles/colorConfig'
+    import SVGChart from '$lib/components/SVGChart.svelte'
     
     // Import the small schools data
-    import smallSchoolsData from '$lib/data/small_schools.json';
+    import smallSchoolsData from '$lib/data/small_schools_expanded.json';
 
     export let width = 800;
     export let height = 500;
 
     // State variables
     let showSchoolLines = false;
-    let selectedCategories = []; // Array to track multiple selected categories
+    let selectedCategories = ['Low', 'Medium', 'High']; // Array to track multiple selected categories
+    let selectedPeriod = 'post-covid'; // 'pre-covid' or 'post-covid'
+    let selectedMetric = 'combined'; // 'economic', 'disability', 'combined'
+    
+    // Define the periods based on our methodological discussion
+    const periods = {
+        'pre-covid': {
+            label: 'Pre-COVID (2016-2019)',
+            years: ['2016-2017', '2017-2018', '2018-2019'],
+            description: 'Data collected using pre-2021 ODE methodology'
+        },
+        'post-covid': {
+            label: 'Post-COVID (2021-2024)',
+            years: ['2021-2022', '2022-2023', '2023-2024'],
+            description: 'Data collected using updated ODE methodology'
+        }
+    };
+
+    // Define the disadvantage metrics
+    const disadvantageMetrics = {
+        'economic': {
+            label: 'Economic Disadvantage Only',
+            description: 'Based on economically disadvantaged students only'
+        },
+        'disability': {
+            label: 'Disability Only',
+            description: 'Based on students with disabilities only'
+        },
+        'combined': {
+            label: 'Combined Disadvantage',
+            description: 'Based on economically disadvantaged + students with disabilities'
+        }
+    };
     
     // Process the imported data to match our component's needs
-    $: schoolData = smallSchoolsData.map(school => {
+    $: allSchoolData = smallSchoolsData.map(school => {
         // Parse numeric values and calculate proficiency as average of ELA and Math
-        const elaProf = parseInt(school["ELA Proficient & Above %"]?.replace(/%/g, '') || "0");
-        const mathProf = parseInt(school["Math Proficient & Above %"]?.replace(/%/g, '') || "0");
+        const elaProf = parseFloat(school["ELA Proficient & Above %"]?.replace(/%/g, '') || "0");
+        const mathProf = parseFloat(school["Math Proficient & Above %"]?.replace(/%/g, '') || "0");
         const proficiency = (elaProf + mathProf) / 2;
         
         // Parse other numeric fields
-        const econDisadv = parseInt(school["Economically Disadvantaged %"]?.replace(/%/g, '') || "0");
-        const disability = parseInt(school["Students w/Disabilities %"]?.replace(/%/g, '') || "0");
-        const spending = parseInt(school["Per Pupil Spending"].replace(/\$|,/g, ''));
+        const econDisadv = parseFloat(school["Economically Disadvantaged %"]?.replace(/%/g, '') || "0");
+        const disability = parseFloat(school["Students w/Disabilities %"]?.replace(/%/g, '') || "0");
+        const spendingStr = school["Per Pupil Spending"]?.replace(/\$|,/g, '') || "0";
+        const spending = spendingStr === "" || spendingStr === "x" ? 0 : parseInt(spendingStr);
         const students = school["Total School Enrollment"];
         
         // Create simplified school name
         const shortName = school.School.replace(" Primary School", "");
         
-        // Assign year order for connecting lines
-        const yearOrder = school["School Year"] === "2021-2022" ? 1 : 
-                         school["School Year"] === "2022-2023" ? 2 : 3;
+        // Assign year order for connecting lines within each period
+        let yearOrder;
+        if (periods['pre-covid'].years.includes(school["School Year"])) {
+            yearOrder = periods['pre-covid'].years.indexOf(school["School Year"]) + 1;
+        } else if (periods['post-covid'].years.includes(school["School Year"])) {
+            yearOrder = periods['post-covid'].years.indexOf(school["School Year"]) + 1;
+        }
         
         return {
             school: shortName,
@@ -43,9 +79,13 @@
             disability: disability,
             proficiency: proficiency,
             spending: spending,
-            yearOrder: yearOrder
+            yearOrder: yearOrder,
+            period: periods['pre-covid'].years.includes(school["School Year"]) ? 'pre-covid' : 'post-covid'
         };
     });
+
+    // Filter data based on selected period
+    $: schoolData = allSchoolData.filter(school => school.period === selectedPeriod);
     
     // Tooltip state
     let tooltipVisible = false;
@@ -56,7 +96,7 @@
     let dimensions = {
         width,
         height,
-        margin: { top: 40, right: 150, bottom: 80, left: 70 },
+        margin: { top: 40, right: 350, bottom: 80, left: 70 },
         innerWidth: 0,
         innerHeight: 0
     };
@@ -66,33 +106,74 @@
         dimensions.innerHeight = height - dimensions.margin.top - dimensions.margin.bottom;
     }
 
-    // Define disadvantage categories with colors
-    const getDisadvantageCategory = (totalDisadv) => {
-        if (totalDisadv < 24) return { category: 'Low', color: '#01b6e1' }; // Blue
-        if (totalDisadv < 31) return { category: 'Medium', color: '#9acd32' }; // Green
+    // Get the disadvantage value based on selected metric
+    const getDisadvantageValue = (school, metric) => {
+        switch (metric) {
+            case 'economic':
+                return school.econDisadv;
+            case 'disability':
+                return school.disability;
+            case 'combined':
+            default:
+                return school.econDisadv + school.disability;
+        }
+    };
+
+    // Calculate dynamic thresholds for equal distribution across categories
+    $: periodThresholds = (() => {
+        const periodData = allSchoolData.filter(school => school.period === selectedPeriod);
+        const disadvValues = periodData.map(school => getDisadvantageValue(school, selectedMetric)).sort((a, b) => a - b);
+        
+        if (disadvValues.length === 0) return { low: 0, high: 100 };
+        
+        const n = disadvValues.length;
+        
+        // For equal tertiles, we want as close to n/3 in each group as possible
+        // Calculate the exact indices for tertile splits
+        const lowIndex = Math.floor(n / 3) - 1; // Index of last item in low group
+        const highIndex = Math.floor(2 * n / 3) - 1; // Index of last item in medium group
+        
+        // The thresholds are the values at these positions
+        // We add a small amount to ensure clean breaks
+        const lowThreshold = disadvValues[lowIndex] + 0.001;
+        const highThreshold = disadvValues[highIndex] + 0.001;
+        
+        return { low: lowThreshold, high: highThreshold };
+    })();
+
+    // Define disadvantage categories with equal distribution
+    const getDisadvantageCategory = (disadvValue) => {
+        const thresholds = periodThresholds;
+        
+        if (disadvValue < thresholds.low) return { category: 'Low', color: '#01b6e1' }; // Blue
+        if (disadvValue < thresholds.high) return { category: 'Medium', color: '#9acd32' }; // Green
         return { category: 'High', color: '#ff9900' }; // Orange
     };
 
     // Process data
     $: coloredData = schoolData.map(item => {
-        const totalDisadv = item.econDisadv + item.disability;
-        const { category, color } = getDisadvantageCategory(totalDisadv);
+        const disadvValue = getDisadvantageValue(item, selectedMetric);
+        const { category, color } = getDisadvantageCategory(disadvValue);
         return {
             ...item,
-            totalDisadv,
+            disadvValue,
+            totalDisadv: item.econDisadv + item.disability, // Keep for tooltip
             color: color,
             disadvCategory: category
         };
     });
 
-    // Create scales
+    // Create scales - dynamic based on data
+    $: xExtent = extent(coloredData, d => d.students);
+    $: yExtent = extent(coloredData, d => d.proficiency);
+    
     $: xScale = scaleLinear()
-        .domain([200, 550])
+        .domain([Math.max(200, xExtent[0] - 50), xExtent[1] + 50])
         .range([0, dimensions.innerWidth])
         .nice();
 
     $: yScale = scaleLinear()
-        .domain([30, 80])
+        .domain([Math.max(30, yExtent[0] - 5), Math.min(85, yExtent[1] + 5)])
         .range([dimensions.innerHeight, 0])
         .nice();
 
@@ -179,20 +260,36 @@
             };
         }).filter(Boolean); // Remove null entries
         
-        console.log('Category trendlines:', trendlines); // Debug log
         return trendlines;
     })();
 
     // Format functions
     const formatNumber = num => num.toLocaleString();
-    const formatMoney = value => `$${value.toLocaleString()}`;
+    const formatMoney = value => value > 0 ? `$${value.toLocaleString()}` : 'N/A';
 
-    // Legend data
-    const categoricalLegend = [
-        { category: 'Low Disadvantage', range: '<24%', color: '#01b6e1' },
-        { category: 'Medium Disadvantage', range: '24-30%', color: '#9acd32' },
-        { category: 'High Disadvantage', range: '31%+', color: '#ff9900' }
-    ];
+    // Get the metric label for display
+    const getMetricLabel = (metric) => {
+        switch (metric) {
+            case 'economic':
+                return 'Economic Disadvantage';
+            case 'disability':
+                return 'Students with Disabilities';
+            case 'combined':
+            default:
+                return 'Combined Disadvantage';
+        }
+    };
+
+    // Legend data - dynamic based on period and actual thresholds
+    $: categoricalLegend = (() => {
+        const thresholds = periodThresholds;
+        const metricLabel = getMetricLabel(selectedMetric);
+        return [
+            { category: `Low ${metricLabel}`, range: `<${thresholds.low.toFixed(1)}%`, color: '#01b6e1' },
+            { category: `Medium ${metricLabel}`, range: `${thresholds.low.toFixed(1)}%-${(thresholds.high - 0.001).toFixed(1)}%`, color: '#9acd32' },
+            { category: `High ${metricLabel}`, range: `≥${thresholds.high.toFixed(1)}%`, color: '#ff9900' }
+        ];
+    })();
 
     // Handle tooltip
     function showTooltip(item, event) {
@@ -221,8 +318,27 @@
 
 <div class="chart-container" bind:clientWidth={width}>
     <div class="controls">
-        <h2 class="text-width">School Size, % Disadvantaged and Proficiency (All Years)</h2>
-        <p class="subtitle">Color indicates total disadvantaged % (economic + disability)</p>
+        <h2 class="text-width">School Size, % Disadvantaged and Proficiency</h2>
+        
+        <!-- Period and Metric selectors -->
+        <div class="selector-container">
+            <div class="period-selector">
+                <label for="period-select" class="period-label">Data Period:</label>
+                <select id="period-select" bind:value={selectedPeriod} class="period-dropdown">
+                    <option value="post-covid">{periods['post-covid'].label}</option>
+                    <option value="pre-covid">{periods['pre-covid'].label}</option>
+                </select>
+            </div>
+            
+            <div class="metric-selector">
+                <label for="metric-select" class="metric-label">Disadvantage Metric:</label>
+                <select id="metric-select" bind:value={selectedMetric} class="metric-dropdown">
+                    <option value="combined">{disadvantageMetrics['combined'].label}</option>
+                    <option value="economic">{disadvantageMetrics['economic'].label}</option>
+                    <option value="disability">{disadvantageMetrics['disability'].label}</option>
+                </select>
+            </div>
+        </div>
         
         <!-- Legend with integrated checkboxes -->
         <div class="legend-container">
@@ -408,7 +524,7 @@
                                 font-weight="600"
                                 dominant-baseline="middle"
                             >
-                                {trendline.category} Disadvantage
+                                {trendline.category} {getMetricLabel(selectedMetric)}
                             </text>
                         {/if}
                     {/each}
@@ -451,15 +567,15 @@
                     </div>
                     <div class="tooltip-row">
                         <span class="tooltip-label">Econ. Disadvantaged:</span>
-                        <span class="tooltip-value">{tooltipData.econDisadv}%</span>
+                        <span class="tooltip-value">{tooltipData.econDisadv.toFixed(1)}%</span>
                     </div>
                     <div class="tooltip-row">
                         <span class="tooltip-label">Students w/ Disabilities:</span>
-                        <span class="tooltip-value">{tooltipData.disability}%</span>
+                        <span class="tooltip-value">{tooltipData.disability.toFixed(1)}%</span>
                     </div>
                     <div class="tooltip-row">
-                        <span class="tooltip-label">Total Disadvantaged:</span>
-                        <span class="tooltip-value">{tooltipData.totalDisadv}% ({tooltipData.disadvCategory})</span>
+                        <span class="tooltip-label">Selected Metric:</span>
+                        <span class="tooltip-value">{tooltipData.disadvValue.toFixed(1)}% ({tooltipData.disadvCategory})</span>
                     </div>
                     <div class="tooltip-row">
                         <span class="tooltip-label">Per Pupil Spending:</span>
@@ -469,15 +585,6 @@
             </div>
         {/if}
     </div>
-
-    <!-- Notes -->
-    <!-- <div class="notes">
-        <p><strong>Notes:</strong></p>
-        <ul>
-            <li>Data includes all schools across three academic years (2021-2022, 2022-2023, 2023-2024)</li>
-            <li>Proficiency is the average of ELA and Math proficiency rates</li>
-        </ul>
-    </div> -->
 </div>
 
 <style>
@@ -498,11 +605,63 @@
         text-align: center;
     }
 
+    .selector-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 2rem;
+        margin-bottom: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .period-selector,
+    .metric-selector {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .period-label,
+    .metric-label {
+        font-weight: 600;
+        color: var(--colorText);
+        white-space: nowrap;
+    }
+
+    .period-dropdown,
+    .metric-dropdown {
+        padding: 0.5rem 1rem;
+        border: 2px solid var(--colorLightGray);
+        border-radius: 6px;
+        background: white;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: border-color 0.2s ease;
+        min-width: 200px;
+    }
+
+    .period-dropdown:focus,
+    .metric-dropdown:focus {
+        outline: none;
+        border-color: var(--colorPrimary);
+    }
+
     .subtitle {
         text-align: center;
         color: var(--colorDarkGray);
         margin-bottom: 1rem;
         font-size: 0.9rem;
+    }
+
+    .methodology-notice {
+        background-color: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 6px;
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+        text-align: center;
+        font-size: 0.85rem;
+        color: #856404;
     }
 
     .legend-container {
@@ -594,22 +753,6 @@
         position: relative;
     }
 
-    .notes {
-        margin-top: 2rem;
-        font-size: 0.85rem;
-        color: var(--colorDarkGray);
-        max-width: 100%;
-    }
-
-    .notes ul {
-        margin-left: 1.5rem;
-        line-height: 1.5;
-    }
-
-    .notes li {
-        margin-bottom: 0.5rem;
-    }
-
     /* Tooltip styles */
     .tooltip {
         position: absolute;
@@ -661,6 +804,23 @@
     }
 
     @media (max-width: 768px) {
+        .selector-container {
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .period-selector,
+        .metric-selector {
+            flex-direction: column;
+            gap: 0.5rem;
+            text-align: center;
+        }
+
+        .period-dropdown,
+        .metric-dropdown {
+            min-width: 250px;
+        }
+
         .chart-controls {
             flex-direction: column;
             align-items: center;

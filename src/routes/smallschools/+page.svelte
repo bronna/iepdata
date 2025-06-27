@@ -115,10 +115,6 @@
         }
     }
     
-    .intro {
-        margin: 1rem auto 2rem;
-    }
-    
     .viz-container {
         margin: 2rem auto 4rem;
         max-width: 1000px;
