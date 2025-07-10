@@ -1,0 +1,12 @@
+# Large data files
+src/lib/data/*.json
+*.json
+
+# Common large file patterns
+*.csv
+*.xlsx
+*.db
+*.sqlite
+node_modules/
+dist/
+build/

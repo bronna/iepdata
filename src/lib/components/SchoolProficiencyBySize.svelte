@@ -5,7 +5,7 @@
     import SVGChart from '$lib/components/SVGChart.svelte'
     
     // Import the small schools data
-    import smallSchoolsData from '$lib/data/small_schools_expanded.json';
+    import smallSchoolsData from '$lib/data/oregon_elementary_schools_complete.json';
 
     export let width = 800;
     export let height = 500;
@@ -15,6 +15,7 @@
     let selectedCategories = ['Low', 'Medium', 'High']; // Array to track multiple selected categories
     let selectedPeriod = 'post-covid'; // 'pre-covid' or 'post-covid'
     let selectedMetric = 'combined'; // 'economic', 'disability', 'combined'
+    let selectedDistrict = 'All Districts'; // Selected district filter
     
     // Define the periods based on our methodological discussion
     const periods = {
@@ -45,6 +46,12 @@
             description: 'Based on economically disadvantaged + students with disabilities'
         }
     };
+    
+    // Get unique districts for dropdown
+    $: uniqueDistricts = (() => {
+        const districts = [...new Set(smallSchoolsData.map(school => school["District Name"]).filter(Boolean))];
+        return districts.sort();
+    })();
     
     // Process the imported data to match our component's needs
     $: allSchoolData = smallSchoolsData.map(school => {
@@ -80,12 +87,17 @@
             proficiency: proficiency,
             spending: spending,
             yearOrder: yearOrder,
-            period: periods['pre-covid'].years.includes(school["School Year"]) ? 'pre-covid' : 'post-covid'
+            period: periods['pre-covid'].years.includes(school["School Year"]) ? 'pre-covid' : 'post-covid',
+            districtName: school["District Name"]
         };
     });
 
-    // Filter data based on selected period
-    $: schoolData = allSchoolData.filter(school => school.period === selectedPeriod);
+    // Filter data based on selected period and district
+    $: schoolData = allSchoolData.filter(school => {
+        const periodMatch = school.period === selectedPeriod;
+        const districtMatch = selectedDistrict === 'All Districts' || school.districtName === selectedDistrict;
+        return periodMatch && districtMatch;
+    });
     
     // Tooltip state
     let tooltipVisible = false;
@@ -120,9 +132,13 @@
     };
 
     // Calculate dynamic thresholds for equal distribution across categories
-    $: periodThresholds = (() => {
-        const periodData = allSchoolData.filter(school => school.period === selectedPeriod);
-        const disadvValues = periodData.map(school => getDisadvantageValue(school, selectedMetric)).sort((a, b) => a - b);
+    $: filteredThresholds = (() => {
+        const filteredData = allSchoolData.filter(school => {
+            const periodMatch = school.period === selectedPeriod;
+            const districtMatch = selectedDistrict === 'All Districts' || school.districtName === selectedDistrict;
+            return periodMatch && districtMatch;
+        });
+        const disadvValues = filteredData.map(school => getDisadvantageValue(school, selectedMetric)).sort((a, b) => a - b);
         
         if (disadvValues.length === 0) return { low: 0, high: 100 };
         
@@ -143,7 +159,7 @@
 
     // Define disadvantage categories with equal distribution
     const getDisadvantageCategory = (disadvValue) => {
-        const thresholds = periodThresholds;
+        const thresholds = filteredThresholds;
         
         if (disadvValue < thresholds.low) return { category: 'Low', color: '#01b6e1' }; // Blue
         if (disadvValue < thresholds.high) return { category: 'Medium', color: '#9acd32' }; // Green
@@ -168,12 +184,14 @@
     $: yExtent = extent(coloredData, d => d.proficiency);
     
     $: xScale = scaleLinear()
-        .domain([Math.max(200, xExtent[0] - 50), xExtent[1] + 50])
+        //.domain([Math.max(200, xExtent[0] - 50), xExtent[1] + 50])
+        .domain([200, 900])
         .range([0, dimensions.innerWidth])
         .nice();
 
     $: yScale = scaleLinear()
-        .domain([Math.max(30, yExtent[0] - 5), Math.min(85, yExtent[1] + 5)])
+        //.domain([Math.max(30, yExtent[0] - 5), Math.min(85, yExtent[1] + 5)])
+        .domain([0, 90])
         .range([dimensions.innerHeight, 0])
         .nice();
 
@@ -280,9 +298,9 @@
         }
     };
 
-    // Legend data - dynamic based on period and actual thresholds
+    // Legend data - dynamic based on filtered data and actual thresholds
     $: categoricalLegend = (() => {
-        const thresholds = periodThresholds;
+        const thresholds = filteredThresholds;
         const metricLabel = getMetricLabel(selectedMetric);
         return [
             { category: `Low ${metricLabel}`, range: `<${thresholds.low.toFixed(1)}%`, color: '#01b6e1' },
@@ -336,6 +354,16 @@
                     <option value="combined">{disadvantageMetrics['combined'].label}</option>
                     <option value="economic">{disadvantageMetrics['economic'].label}</option>
                     <option value="disability">{disadvantageMetrics['disability'].label}</option>
+                </select>
+            </div>
+            
+            <div class="district-selector">
+                <label for="district-select" class="district-label">School District:</label>
+                <select id="district-select" bind:value={selectedDistrict} class="district-dropdown">
+                    <option value="All Districts">All Districts</option>
+                    {#each uniqueDistricts as district}
+                        <option value={district}>{district}</option>
+                    {/each}
                 </select>
             </div>
         </div>
@@ -615,21 +643,24 @@
     }
 
     .period-selector,
-    .metric-selector {
+    .metric-selector,
+    .district-selector {
         display: flex;
         align-items: center;
         gap: 0.75rem;
     }
 
     .period-label,
-    .metric-label {
+    .metric-label,
+    .district-label {
         font-weight: 600;
         color: var(--colorText);
         white-space: nowrap;
     }
 
     .period-dropdown,
-    .metric-dropdown {
+    .metric-dropdown,
+    .district-dropdown {
         padding: 0.5rem 1rem;
         border: 2px solid var(--colorLightGray);
         border-radius: 6px;
@@ -641,7 +672,8 @@
     }
 
     .period-dropdown:focus,
-    .metric-dropdown:focus {
+    .metric-dropdown:focus,
+    .district-dropdown:focus {
         outline: none;
         border-color: var(--colorPrimary);
     }
@@ -810,14 +842,16 @@
         }
 
         .period-selector,
-        .metric-selector {
+        .metric-selector,
+        .district-selector {
             flex-direction: column;
             gap: 0.5rem;
             text-align: center;
         }
 
         .period-dropdown,
-        .metric-dropdown {
+        .metric-dropdown,
+        .district-dropdown {
             min-width: 250px;
         }
 
