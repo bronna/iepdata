@@ -1,0 +1,26 @@
+{
+	"name": "adadata",
+	"version": "0.0.1",
+	"private": true,
+	"scripts": {
+		"dev": "vite dev",
+		"build": "vite build",
+		"preview": "vite preview"
+	},
+	"devDependencies": {
+		"@sveltejs/adapter-auto": "^3.0.0",
+		"@sveltejs/kit": "^2.0.0",
+		"@sveltejs/vite-plugin-svelte": "^3.0.0",
+		"svelte": "^4.2.17",
+		"vite": "^5.0.3"
+	},
+	"type": "module",
+	"dependencies": {
+		"@sveltejs/svelte-scroller": "^2.0.7",
+		"d3": "^7.9.0",
+		"lucide-svelte": "^0.453.0",
+		"svelecte": "^4.1.0",
+		"tippy.js": "^6.3.7",
+		"topojson-client": "^3.1.0"
+	}
+}

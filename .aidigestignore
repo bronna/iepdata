@@ -1,0 +1,11 @@
+.db
+.svelte-kit
+build-*
+ios
+android
+modules/
+parse-skdocs.cjs
+sk.json
+oregon_data_22.json
+oregon_data_23.json
+oregon_data_24.json
