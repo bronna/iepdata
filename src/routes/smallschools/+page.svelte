@@ -3,7 +3,6 @@
     import SmallSchools from '$lib/components/SmallSchools.svelte'
     import SchoolSizeExpenditureChart from '$lib/components/SchoolSizeExpenditureChart.svelte'
     import SchoolProficiencyTrends from '$lib/components/SchoolProficiencyTrends.svelte'
-    import IncomePovertyProficiencyChart from '$lib/components/IncomePovertyProficiencyChart.svelte'
     import SideHeader from '$lib/components/SideHeader.svelte'
     import { colors } from "$lib/styles/colorConfig"
     import Divider from "$lib/components/Divider.svelte"
@@ -51,17 +50,6 @@
                 </Divider>
             </div>
             <SchoolProficiencyBySize />
-        </div>
-
-        <div class="viz-container">
-            <div class="section-heading">
-                <Divider>
-                    <ChartNoAxesColumn size={24} />
-                </Divider>
-                <h2>Historical Economic Disadvantage & Performance</h2>
-                <p style="text-align:center; font-size:1rem; margin-top:-0.5rem;">Economic disadvantage analysis spanning pre-COVID and recent years</p>
-            </div>
-            <IncomePovertyProficiencyChart />
         </div>
 
         <div class="viz-container">

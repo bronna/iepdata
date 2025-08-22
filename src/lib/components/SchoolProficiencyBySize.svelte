@@ -12,8 +12,8 @@
 
     // State variables
     let showSchoolLines = false;
-    let selectedCategories = ['Low', 'High']; // Array to track multiple selected categories
-    let selectedSchoolYear = 'All Years'; // 'All Years' or specific year
+    let selectedCategories = ['Low', 'Medium', 'High']; // Array to track multiple selected categories
+    let selectedPeriod = 'post-covid'; // 'pre-covid' or 'post-covid'
     let selectedMetric = 'combined'; // 'economic', 'disability', 'combined'
     let selectedDistrict = 'All Districts'; // Selected district filter
     
@@ -30,9 +30,6 @@
             description: 'Data collected using updated ODE methodology'
         }
     };
-    
-    // Use only post-covid data
-    const selectedPeriod = 'post-covid';
 
     // Define the disadvantage metrics
     const disadvantageMetrics = {
@@ -50,26 +47,10 @@
         }
     };
     
-    // Get unique districts for dropdown - limited to specific districts
+    // Get unique districts for dropdown
     $: uniqueDistricts = (() => {
-        const allowedDistricts = [
-            'Beaverton SD 48J',
-            'Lake Oswego SD 7J',
-            'Portland SD 1J',
-            'Salem-Keizer SD 24J',
-            'Tigard-Tualatin SD 23J',
-            'West Linn-Wilsonville SD 3J'
-        ];
-        
-        const allDistricts = [...new Set(smallSchoolsData.map(school => school["District Name"]).filter(Boolean))];
-        const filteredDistricts = allDistricts.filter(district => allowedDistricts.includes(district));
-        return filteredDistricts.sort();
-    })();
-    
-    // Get unique school years for dropdown
-    $: uniqueSchoolYears = (() => {
-        const years = [...new Set(smallSchoolsData.map(school => school["School Year"]).filter(Boolean))];
-        return years.sort();
+        const districts = [...new Set(smallSchoolsData.map(school => school["District Name"]).filter(Boolean))];
+        return districts.sort();
     })();
     
     // Process the imported data to match our component's needs
@@ -111,23 +92,11 @@
         };
     });
 
-    // Filter data based on selected period, school year, and district
+    // Filter data based on selected period and district
     $: schoolData = allSchoolData.filter(school => {
-        const allowedDistricts = [
-            'Beaverton SD 48J',
-            'Lake Oswego SD 7J',
-            'Portland SD 1J',
-            'Salem-Keizer SD 24J',
-            'Tigard-Tualatin SD 23J',
-            'West Linn-Wilsonville SD 3J'
-        ];
-        
         const periodMatch = school.period === selectedPeriod;
-        const yearMatch = selectedSchoolYear === 'All Years' || school.year === selectedSchoolYear;
-        const districtMatch = selectedDistrict === 'All Districts' 
-            ? allowedDistricts.includes(school.districtName)
-            : school.districtName === selectedDistrict;
-        return periodMatch && yearMatch && districtMatch;
+        const districtMatch = selectedDistrict === 'All Districts' || school.districtName === selectedDistrict;
+        return periodMatch && districtMatch;
     });
     
     // Tooltip state
@@ -162,46 +131,38 @@
         }
     };
 
-    // Calculate dynamic thresholds for equal distribution across 2 categories
+    // Calculate dynamic thresholds for equal distribution across categories
     $: filteredThresholds = (() => {
-        const allowedDistricts = [
-            'Beaverton SD 48J',
-            'Lake Oswego SD 7J',
-            'Portland SD 1J',
-            'Salem-Keizer SD 24J',
-            'Tigard-Tualatin SD 23J',
-            'West Linn-Wilsonville SD 3J'
-        ];
-        
         const filteredData = allSchoolData.filter(school => {
             const periodMatch = school.period === selectedPeriod;
-            const yearMatch = selectedSchoolYear === 'All Years' || school.year === selectedSchoolYear;
-            const districtMatch = selectedDistrict === 'All Districts' 
-                ? allowedDistricts.includes(school.districtName)
-                : school.districtName === selectedDistrict;
-            return periodMatch && yearMatch && districtMatch;
+            const districtMatch = selectedDistrict === 'All Districts' || school.districtName === selectedDistrict;
+            return periodMatch && districtMatch;
         });
         const disadvValues = filteredData.map(school => getDisadvantageValue(school, selectedMetric)).sort((a, b) => a - b);
         
-        if (disadvValues.length === 0) return { median: 50 };
-        if (disadvValues.length === 1) return { median: disadvValues[0] };
+        if (disadvValues.length === 0) return { low: 0, high: 100 };
         
         const n = disadvValues.length;
         
-        // For median split, use 50th percentile
-        const medianPosition = Math.ceil(n / 2) - 1;
+        // For equal tertiles, we want as close to n/3 in each group as possible
+        // Calculate the exact indices for tertile splits
+        const lowIndex = Math.floor(n / 3) - 1; // Index of last item in low group
+        const highIndex = Math.floor(2 * n / 3) - 1; // Index of last item in medium group
         
-        // Use actual value at median position as threshold
-        const medianThreshold = disadvValues[Math.min(medianPosition, n - 1)];
+        // The thresholds are the values at these positions
+        // We add a small amount to ensure clean breaks
+        const lowThreshold = disadvValues[lowIndex] + 0.001;
+        const highThreshold = disadvValues[highIndex] + 0.001;
         
-        return { median: medianThreshold };
+        return { low: lowThreshold, high: highThreshold };
     })();
 
-    // Define disadvantage categories with equal distribution across 2 levels
+    // Define disadvantage categories with equal distribution
     const getDisadvantageCategory = (disadvValue) => {
         const thresholds = filteredThresholds;
         
-        if (disadvValue <= thresholds.median) return { category: 'Low', color: '#01b6e1' }; // Blue
+        if (disadvValue < thresholds.low) return { category: 'Low', color: '#01b6e1' }; // Blue
+        if (disadvValue < thresholds.high) return { category: 'Medium', color: '#9acd32' }; // Green
         return { category: 'High', color: '#ff9900' }; // Orange
     };
 
@@ -276,9 +237,10 @@
 
     // Calculate trendlines for each category
     $: categoryTrendlines = (() => {
-        const categories = ['Low', 'High'];
+        const categories = ['Low', 'Medium', 'High'];
         const categoryColors = {
             'Low': '#01b6e1',
+            'Medium': '#9acd32', 
             'High': '#ff9900'
         };
         
@@ -341,8 +303,9 @@
         const thresholds = filteredThresholds;
         const metricLabel = getMetricLabel(selectedMetric);
         return [
-            { category: `Low ${metricLabel}`, range: `≤${thresholds.median.toFixed(1)}%`, color: '#01b6e1' },
-            { category: `High ${metricLabel}`, range: `>${thresholds.median.toFixed(1)}%`, color: '#ff9900' }
+            { category: `Low ${metricLabel}`, range: `<${thresholds.low.toFixed(1)}%`, color: '#01b6e1' },
+            { category: `Medium ${metricLabel}`, range: `${thresholds.low.toFixed(1)}%-${(thresholds.high - 0.001).toFixed(1)}%`, color: '#9acd32' },
+            { category: `High ${metricLabel}`, range: `≥${thresholds.high.toFixed(1)}%`, color: '#ff9900' }
         ];
     })();
 
@@ -375,15 +338,13 @@
     <div class="controls">
         <h2 class="text-width">School Size, % Disadvantaged and Proficiency</h2>
         
-        <!-- Metric selectors -->
+        <!-- Period and Metric selectors -->
         <div class="selector-container">
-            <div class="school-year-selector">
-                <label for="school-year-select" class="school-year-label">School Year:</label>
-                <select id="school-year-select" bind:value={selectedSchoolYear} class="school-year-dropdown">
-                    <option value="All Years">All Years</option>
-                    {#each uniqueSchoolYears as year}
-                        <option value={year}>{year}</option>
-                    {/each}
+            <div class="period-selector">
+                <label for="period-select" class="period-label">Data Period:</label>
+                <select id="period-select" bind:value={selectedPeriod} class="period-dropdown">
+                    <option value="post-covid">{periods['post-covid'].label}</option>
+                    <option value="pre-covid">{periods['pre-covid'].label}</option>
                 </select>
             </div>
             
@@ -681,7 +642,7 @@
         flex-wrap: wrap;
     }
 
-    .school-year-selector,
+    .period-selector,
     .metric-selector,
     .district-selector {
         display: flex;
@@ -689,7 +650,7 @@
         gap: 0.75rem;
     }
 
-    .school-year-label,
+    .period-label,
     .metric-label,
     .district-label {
         font-weight: 600;
@@ -697,7 +658,7 @@
         white-space: nowrap;
     }
 
-    .school-year-dropdown,
+    .period-dropdown,
     .metric-dropdown,
     .district-dropdown {
         padding: 0.5rem 1rem;
@@ -710,7 +671,7 @@
         min-width: 200px;
     }
 
-    .school-year-dropdown:focus,
+    .period-dropdown:focus,
     .metric-dropdown:focus,
     .district-dropdown:focus {
         outline: none;
@@ -880,7 +841,7 @@
             gap: 1rem;
         }
 
-        .school-year-selector,
+        .period-selector,
         .metric-selector,
         .district-selector {
             flex-direction: column;
@@ -888,7 +849,7 @@
             text-align: center;
         }
 
-        .school-year-dropdown,
+        .period-dropdown,
         .metric-dropdown,
         .district-dropdown {
             min-width: 250px;

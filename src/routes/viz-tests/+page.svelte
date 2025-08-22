@@ -1,9 +1,9 @@
 <script>
     import { fade } from 'svelte/transition'
+    import ScatterplotIdentificationSize from '$lib/components/ScatterplotIdentificationSize.svelte'
+    import ScatterplotInclSize from '$lib/components/ScatterplotInclSize.svelte'
     import BubbleMap from '$lib/components/BubbleMap.svelte'
     import DistrictsBeeswarm from '$lib/components/DistrictsBeeswarm.svelte'
-    import ScatterplotInclSize from '$lib/components/ScatterplotInclSize.svelte'
-    import ScatterplotIdentificationSize from '$lib/components/ScatterplotIdentificationSize.svelte'
 
     export let data
     console.log('viz test data:', data)
@@ -11,9 +11,13 @@
     let currentView = 'map'
 </script>
 
-<h1>Charts In Progress</h1>
+<h1>Visualization Tests</h1>
 
 <div class="map-container">
+    
+    <div class="viz-in-progress">
+        <ScatterplotIdentificationSize />
+    </div>
 
     <div class="viz-in-progress">
         <div class="toggle-controls">
@@ -42,10 +46,6 @@
                 </div>
             {/if}
         </div>
-    </div>
-    
-    <div class="viz-in-progress">
-        <ScatterplotIdentificationSize />
     </div>
 
     <div class="viz-in-progress">

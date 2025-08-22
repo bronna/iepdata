@@ -333,7 +333,7 @@
                                 r={node.r}
                                 fill={colorScale(node.district.properties.quartile)}
                                 stroke={node.isSelected ? colors.colorDarkGray : colors.colorBackgroundWhite}
-                                stroke-width={1}
+                                stroke-width={node.isSelected ? 2 : 1}
                                 opacity={node.isSelected ? 0.9 : 0.7}
                                 on:click={() => handleDistrictClick(node.district)}
                                 class="district-circle"
@@ -349,10 +349,10 @@
                             <circle
                                 cx={node.x}
                                 cy={node.y}
-                                r={node.r + 2}
+                                r={node.r + 6}
                                 fill="none"
                                 stroke={colors.colorDarkGray}
-                                stroke-width={1}
+                                stroke-width={6}
                                 stroke-opacity={0.5}
                             />
                             <!-- Primary circle -->
@@ -377,14 +377,14 @@
                             <!-- White text stroke for better readability -->
                             <text 
                                 x={selectedLabelPosition.x}
-                                y={selectedLabelPosition.y}
+                                y={selectedLabelPosition.y - 15}
                                 text-anchor="middle"
                                 dominant-baseline="middle"
                                 fill="white"
                                 stroke="white"
                                 stroke-width="5"
                                 stroke-linejoin="round"
-                                font-size="10px"
+                                font-size="14px"
                                 font-weight="400"
                             >
                                 {selectedDistrictData?.properties["Institution Name"]}
@@ -392,11 +392,11 @@
                             <!-- Label text -->
                             <text 
                                 x={selectedLabelPosition.x}
-                                y={selectedLabelPosition.y}
+                                y={selectedLabelPosition.y - 15}
                                 text-anchor="middle"
                                 dominant-baseline="middle"
                                 fill="black"
-                                font-size="10px"
+                                font-size="14px"
                                 font-weight="400"
                             >
                                 {selectedDistrictData?.properties["Institution Name"]}

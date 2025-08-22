@@ -185,7 +185,6 @@
     "Total School Enrollment": 459,
     "Per Pupil Spending": "$14529",
     "Economically Disadvantaged %": "28%",
-    "Income-to-Poverty Ratio": "437",
     "Students w/Disabilities %": "14%",
     "ELA Proficient & Above %": "46%",
     "Math Proficient & Above %": "42%"
@@ -196,7 +195,6 @@
     "Total School Enrollment": 243,
     "Per Pupil Spending": "$19622",
     "Economically Disadvantaged %": "11%",
-    "Income-to-Poverty Ratio": "493",
     "Students w/Disabilities %": "12%",
     "ELA Proficient & Above %": "79%",
     "Math Proficient & Above %": "67%"
@@ -207,7 +205,6 @@
     "Total School Enrollment": 492,
     "Per Pupil Spending": "$15566",
     "Economically Disadvantaged %": "32%",
-    "Income-to-Poverty Ratio": "511",
     "Students w/Disabilities %": "15%",
     "ELA Proficient & Above %": "37%",
     "Math Proficient & Above %": "34%"
@@ -218,7 +215,6 @@
     "Total School Enrollment": 345,
     "Per Pupil Spending": "$14918",
     "Economically Disadvantaged %": "9%",
-    "Income-to-Poverty Ratio": "406",
     "Students w/Disabilities %": "11%",
     "ELA Proficient & Above %": "67%",
     "Math Proficient & Above %": "62%"
@@ -229,7 +225,6 @@
     "Total School Enrollment": 473,
     "Per Pupil Spending": "$14708",
     "Economically Disadvantaged %": "21%",
-    "Income-to-Poverty Ratio": "476",
     "Students w/Disabilities %": "9%",
     "ELA Proficient & Above %": "59%",
     "Math Proficient & Above %": "53%"
@@ -240,7 +235,6 @@
     "Total School Enrollment": 360,
     "Per Pupil Spending": "$14969",
     "Economically Disadvantaged %": "7%",
-    "Income-to-Poverty Ratio": "805",
     "Students w/Disabilities %": "13%",
     "ELA Proficient & Above %": "63%",
     "Math Proficient & Above %": "67%"
@@ -251,7 +245,6 @@
     "Total School Enrollment": 367,
     "Per Pupil Spending": "$15387",
     "Economically Disadvantaged %": "10%",
-    "Income-to-Poverty Ratio": "533",
     "Students w/Disabilities %": "14%",
     "ELA Proficient & Above %": "69%",
     "Math Proficient & Above %": "63%"
@@ -262,7 +255,6 @@
     "Total School Enrollment": 462,
     "Per Pupil Spending": "$14430",
     "Economically Disadvantaged %": "7%",
-    "Income-to-Poverty Ratio": "571",
     "Students w/Disabilities %": "10%",
     "ELA Proficient & Above %": "73%",
     "Math Proficient & Above %": "64%"
@@ -273,7 +265,6 @@
     "Total School Enrollment": 424,
     "Per Pupil Spending": "$14599",
     "Economically Disadvantaged %": "16%",
-    "Income-to-Poverty Ratio": "513",
     "Students w/Disabilities %": "15%",
     "ELA Proficient & Above %": "56%",
     "Math Proficient & Above %": "48%"
@@ -286,7 +277,6 @@
     "Per Pupil Spending Data Source": "",
     "Economically Disadvantaged %": "33%",
     "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
-    "Income-to-Poverty Ratio": "382",
     "Students w/Disabilities %": "15%",
     "ELA Proficient & Above %": "63%",
     "Math Proficient & Above %": "58%"
@@ -299,7 +289,6 @@
     "Per Pupil Spending Data Source": "",
     "Economically Disadvantaged %": "13%",
     "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
-    "Income-to-Poverty Ratio": "485",
     "Students w/Disabilities %": "11%",
     "ELA Proficient & Above %": "75%",
     "Math Proficient & Above %": "60%"
@@ -312,7 +301,6 @@
     "Per Pupil Spending Data Source": "",
     "Economically Disadvantaged %": "37%",
     "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
-    "Income-to-Poverty Ratio": "439",
     "Students w/Disabilities %": "14%",
     "ELA Proficient & Above %": "60%",
     "Math Proficient & Above %": "49%"
@@ -325,7 +313,6 @@
     "Per Pupil Spending Data Source": "",
     "Economically Disadvantaged %": "8%",
     "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
-    "Income-to-Poverty Ratio": "589",
     "Students w/Disabilities %": "17%",
     "ELA Proficient & Above %": "76%",
     "Math Proficient & Above %": "66%"
@@ -338,7 +325,6 @@
     "Per Pupil Spending Data Source": "",
     "Economically Disadvantaged %": "24%",
     "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
-    "Income-to-Poverty Ratio": "381",
     "Students w/Disabilities %": "11%",
     "ELA Proficient & Above %": "64%",
     "Math Proficient & Above %": "55%"
@@ -351,7 +337,6 @@
     "Per Pupil Spending Data Source": "",
     "Economically Disadvantaged %": "10%",
     "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
-    "Income-to-Poverty Ratio": "802",
     "Students w/Disabilities %": "16%",
     "ELA Proficient & Above %": "74%",
     "Math Proficient & Above %": "65%"
@@ -364,7 +349,6 @@
     "Per Pupil Spending Data Source": "",
     "Economically Disadvantaged %": "13%",
     "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
-    "Income-to-Poverty Ratio": "511",
     "Students w/Disabilities %": "12%",
     "ELA Proficient & Above %": "78%",
     "Math Proficient & Above %": "73%"
@@ -377,7 +361,6 @@
     "Per Pupil Spending Data Source": "",
     "Economically Disadvantaged %": "6%",
     "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
-    "Income-to-Poverty Ratio": "698",
     "Students w/Disabilities %": "11%",
     "ELA Proficient & Above %": "78%",
     "Math Proficient & Above %": "69%"
@@ -390,7 +373,6 @@
     "Per Pupil Spending Data Source": "",
     "Economically Disadvantaged %": "15%",
     "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
-    "Income-to-Poverty Ratio": "653",
     "Students w/Disabilities %": "14%",
     "ELA Proficient & Above %": "76%",
     "Math Proficient & Above %": "67%"
@@ -403,7 +385,6 @@
     "Per Pupil Spending Data Source": "",
     "Economically Disadvantaged %": "32%",
     "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
-    "Income-to-Poverty Ratio": "357",
     "Students w/Disabilities %": "15%",
     "ELA Proficient & Above %": "59%",
     "Math Proficient & Above %": "52%"
@@ -416,7 +397,6 @@
     "Per Pupil Spending Data Source": "",
     "Economically Disadvantaged %": "11%",
     "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
-    "Income-to-Poverty Ratio": "524",
     "Students w/Disabilities %": "10%",
     "ELA Proficient & Above %": "80%",
     "Math Proficient & Above %": "69%"
@@ -429,7 +409,6 @@
     "Per Pupil Spending Data Source": "",
     "Economically Disadvantaged %": "38%",
     "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
-    "Income-to-Poverty Ratio": "421",
     "Students w/Disabilities %": "15%",
     "ELA Proficient & Above %": "62%",
     "Math Proficient & Above %": "49%"
@@ -442,7 +421,6 @@
     "Per Pupil Spending Data Source": "",
     "Economically Disadvantaged %": "10%",
     "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
-    "Income-to-Poverty Ratio": "609",
     "Students w/Disabilities %": "15%",
     "ELA Proficient & Above %": "71%",
     "Math Proficient & Above %": "64%"
@@ -455,7 +433,6 @@
     "Per Pupil Spending Data Source": "",
     "Economically Disadvantaged %": "27%",
     "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
-    "Income-to-Poverty Ratio": "350",
     "Students w/Disabilities %": "13%",
     "ELA Proficient & Above %": "66%",
     "Math Proficient & Above %": "61%"
@@ -468,7 +445,6 @@
     "Per Pupil Spending Data Source": "",
     "Economically Disadvantaged %": "6%",
     "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
-    "Income-to-Poverty Ratio": "800",
     "Students w/Disabilities %": "13%",
     "ELA Proficient & Above %": "77%",
     "Math Proficient & Above %": "70%"
@@ -481,7 +457,6 @@
     "Per Pupil Spending Data Source": "",
     "Economically Disadvantaged %": "16%",
     "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
-    "Income-to-Poverty Ratio": "485",
     "Students w/Disabilities %": "12%",
     "ELA Proficient & Above %": "80%",
     "Math Proficient & Above %": "82%"
@@ -494,7 +469,6 @@
     "Per Pupil Spending Data Source": "",
     "Economically Disadvantaged %": "6%",
     "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
-    "Income-to-Poverty Ratio": "709",
     "Students w/Disabilities %": "10%",
     "ELA Proficient & Above %": "77%",
     "Math Proficient & Above %": "75%"
@@ -507,7 +481,6 @@
     "Per Pupil Spending Data Source": "",
     "Economically Disadvantaged %": "16%",
     "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
-    "Income-to-Poverty Ratio": "591",
     "Students w/Disabilities %": "12%",
     "ELA Proficient & Above %": "73%",
     "Math Proficient & Above %": "66%"
@@ -520,7 +493,6 @@
     "Per Pupil Spending Data Source": "",
     "Economically Disadvantaged %": "33%",
     "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
-    "Income-to-Poverty Ratio": "324",
     "Students w/Disabilities %": "14%",
     "ELA Proficient & Above %": "64.9%",
     "Math Proficient & Above %": "61.7%"
@@ -533,7 +505,6 @@
     "Per Pupil Spending Data Source": "",
     "Economically Disadvantaged %": "13%",
     "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
-    "Income-to-Poverty Ratio": "464",
     "Students w/Disabilities %": "10%",
     "ELA Proficient & Above %": "82.8%",
     "Math Proficient & Above %": "70.4%"
@@ -546,7 +517,6 @@
     "Per Pupil Spending Data Source": "",
     "Economically Disadvantaged %": "40%",
     "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
-    "Income-to-Poverty Ratio": "485",
     "Students w/Disabilities %": "14%",
     "ELA Proficient & Above %": "61.8%",
     "Math Proficient & Above %": "53.2%"
@@ -559,7 +529,6 @@
     "Per Pupil Spending Data Source": "",
     "Economically Disadvantaged %": "17%",
     "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
-    "Income-to-Poverty Ratio": "619",
     "Students w/Disabilities %": "12%",
     "ELA Proficient & Above %": "71.3%",
     "Math Proficient & Above %": "66.5%"
@@ -572,7 +541,6 @@
     "Per Pupil Spending Data Source": "",
     "Economically Disadvantaged %": "32%",
     "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
-    "Income-to-Poverty Ratio": "311",
     "Students w/Disabilities %": "12%",
     "ELA Proficient & Above %": "61.1%",
     "Math Proficient & Above %": "54.8%"
@@ -585,7 +553,6 @@
     "Per Pupil Spending Data Source": "",
     "Economically Disadvantaged %": "8%",
     "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
-    "Income-to-Poverty Ratio": "853",
     "Students w/Disabilities %": "10%",
     "ELA Proficient & Above %": "78.8%",
     "Math Proficient & Above %": "68.2%"
@@ -598,7 +565,6 @@
     "Per Pupil Spending Data Source": "",
     "Economically Disadvantaged %": "21%",
     "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
-    "Income-to-Poverty Ratio": "422",
     "Students w/Disabilities %": "9%",
     "ELA Proficient & Above %": "80.1%",
     "Math Proficient & Above %": "71.3%"
@@ -611,7 +577,6 @@
     "Per Pupil Spending Data Source": "",
     "Economically Disadvantaged %": "8%",
     "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
-    "Income-to-Poverty Ratio": "670",
     "Students w/Disabilities %": "9%",
     "ELA Proficient & Above %": "73.4%",
     "Math Proficient & Above %": "65.2%"
@@ -624,7 +589,6 @@
     "Per Pupil Spending Data Source": "",
     "Economically Disadvantaged %": "13%",
     "Economically Diadvantaged Data Source": "RCmediaSchoolsAggregate",
-    "Income-to-Poverty Ratio": "464",
     "Students w/Disabilities %": "10%",
     "ELA Proficient & Above %": "79.8%",
     "Math Proficient & Above %": "75.5%"
