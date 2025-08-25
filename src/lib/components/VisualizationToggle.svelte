@@ -11,11 +11,30 @@
     import BubbleMap from './BubbleMap.svelte'
 
     export let index
+    export let initialView = 'beeswarm'
     export let showToggle = false
     
-    let currentView = 'beeswarm'
+    let currentView = initialView
+    let hasReachedSlide7 = false
     
     $: showToggle = index >= 7 // Only show toggle after scroller reaches final state
+    
+    // Track when we've reached slide 7 to distinguish initial load from scrolling back
+    $: if (index >= 7) {
+        hasReachedSlide7 = true
+    }
+    
+    // Reset to beeswarm when scrolling back to earlier slides, but preserve initialView on first load
+    $: if (index < 7) {
+        if (hasReachedSlide7) {
+            // User scrolled back from slide 7, reset to beeswarm
+            currentView = 'beeswarm'
+        } else if (initialView === 'beeswarm') {
+            // Initial load with beeswarm (default behavior)
+            currentView = 'beeswarm'
+        }
+        // If initialView is 'map' and we haven't reached slide 7 yet, preserve currentView
+    }
 </script>
 
 <div class="viz-container">
@@ -50,7 +69,7 @@
         {#if currentView === 'beeswarm'}
             <DistrictsBeeswarm {index} />
         {:else}
-            <div style="width: 100%; height: 400px;">
+            <div style="width: 100%; height: 500px;">
                 <BubbleMap />
             </div>
         {/if}

@@ -27,10 +27,12 @@
     let threshold = 0.8
     let bottom = 0.8
 
-    // Deep link support
+    // Deep link support for slide and view parameters
+    $: slideParam = $page.url.searchParams.get('slide')
+    $: viewParam = $page.url.searchParams.get('view')
+    $: initialView = viewParam === 'map' ? 'map' : 'beeswarm'
+    
     onMount(() => {
-        const slideParam = $page.url.searchParams.get('slide')
-        
         if (slideParam === '7') {
             // Wait a bit for the DOM to be ready, then scroll to the last section
             setTimeout(() => {
@@ -109,7 +111,7 @@
         
                     <SelectDistricts />
         
-                    <VisualizationToggle {index} />
+                    <VisualizationToggle {index} {initialView} />
                 </div>
         
                 <div slot="foreground" class="foreground-content">
