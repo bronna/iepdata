@@ -34,7 +34,7 @@
                 We're always looking to improve these tools to make them more helpful and accessible! We'd love to hear from you.
             </p>
             <p>
-                You can contact us by email at <strong>disabilityeddata@protonmail.com</strong>, or by using the <strong>'Feedback' button</strong> in the bottom right corner below.
+                You can contact us by email at <strong>disabilityeddata@protonmail.com</strong>.
             </p>
             <p>
                 Thank you!
