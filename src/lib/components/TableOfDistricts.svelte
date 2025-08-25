@@ -5,6 +5,7 @@
     import { arrowUp, arrowDown } from "$lib/utils/arrows.js"
     import InclusionRing from "$lib/components/InclusionRing.svelte"
     import { selectedDistricts } from '$lib/stores/stores.js'
+    import { Search } from 'lucide-svelte'
 
     export let data
 
@@ -14,6 +15,7 @@
     const sortOrder = writable(-1)
     const visibleRows = writable(8) // Increased default to accommodate selected districts
     const showAllRows = writable(false)
+    let searchInputValue = ''
 
     function sortBy(key) {
         sortKey.set(key)
@@ -21,53 +23,66 @@
     }
 
     // Enhanced data processing that prioritizes selected districts
-    // Need to make this reactive to selectedDistricts changes
-    $: processedData = (() => {
-        if (!data) return { selectedData: [], otherData: [] }
+    // Now properly reactive to searchInputValue, selectedDistricts, sortKey, and sortOrder
+    $: {
+        if (!data) {
+            processedData = { selectedData: [], otherData: [] }
+        } else {
+            // Filter out invalid districts
+            let validData = data.filter(item => 
+                item.properties["Institution Name"] != null && 
+                item.properties["Institution Name"] !== "undefined" &&
+                item.properties["Institution Name"].trim() !== "" &&
+                item.properties["GEOID"] !== '999999'
+            )
 
-        // Filter out invalid districts
-        const validData = data.filter(item => 
-            item.properties["Institution Name"] != null && 
-            item.properties["Institution Name"] !== "undefined" &&
-            item.properties["Institution Name"].trim() !== "" &&
-            item.properties["GEOID"] !== '999999'
-        )
-
-        // Separate selected and non-selected districts
-        const selectedData = validData.filter(item => 
-            $selectedDistricts && $selectedDistricts.includes(item.properties.GEOID)
-        )
-        
-        const otherData = validData.filter(item => 
-            !$selectedDistricts || !$selectedDistricts.includes(item.properties.GEOID)
-        )
-
-        // Sort function
-        const sortFunction = (a, b) => {
-            let aValue = a.properties[$sortKey]
-            let bValue = b.properties[$sortKey]
-            
-            if (["Total Student Count", "weighted_inclusion", "Students with Disabilities", "nAlerts"].includes($sortKey)) {
-                aValue = aValue === null || aValue === undefined ? -Infinity : Number(aValue)
-                bValue = bValue === null || bValue === undefined ? -Infinity : Number(bValue)
-                return $sortOrder * (aValue - bValue)
+            // Apply search filter
+            if (searchInputValue && searchInputValue.trim()) {
+                const searchLower = searchInputValue.toLowerCase().trim()
+                validData = validData.filter(item => 
+                    item.properties["Institution Name"].toLowerCase().includes(searchLower)
+                )
             }
+
+            // Separate selected and non-selected districts
+            const selectedData = validData.filter(item => 
+                $selectedDistricts && $selectedDistricts.includes(item.properties.GEOID)
+            )
             
-            if (typeof aValue === 'string' && typeof bValue === 'string') {
+            const otherData = validData.filter(item => 
+                !$selectedDistricts || !$selectedDistricts.includes(item.properties.GEOID)
+            )
+
+            // Sort function
+            const sortFunction = (a, b) => {
+                let aValue = a.properties[$sortKey]
+                let bValue = b.properties[$sortKey]
+                
+                if (["Total Student Count", "weighted_inclusion", "Students with Disabilities", "nAlerts"].includes($sortKey)) {
+                    aValue = aValue === null || aValue === undefined ? -Infinity : Number(aValue)
+                    bValue = bValue === null || bValue === undefined ? -Infinity : Number(bValue)
+                    return $sortOrder * (aValue - bValue)
+                }
+                
+                if (typeof aValue === 'string' && typeof bValue === 'string') {
+                    return $sortOrder * aValue.localeCompare(bValue)
+                }
+                
+                aValue = aValue === null || aValue === undefined ? '' : String(aValue)
+                bValue = bValue === null || bValue === undefined ? '' : String(bValue)
                 return $sortOrder * aValue.localeCompare(bValue)
             }
-            
-            aValue = aValue === null || aValue === undefined ? '' : String(aValue)
-            bValue = bValue === null || bValue === undefined ? '' : String(bValue)
-            return $sortOrder * aValue.localeCompare(bValue)
+
+            // Sort both arrays
+            selectedData.sort(sortFunction)
+            otherData.sort(sortFunction)
+
+            processedData = { selectedData, otherData }
         }
+    }
 
-        // Sort both arrays
-        selectedData.sort(sortFunction)
-        otherData.sort(sortFunction)
-
-        return { selectedData, otherData }
-    })()
+    // Initialize processedData
+    let processedData = { selectedData: [], otherData: [] }
 
     // Combined data for display - also reactive
     $: displayData = [
@@ -90,9 +105,32 @@
 
     // Check if we have selected districts to show the divider
     $: hasSelectedDistricts = $selectedDistricts && $selectedDistricts.length > 0
+
+    // Clear search function
+    function clearSearch() {
+        searchInputValue = ''
+    }
 </script>
 
 <div class="table-container">
+    <!-- Search bar above table -->
+    <div class="search-container">
+        <div class="search-input-container">
+            <div class="search-icon-wrapper">
+                <Search size={20} color="var(--colorMediumGray)" />
+            </div>
+            <input
+                type="text"
+                bind:value={searchInputValue}
+                placeholder="Search for a district..."
+                class="search-input"
+            />
+            {#if searchInputValue}
+                <button class="clear-button" on:click={clearSearch}>✕</button>
+            {/if}
+        </div>
+    </div>
+
     <!-- {#if hasSelectedDistricts}
         <div class="selected-districts-header">
             <h3>Selected Districts ({$selectedDistricts.length})</h3>
@@ -309,6 +347,69 @@
 </div>
 
 <style>
+    /* Search bar styles */
+    .search-container {
+        margin: 1rem auto;
+        max-width: 90%;
+        width: 100%;
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .search-input-container {
+        width: 300px;
+        position: relative;
+        display: flex;
+        align-items: center;
+        max-width: 100%;
+    }
+
+    @media (max-width: 768px) {
+        .search-input-container {
+            width: 100%;
+        }
+    }
+
+    .search-icon-wrapper {
+        position: absolute;
+        left: 1rem;
+        display: flex;
+        align-items: center;
+        pointer-events: none;
+        z-index: 2;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 0.8rem 2.5rem;
+        font-size: 1rem;
+        border: 2px solid var(--colorLightGray);
+        border-radius: 8px;
+        transition: border-color 0.3s ease;
+        background-color: var(--colorBackgroundWhite);
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: var(--colorInclusive);
+    }
+
+    .clear-button {
+        position: absolute;
+        right: 1rem;
+        background: none;
+        border: none;
+        color: var(--colorMediumGray);
+        cursor: pointer;
+        font-size: 1.2rem;
+        padding: 0.25rem;
+        z-index: 2;
+    }
+
+    .clear-button:hover {
+        color: var(--colorText);
+    }
+
     .table-container {
         width: 90%;
         margin: 0 auto;

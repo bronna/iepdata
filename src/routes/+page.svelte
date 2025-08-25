@@ -30,26 +30,19 @@
     // Deep link support
     onMount(() => {
         const slideParam = $page.url.searchParams.get('slide')
-        console.log('onMount slideParam:', slideParam)
         
         if (slideParam === '7') {
             // Wait a bit for the DOM to be ready, then scroll to the last section
             setTimeout(() => {
                 const sections = document.querySelectorAll('section')
-                console.log('Found sections:', sections.length)
                 
                 if (sections.length >= 8) {
                     const lastSection = sections[sections.length - 1]
                     lastSection.scrollIntoView({ behavior: 'smooth' })
-                    console.log('Scrolled to last section')
                 }
             }, 100)
         }
     })
-
-    // Deep link support - check for slide parameter in URL
-    $: slideParam = $page.url.searchParams.get('slide')
-    $: console.log('URL slideParam:', slideParam, 'Current index:', index)
 
     // Check if any districts are selected
     $: isDistrictSelected = $selectedDistricts && $selectedDistricts.length > 0
