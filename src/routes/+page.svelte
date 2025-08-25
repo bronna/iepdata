@@ -4,7 +4,9 @@
 </svelte:head>
 
 <script>
+    import { onMount } from 'svelte'
     import { data, selectedDistricts, selectedDistrictsData, primaryDistrictData } from "$lib/stores/stores.js"
+    import { page } from '$app/stores'
     import SideHeader from '$lib/components/SideHeader.svelte'
     import Divider from "$lib/components/Divider.svelte"
     import { Search, Pencil, TableProperties } from 'lucide-svelte'
@@ -25,20 +27,36 @@
     let threshold = 0.8
     let bottom = 0.8
 
+    // Deep link support
+    onMount(() => {
+        const slideParam = $page.url.searchParams.get('slide')
+        console.log('onMount slideParam:', slideParam)
+        
+        if (slideParam === '7') {
+            // Wait a bit for the DOM to be ready, then scroll to the last section
+            setTimeout(() => {
+                const sections = document.querySelectorAll('section')
+                console.log('Found sections:', sections.length)
+                
+                if (sections.length >= 8) {
+                    const lastSection = sections[sections.length - 1]
+                    lastSection.scrollIntoView({ behavior: 'smooth' })
+                    console.log('Scrolled to last section')
+                }
+            }, 100)
+        }
+    })
+
+    // Deep link support - check for slide parameter in URL
+    $: slideParam = $page.url.searchParams.get('slide')
+    $: console.log('URL slideParam:', slideParam, 'Current index:', index)
+
     // Check if any districts are selected
     $: isDistrictSelected = $selectedDistricts && $selectedDistricts.length > 0
 
     // Total number of scrolly sections
     $: totalScrollySections = isDistrictSelected ? 8 : 2
 
-    // Function to skip the scrolly experience
-    function skipToEnd() {
-        index = totalScrollySections - 1
-        // Scroll to the table section
-        document.querySelector('.post-scroll-content').scrollIntoView({ 
-            behavior: 'smooth' 
-        })
-    }
 </script>
 
 
@@ -154,12 +172,11 @@
                 </div>
             </Scroller>
         
-            <!-- Progress indicator and Skip button -->
+            <!-- Progress indicator -->
             {#if index > 0 && index < totalScrollySections - 1}
                 <ScrollyProgress 
                     currentIndex={index} 
                     totalSteps={totalScrollySections}
-                    onSkip={skipToEnd}
                 />
             {/if}
         

@@ -18,8 +18,8 @@
     $: showToggle = index >= 7 // Only show toggle after scroller reaches final state
 </script>
 
-{#if showToggle}
-    <div class="viz-container" transition:fade={{ duration: 300 }}>
+<div class="viz-container">
+    {#if showToggle}
         <div class="toggle-buttons" transition:fade={{ duration: 300 }}>
             <button 
                 class="toggle-btn {currentView === 'beeswarm' ? 'active' : ''}"
@@ -44,23 +44,18 @@
                 <span>Map</span>
             </button>
         </div>
+    {/if}
 
-        <div class="visualization">
-            {#if currentView === 'beeswarm'}
-                <div transition:fade={{ duration: 300 }}>
-                    <DistrictsBeeswarm {index} />
-                </div>
-            {:else}
-                <div transition:fade={{ duration: 300 }}
-                     style="width: 100%; height: 400px;">
-                    <BubbleMap />
-                </div>
-            {/if}
-        </div>
+    <div class="visualization">
+        {#if currentView === 'beeswarm'}
+            <DistrictsBeeswarm {index} />
+        {:else}
+            <div style="width: 100%; height: 400px;">
+                <BubbleMap />
+            </div>
+        {/if}
     </div>
-{:else}
-    <DistrictsBeeswarm {index} />
-{/if}
+</div>
 
 <style>
     .viz-container {
