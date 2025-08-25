@@ -40,11 +40,11 @@
             </h3>
 
             <p> 
-                Oregon caps special education funding at 11% of each school district's enrollment. If there are any students beyond that number, <strong>districts have to fund those services themselves.</strong>
+                If any district has more than 11% of its students with disabilities, the state cuts off funding for those services. Oregon caps special education funding at 11% and any more than that, <strong>districts have to fund themselves.</strong>
             </p>
 
             <p>
-                Want to see how many districts fall under that cap?
+                How many districts fall under that cap?
             </p>
         </div>
 
@@ -66,41 +66,25 @@
             <h3>
                 The funding shortfall
             </h3>
-            <p> 
-                When districts serve students beyond the 11% threshold, they absorb those costs locally. This creates a funding gap that districts must address through other means.
-            </p>
             <p>
-                What does this mean for students? Educators know that every month of delay makes intervention harder, and that the earlier you intervene, the less expensive and more effective support becomes. That's why you see so many districts continuing to identify students beyond, in many cases way beyond, the 11% cap. Oregon's system punishes exactly the approach that works best for kids, and costs less in the long run.
+                Only <strong>six other states</strong> cap special education funding. And Oregon's is on the lower end. The cap was set in the early 1990s, back when we understood far less about learning differences and intervention strategies.
+            </p>
+
+            <p>
+               Every month of delay makes intervention harder, and the earlier you intervene the less expensive, and more effective, support becomes. That's why you see so many districts continuing to identify students beyond, in many cases way beyond, the 11% cap, even though it creates financial liability for them. The state's system punishes exactly the approach that works best and costs less in the long run.
             </p>
 
             <h3>
-                The lonely funding cap club
+                A structural mismatch
             </h3>
             <p>
-                Turns out, only <strong>five other states</strong> in the entire country cap special education funding. Not only that, but Oregon's cap is the lowest of all of them. By a lot.
+                The consistent gap between the funding cap and actual student need suggests a widespread issue. Districts across Oregon are identifying students who need special education services at rates significantly higher than what the state funds.
             </p>
-            <p>
-                The cap was set in the early 1990s, back when we understood far less about learning differences and intervention strategies. It hasn't budged since, even as our knowledge about supporting students with disabilities has transformed completely.
-            </p>
-
-            <h3>
-                What this means
-            </h3>
-            <p>
-                The consistent gap between the funding cap and actual student need suggests a structural mismatch. Districts across Oregon are identifying students who need special education services at rates significantly higher than what the state funds.
-            </p>
-            <p>
-                This isn't about any single district's approach, it's a statewide pattern.
-            </p>
-
-            <h3>
-                What can you do?
-            </h3>
             <p>
                 Unfortunately, legislators decided not to modify the funding cap in the 2025 session.  <a href="https://olis.oregonlegislature.gov/liz/2025R1/Measures/Overview/HB2953" target="_blank">HB 2953</a> would have removed the cap, and <a href="https://olis.oregonlegislature.gov/liz/2025R1/Measures/Overview/HB2448" target="_blank">HB 2448</a> would have increased funding to the High Cost Disabilities Account, but neither bill passed.
             </p>
             <p>
-                This is not the end of the road, however. Your state representative and senator need to hear from you about the impact of the funding cap on your students and your district. If you want to see change, <a href="https://geo.maps.arcgis.com/apps/instant/lookup/index.html?appid=fd070b56c975456ea2a25f7e3f4289d1" target="_blank">reach out</a> to them and let them know how this affects you.
+                This is not the end of the road, however. Your state representative and senator need to hear from you about the impact of the funding cap on your students and your district. <a href="https://geo.maps.arcgis.com/apps/instant/lookup/index.html?appid=fd070b56c975456ea2a25f7e3f4289d1" target="_blank">Reach out</a> and let them know.
             </p>
         </div>
 

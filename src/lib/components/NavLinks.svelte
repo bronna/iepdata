@@ -6,8 +6,8 @@
 </script>
 
 <nav class={direction} style="--linkColor: {linkColor}">
-    <a href="/inclusion">Inclusion</a>
-    <a href="/funding">Funding</a>
+    <!-- <a href="/inclusion">Inclusion</a> -->
+    <a href="/funding">SCHOOL Funding</a>
     <a href="/about">About</a>
     <a href="/resources">Resources</a>
     <a href="/contact">Contact</a>
