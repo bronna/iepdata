@@ -44,6 +44,7 @@
     let simulation
     let nodes = []  // Will store our circle data
     let mapReady = false // Flag to track if the map is ready to render
+    export let mode = 'bubbles' // Controls visualization mode: 'bubbles' or 'choropleth'
     let showLabels = true // Option to toggle city labels
     
     // Find the bounds encompassing all districts in the state
@@ -315,59 +316,67 @@
                             <path
                                 class="districtShape"
                                 d={districtPathGenerator(district)}
-                                fill="none"
+                                fill={mode === 'choropleth' ? (district.properties.quartile ? colorScale(district.properties.quartile) : colors.colorLightGray) : 'none'}
                                 fill-rule="evenodd"
-                                stroke={colors.colorLightGray}
-                                stroke-width="0.5"
+                                stroke={mode === 'choropleth' && $selectedDistricts.includes(district.properties.GEOID) ? colors.colorDarkGray : colors.colorLightGray}
+                                stroke-width={mode === 'choropleth' && $selectedDistricts.includes(district.properties.GEOID) ? "2" : "0.5"}
+                                stroke-opacity={mode === 'choropleth' ? 0.8 : 1}
+                                opacity={mode === 'choropleth' && $selectedDistricts.includes(district.properties.GEOID) ? 1 : (mode === 'choropleth' ? 0.8 : 1)}
+                                on:click={() => handleDistrictClick(district)}
+                                class:clickable-district={mode === 'choropleth'}
+                                use:tooltipAction={mode === 'choropleth' ? tooltipContent(district.properties) : ''}
                             ></path>
                         {/if}
                     {/each}
                     
-                    <!-- First render non-selected circles -->
-                    {#each nodes as node}
-                        {#if !isNaN(node.x) && !isNaN(node.y) && node.r > 0 && !node.isPrimary}
-                            <!-- svelte-ignore a11y-click-events-have-key-events -->
-                            <circle
-                                cx={node.x}
-                                cy={node.y}
-                                r={node.r}
-                                fill={colorScale(node.district.properties.quartile)}
-                                stroke={node.isSelected ? colors.colorDarkGray : colors.colorBackgroundWhite}
-                                stroke-width={node.isSelected ? 2 : 1}
-                                opacity={node.isSelected ? 0.9 : 0.7}
-                                on:click={() => handleDistrictClick(node.district)}
-                                class="district-circle"
-                                use:tooltipAction={tooltipContent(node.district.properties)}
-                            ></circle>
-                        {/if}
-                    {/each}
-                    
-                    <!-- Then render primary circle with highlight effect -->
-                    {#each nodes as node}
-                        {#if !isNaN(node.x) && !isNaN(node.y) && node.r > 0 && node.isPrimary}
-                            <!-- Background highlight circle -->
-                            <circle
-                                cx={node.x}
-                                cy={node.y}
-                                r={node.r + 2}
-                                fill="none"
-                                stroke={colors.colorDarkGray}
-                                stroke-width={2}
-                                stroke-opacity={0.3}
-                            />
-                            <!-- Primary circle -->
-                            <!-- svelte-ignore a11y-click-events-have-key-events -->
-                            <circle
-                                cx={node.x}
-                                cy={node.y}
-                                r={node.r}
-                                fill={colorScale(node.district.properties.quartile)}
-                                on:click={() => handleDistrictClick(node.district)}
-                                class="district-circle selected"
-                                use:tooltipAction={tooltipContent(node.district.properties)}
-                            ></circle>
-                        {/if}
-                    {/each}
+                    <!-- Render circles only in bubbles mode -->
+                    {#if mode === 'bubbles'}
+                        <!-- First render non-selected circles -->
+                        {#each nodes as node}
+                            {#if !isNaN(node.x) && !isNaN(node.y) && node.r > 0 && !node.isPrimary}
+                                <!-- svelte-ignore a11y-click-events-have-key-events -->
+                                <circle
+                                    cx={node.x}
+                                    cy={node.y}
+                                    r={node.r}
+                                    fill={colorScale(node.district.properties.quartile)}
+                                    stroke={node.isSelected ? colors.colorDarkGray : colors.colorBackgroundWhite}
+                                    stroke-width={node.isSelected ? 2 : 1}
+                                    opacity={node.isSelected ? 0.9 : 0.7}
+                                    on:click={() => handleDistrictClick(node.district)}
+                                    class="district-circle"
+                                    use:tooltipAction={tooltipContent(node.district.properties)}
+                                ></circle>
+                            {/if}
+                        {/each}
+                        
+                        <!-- Then render primary circle with highlight effect -->
+                        {#each nodes as node}
+                            {#if !isNaN(node.x) && !isNaN(node.y) && node.r > 0 && node.isPrimary}
+                                <!-- Background highlight circle -->
+                                <circle
+                                    cx={node.x}
+                                    cy={node.y}
+                                    r={node.r + 2}
+                                    fill="none"
+                                    stroke={colors.colorDarkGray}
+                                    stroke-width={2}
+                                    stroke-opacity={0.3}
+                                />
+                                <!-- Primary circle -->
+                                <!-- svelte-ignore a11y-click-events-have-key-events -->
+                                <circle
+                                    cx={node.x}
+                                    cy={node.y}
+                                    r={node.r}
+                                    fill={colorScale(node.district.properties.quartile)}
+                                    on:click={() => handleDistrictClick(node.district)}
+                                    class="district-circle selected"
+                                    use:tooltipAction={tooltipContent(node.district.properties)}
+                                ></circle>
+                            {/if}
+                        {/each}
+                    {/if}
 
                     <!-- Selected district label -->
                     {#if selectedLabelPosition && $primaryDistrictId}
@@ -513,6 +522,15 @@
     }
     
     .district-circle.selected {
+        opacity: 1;
+    }
+
+    .clickable-district {
+        cursor: pointer;
+        transition: opacity 0.2s;
+    }
+
+    .clickable-district:hover {
         opacity: 1;
     }
 

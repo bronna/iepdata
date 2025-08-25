@@ -30,7 +30,8 @@
     // Deep link support for slide and view parameters
     $: slideParam = $page.url.searchParams.get('slide')
     $: viewParam = $page.url.searchParams.get('view')
-    $: initialView = viewParam === 'map' ? 'map' : 'beeswarm'
+    $: initialView = (viewParam === 'map' || viewParam === 'choropleth') ? 'map' : 'beeswarm'
+    $: initialMapMode = viewParam === 'choropleth' ? 'choropleth' : 'bubbles'
     
     onMount(() => {
         if (slideParam === '7') {
@@ -111,7 +112,7 @@
         
                     <SelectDistricts />
         
-                    <VisualizationToggle {index} {initialView} />
+                    <VisualizationToggle {index} {initialView} {initialMapMode} />
                 </div>
         
                 <div slot="foreground" class="foreground-content">

@@ -1,6 +1,6 @@
 <script>
     import { fade } from 'svelte/transition'
-    import { Map, BarChart2 } from 'lucide-svelte'
+    import { Map, BarChart2, MapPin } from 'lucide-svelte'
     import { colors } from '$lib/styles/colorConfig'
     import { selectedDistricts, primaryDistrictData } from '$lib/stores/stores.js'
     
@@ -12,9 +12,11 @@
 
     export let index
     export let initialView = 'beeswarm'
+    export let initialMapMode = 'bubbles'
     export let showToggle = false
     
     let currentView = initialView
+    let currentMapMode = initialMapMode // Controls map sub-mode: 'bubbles' or 'choropleth'
     let hasReachedSlide7 = false
     
     $: showToggle = index >= 7 // Only show toggle after scroller reaches final state
@@ -52,15 +54,26 @@
                 <span>Swarm</span>
             </button>
             <button 
-                class="toggle-btn {currentView === 'map' ? 'active' : ''}"
-                on:click={() => currentView = 'map'}
-                aria-label="Show map visualization"
+                class="toggle-btn {currentView === 'map' && currentMapMode === 'bubbles' ? 'active' : ''}"
+                on:click={() => { currentView = 'map'; currentMapMode = 'bubbles' }}
+                aria-label="Show bubble map visualization"
             >
                 <Map 
                     size={20} 
-                    color={currentView === 'map' ? colors.colorWhite : colors.colorText} 
+                    color={currentView === 'map' && currentMapMode === 'bubbles' ? colors.colorWhite : colors.colorText} 
                 />
-                <span>Map</span>
+                <span>Bubbles</span>
+            </button>
+            <button 
+                class="toggle-btn {currentView === 'map' && currentMapMode === 'choropleth' ? 'active' : ''}"
+                on:click={() => { currentView = 'map'; currentMapMode = 'choropleth' }}
+                aria-label="Show choropleth map visualization"
+            >
+                <MapPin 
+                    size={20} 
+                    color={currentView === 'map' && currentMapMode === 'choropleth' ? colors.colorWhite : colors.colorText} 
+                />
+                <span>Choropleth</span>
             </button>
         </div>
     {/if}
@@ -70,7 +83,7 @@
             <DistrictsBeeswarm {index} />
         {:else}
             <div style="width: 100%; height: 500px;">
-                <BubbleMap />
+                <BubbleMap mode={currentMapMode} />
             </div>
         {/if}
     </div>
@@ -89,6 +102,7 @@
         display: flex;
         gap: 0.5rem;
         z-index: 10;
+        flex-wrap: wrap;
     }
 
     .toggle-btn {
@@ -123,6 +137,7 @@
     @media (max-width: 768px) {
         .toggle-buttons {
             right: 1rem;
+            top: -70px; /* Give more space for two rows */
         }
 
         .toggle-btn span {
@@ -131,6 +146,7 @@
 
         .toggle-btn {
             padding: 0.5rem;
+            min-width: 44px; /* Ensure adequate touch target */
         }
     }
 </style>
