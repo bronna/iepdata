@@ -7,6 +7,7 @@
     import { onMount } from 'svelte'
     import { data, selectedDistricts, selectedDistrictsData, primaryDistrictData } from "$lib/stores/stores.js"
     import { page } from '$app/stores'
+    import { browser } from '$app/environment'
     import SideHeader from '$lib/components/SideHeader.svelte'
     import Divider from "$lib/components/Divider.svelte"
     import { Search, Pencil, TableProperties } from 'lucide-svelte'
@@ -28,8 +29,8 @@
     let bottom = 0.8
 
     // Deep link support for slide and view parameters
-    $: slideParam = $page.url.searchParams.get('slide')
-    $: viewParam = $page.url.searchParams.get('view')
+    $: slideParam = browser ? $page.url.searchParams.get('slide') : null
+    $: viewParam = browser ? $page.url.searchParams.get('view') : null
     $: initialView = (viewParam === 'map' || viewParam === 'choropleth') ? 'map' : 'beeswarm'
     $: initialMapMode = viewParam === 'choropleth' ? 'choropleth' : 'bubbles'
     
