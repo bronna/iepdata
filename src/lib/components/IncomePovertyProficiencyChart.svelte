@@ -12,8 +12,9 @@
 
     // State variables
     let showSchoolLines = false;
-    let selectedCategories = ['Lower Economic Disadvantage', 'Higher Economic Disadvantage']; // Array to track multiple selected categories
+    let selectedCategories = ['Low', 'High']; // Array to track multiple selected categories
     let selectedSchoolYear = 'All Years'; // 'All Years' or specific year
+    let selectedMetric = 'economic'; // 'economic', 'disability', 'combined'
     
     // Target school years for this chart
     const targetYears = ['2016-2017', '2017-2018', '2018-2019', '2021-2022', '2022-2023', '2023-2024'];
@@ -21,6 +22,22 @@
     // Define COVID period categories
     const preCovidYears = ['2016-2017', '2017-2018', '2018-2019'];
     const postCovidYears = ['2021-2022', '2022-2023', '2023-2024'];
+    
+    // Define the disadvantage metrics
+    const disadvantageMetrics = {
+        'economic': {
+            label: 'Economic Disadvantage Only',
+            description: 'Based on economically disadvantaged students only'
+        },
+        'disability': {
+            label: 'Disability Only', 
+            description: 'Based on students with disabilities only'
+        },
+        'combined': {
+            label: 'Combined Disadvantage',
+            description: 'Based on economically disadvantaged + students with disabilities'
+        }
+    };
     
     // Get unique school years for dropdown (filtered to target years)
     $: uniqueSchoolYears = (() => {
@@ -40,8 +57,9 @@
             const mathProf = parseFloat(school["Math Proficient & Above %"]?.replace(/%/g, '') || "0");
             const proficiency = (elaProf + mathProf) / 2;
             
-            // Parse Economically Disadvantaged % (higher percentage = more economically disadvantaged)
+            // Parse disadvantage percentages
             const econDisadv = parseFloat(school["Economically Disadvantaged %"]?.replace(/%/g, '') || "0");
+            const disability = parseFloat(school["Students w/Disabilities %"]?.replace(/%/g, '') || "0");
             const students = school["Total School Enrollment"];
             
             // Create simplified school name
@@ -55,6 +73,7 @@
                 year: school["School Year"],
                 students: students,
                 econDisadv: econDisadv,
+                disability: disability,
                 proficiency: proficiency,
                 yearOrder: yearOrder
             };
@@ -87,6 +106,19 @@
         dimensions.innerHeight = height - dimensions.margin.top - dimensions.margin.bottom;
     }
 
+    // Get the disadvantage value based on selected metric
+    const getDisadvantageValue = (school, metric) => {
+        switch (metric) {
+            case 'economic':
+                return school.econDisadv;
+            case 'disability':
+                return school.disability;
+            case 'combined':
+            default:
+                return school.econDisadv + school.disability;
+        }
+    };
+
     // Calculate dynamic thresholds for equal distribution across 2 categories
     $: filteredThresholds = (() => {
         const filteredData = allSchoolData.filter(school => {
@@ -95,38 +127,52 @@
             if (selectedSchoolYear === 'Post-COVID Years') return postCovidYears.includes(school.year);
             return school.year === selectedSchoolYear;
         });
-        const econDisadvValues = filteredData.map(school => school.econDisadv).sort((a, b) => a - b);
+        const disadvValues = filteredData.map(school => getDisadvantageValue(school, selectedMetric)).sort((a, b) => a - b);
         
-        if (econDisadvValues.length === 0) return { median: 15 };
-        if (econDisadvValues.length === 1) return { median: econDisadvValues[0] };
+        if (disadvValues.length === 0) return { median: 15 };
+        if (disadvValues.length === 1) return { median: disadvValues[0] };
         
-        const n = econDisadvValues.length;
+        const n = disadvValues.length;
         
         // For median split, use 50th percentile
         const medianPosition = Math.ceil(n / 2) - 1;
         
         // Use actual value at median position as threshold
-        const medianThreshold = econDisadvValues[Math.min(medianPosition, n - 1)];
+        const medianThreshold = disadvValues[Math.min(medianPosition, n - 1)];
         
         return { median: medianThreshold };
     })();
 
+    // Get the metric label for display
+    const getMetricLabel = (metric) => {
+        switch (metric) {
+            case 'economic':
+                return 'Economic Disadvantage';
+            case 'disability':
+                return 'Students with Disabilities';
+            case 'combined':
+            default:
+                return 'Combined Disadvantage';
+        }
+    };
+
     // Define disadvantage categories with equal distribution across 2 levels
-    // Note: Higher Economically Disadvantaged % = MORE economically disadvantaged
-    const getEconomicDisadvantageCategory = (econDisadv) => {
+    const getDisadvantageCategory = (disadvValue) => {
         const thresholds = filteredThresholds;
         
-        if (econDisadv <= thresholds.median) return { category: 'Lower Economic Disadvantage', color: '#01b6e1' }; // Blue
-        return { category: 'Higher Economic Disadvantage', color: '#ff9900' }; // Orange
+        if (disadvValue <= thresholds.median) return { category: 'Low', color: '#01b6e1' }; // Blue
+        return { category: 'High', color: '#ff9900' }; // Orange
     };
 
     // Process data
     $: coloredData = schoolData.map(item => {
-        const { category, color } = getEconomicDisadvantageCategory(item.econDisadv);
+        const disadvValue = getDisadvantageValue(item, selectedMetric);
+        const { category, color } = getDisadvantageCategory(disadvValue);
         return {
             ...item,
+            disadvValue,
             color: color,
-            economicDisadvCategory: category
+            disadvCategory: category
         };
     });
 
@@ -186,14 +232,14 @@
 
     // Calculate trendlines for each category
     $: categoryTrendlines = (() => {
-        const categories = ['Lower Economic Disadvantage', 'Higher Economic Disadvantage'];
+        const categories = ['Low', 'High'];
         const categoryColors = {
-            'Lower Economic Disadvantage': '#01b6e1',
-            'Higher Economic Disadvantage': '#ff9900'
+            'Low': '#01b6e1',
+            'High': '#ff9900'
         };
         
         const trendlines = categories.map(category => {
-            const categoryData = coloredData.filter(item => item.economicDisadvCategory === category);
+            const categoryData = coloredData.filter(item => item.disadvCategory === category);
             
             if (categoryData.length < 2) return null; // Need at least 2 points for a trendline
             
@@ -235,9 +281,10 @@
     // Legend data - dynamic based on filtered data and actual thresholds
     $: categoricalLegend = (() => {
         const thresholds = filteredThresholds;
+        const metricLabel = getMetricLabel(selectedMetric);
         return [
-            { category: `Lower Economic Disadvantage`, range: `≤${thresholds.median.toFixed(1)}%`, color: '#01b6e1' },
-            { category: `Higher Economic Disadvantage`, range: `>${thresholds.median.toFixed(1)}%`, color: '#ff9900' }
+            { category: `Low ${metricLabel}`, range: `≤${thresholds.median.toFixed(1)}%`, color: '#01b6e1' },
+            { category: `High ${metricLabel}`, range: `>${thresholds.median.toFixed(1)}%`, color: '#ff9900' }
         ];
     })();
 
@@ -268,10 +315,10 @@
 
 <div class="chart-container" bind:clientWidth={width}>
     <div class="controls">
-        <h2 class="text-width">School Size and Proficiency by Economic Disadvantage</h2>
+        <h2 class="text-width">School Size and Proficiency by Disadvantage Level</h2>
         <p class="subtitle">Historical data: 2016-2017, 2017-2018, 2018-2019, 2021-2022, 2022-2023, 2023-2024</p>
         
-        <!-- School Year selector -->
+        <!-- School Year and Metric selectors -->
         <div class="selector-container">
             <div class="school-year-selector">
                 <label for="school-year-select" class="school-year-label">School Year:</label>
@@ -284,6 +331,15 @@
                     {/each}
                 </select>
             </div>
+            
+            <div class="metric-selector">
+                <label for="metric-select" class="metric-label">Disadvantage Metric:</label>
+                <select id="metric-select" bind:value={selectedMetric} class="metric-dropdown">
+                    <option value="economic">{disadvantageMetrics['economic'].label}</option>
+                    <option value="disability">{disadvantageMetrics['disability'].label}</option>
+                    <option value="combined">{disadvantageMetrics['combined'].label}</option>
+                </select>
+            </div>
         </div>
         
         <!-- Legend with integrated checkboxes -->
@@ -294,7 +350,7 @@
                     <input 
                         type="checkbox" 
                         bind:group={selectedCategories} 
-                        value={item.category}
+                        value={item.category.split(' ')[0]}
                         class="legend-checkbox"
                     >
                     <div class="legend-color" style="background-color: {item.color}"></div>
@@ -480,7 +536,7 @@
             <!-- Data points -->
             <g class="data-points">
                 {#each coloredData as item}
-                    {@const isSelected = selectedCategories.length === 0 || selectedCategories.includes(item.economicDisadvCategory)}
+                    {@const isSelected = selectedCategories.length === 0 || selectedCategories.includes(item.disadvCategory)}
                     <circle
                         cx={xScale(item.students)}
                         cy={yScale(item.proficiency)}
@@ -562,19 +618,22 @@
         flex-wrap: wrap;
     }
 
-    .school-year-selector {
+    .school-year-selector,
+    .metric-selector {
         display: flex;
         align-items: center;
         gap: 0.75rem;
     }
 
-    .school-year-label {
+    .school-year-label,
+    .metric-label {
         font-weight: 600;
         color: var(--colorText);
         white-space: nowrap;
     }
 
-    .school-year-dropdown {
+    .school-year-dropdown,
+    .metric-dropdown {
         padding: 0.5rem 1rem;
         border: 2px solid var(--colorLightGray);
         border-radius: 6px;
@@ -585,7 +644,8 @@
         min-width: 200px;
     }
 
-    .school-year-dropdown:focus {
+    .school-year-dropdown:focus,
+    .metric-dropdown:focus {
         outline: none;
         border-color: var(--colorPrimary);
     }
