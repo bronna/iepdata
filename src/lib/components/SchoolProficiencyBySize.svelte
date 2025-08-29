@@ -11,9 +11,10 @@
     export let height = 500;
 
     // State variables
-    let showSchoolLines = false;
     let selectedCategories = ['Low', 'High']; // Array to track multiple selected categories
-    let selectedPeriod = 'post-covid'; // 'pre-covid' or 'post-covid'
+    // Use only post-covid data
+    const selectedPeriod = 'post-covid';
+    let selectedSchoolYear = 'All Years'; // 'All Years' or specific year
     let selectedMetric = 'combined'; // 'economic', 'disability', 'combined'
     let selectedDistrict = 'All Districts'; // Selected district filter
     
@@ -92,11 +93,12 @@
         };
     });
 
-    // Filter data based on selected period and district
+    // Filter data based on selected period, year, and district
     $: schoolData = allSchoolData.filter(school => {
         const periodMatch = school.period === selectedPeriod;
+        const yearMatch = selectedSchoolYear === 'All Years' || school.year === selectedSchoolYear;
         const districtMatch = selectedDistrict === 'All Districts' || school.districtName === selectedDistrict;
-        return periodMatch && districtMatch;
+        return periodMatch && yearMatch && districtMatch;
     });
     
     // Tooltip state
@@ -131,12 +133,24 @@
         }
     };
 
-    // Calculate dynamic thresholds for equal distribution across categories (binary split)
+    // Calculate dynamic thresholds for equal distribution across 2 categories
     $: filteredThresholds = (() => {
+        const allowedDistricts = [
+            'Beaverton SD 48J',
+            'Lake Oswego SD 7J',
+            'Portland SD 1J',
+            'Salem-Keizer SD 24J',
+            'Tigard-Tualatin SD 23J',
+            'West Linn-Wilsonville SD 3J'
+        ];
+        
         const filteredData = allSchoolData.filter(school => {
             const periodMatch = school.period === selectedPeriod;
-            const districtMatch = selectedDistrict === 'All Districts' || school.districtName === selectedDistrict;
-            return periodMatch && districtMatch;
+            const yearMatch = selectedSchoolYear === 'All Years' || school.year === selectedSchoolYear;
+            const districtMatch = selectedDistrict === 'All Districts' 
+                ? allowedDistricts.includes(school.districtName)
+                : school.districtName === selectedDistrict;
+            return periodMatch && yearMatch && districtMatch;
         });
         const disadvValues = filteredData.map(school => getDisadvantageValue(school, selectedMetric)).sort((a, b) => a - b);
         
@@ -151,11 +165,11 @@
         return { median: medianThreshold };
     })();
 
-    // Define disadvantage categories with binary split
+    // Define disadvantage categories with equal distribution across 2 levels
     const getDisadvantageCategory = (disadvValue) => {
         const thresholds = filteredThresholds;
         
-        if (disadvValue < thresholds.median) return { category: 'Low', color: '#01b6e1' }; // Blue
+        if (disadvValue <= thresholds.median) return { category: 'Low', color: '#01b6e1' }; // Blue
         return { category: 'High', color: '#ff9900' }; // Orange
     };
 
@@ -295,8 +309,8 @@
         const thresholds = filteredThresholds;
         const metricLabel = getMetricLabel(selectedMetric);
         return [
-            { category: `Low Combined Disadvantage`, range: `<${thresholds.median.toFixed(1)}%`, color: '#01b6e1' },
-            { category: `High Combined Disadvantage`, range: `≥${thresholds.median.toFixed(1)}%`, color: '#ff9900' }
+            { category: `Low ${metricLabel}`, range: `≤${thresholds.median.toFixed(1)}%`, color: '#01b6e1' },
+            { category: `High ${metricLabel}`, range: `>${thresholds.median.toFixed(1)}%`, color: '#ff9900' }
         ];
     })();
 
@@ -329,13 +343,15 @@
     <div class="controls">
         <h2 class="text-width">School Size, % Disadvantaged and Proficiency</h2>
         
-        <!-- Period and Metric selectors -->
+        <!-- School Year, Metric and District selectors -->
         <div class="selector-container">
-            <div class="period-selector">
-                <label for="period-select" class="period-label">Data Period:</label>
-                <select id="period-select" bind:value={selectedPeriod} class="period-dropdown">
-                    <option value="post-covid">{periods['post-covid'].label}</option>
-                    <option value="pre-covid">{periods['pre-covid'].label}</option>
+            <div class="year-selector">
+                <label for="year-select" class="year-label">School Year:</label>
+                <select id="year-select" bind:value={selectedSchoolYear} class="year-dropdown">
+                    <option value="All Years">All Years</option>
+                    <option value="2021-2022">21-22</option>
+                    <option value="2022-2023">22-23</option>
+                    <option value="2023-2024">23-24</option>
                 </select>
             </div>
             
@@ -379,13 +395,6 @@
             {/each}
         </div>
         
-        <!-- Controls -->
-        <div class="chart-controls">
-            <label class="control-label">
-                <input type="checkbox" bind:checked={showSchoolLines}>
-                Show School Progress Lines
-            </label>
-        </div>
     </div>
     
     <div class="scatterplot">
@@ -500,23 +509,6 @@
                 </text>
             </g>
 
-            <!-- School progress lines -->
-            {#if showSchoolLines}
-                <g class="school-lines">
-                    {#each schoolLines as line}
-                        <line
-                            x1={xScale(line.x1)}
-                            y1={yScale(line.y1)}
-                            x2={xScale(line.x2)}
-                            y2={yScale(line.y2)}
-                            stroke="#999"
-                            stroke-width="1.5"
-                            stroke-opacity="0.6"
-                            stroke-dasharray="4,4"
-                        />
-                    {/each}
-                </g>
-            {/if}
 
             <!-- Category trendlines -->
             {#if selectedCategories.length > 0}
@@ -633,7 +625,7 @@
         flex-wrap: wrap;
     }
 
-    .period-selector,
+    .year-selector,
     .metric-selector,
     .district-selector {
         display: flex;
@@ -641,7 +633,7 @@
         gap: 0.75rem;
     }
 
-    .period-label,
+    .year-label,
     .metric-label,
     .district-label {
         font-weight: 600;
@@ -649,7 +641,7 @@
         white-space: nowrap;
     }
 
-    .period-dropdown,
+    .year-dropdown,
     .metric-dropdown,
     .district-dropdown {
         padding: 0.5rem 1rem;
@@ -662,7 +654,7 @@
         min-width: 200px;
     }
 
-    .period-dropdown:focus,
+    .year-dropdown:focus,
     .metric-dropdown:focus,
     .district-dropdown:focus {
         outline: none;
@@ -832,7 +824,7 @@
             gap: 1rem;
         }
 
-        .period-selector,
+        .year-selector,
         .metric-selector,
         .district-selector {
             flex-direction: column;
@@ -840,7 +832,7 @@
             text-align: center;
         }
 
-        .period-dropdown,
+        .year-dropdown,
         .metric-dropdown,
         .district-dropdown {
             min-width: 250px;
