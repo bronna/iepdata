@@ -12,7 +12,7 @@
 
     // State variables
     let showSchoolLines = false;
-    let selectedCategories = ['Low', 'Medium', 'High']; // Array to track multiple selected categories
+    let selectedCategories = ['Low', 'High']; // Array to track multiple selected categories
     let selectedPeriod = 'post-covid'; // 'pre-covid' or 'post-covid'
     let selectedMetric = 'combined'; // 'economic', 'disability', 'combined'
     let selectedDistrict = 'All Districts'; // Selected district filter
@@ -131,7 +131,7 @@
         }
     };
 
-    // Calculate dynamic thresholds for equal distribution across categories
+    // Calculate dynamic thresholds for equal distribution across categories (binary split)
     $: filteredThresholds = (() => {
         const filteredData = allSchoolData.filter(school => {
             const periodMatch = school.period === selectedPeriod;
@@ -140,29 +140,22 @@
         });
         const disadvValues = filteredData.map(school => getDisadvantageValue(school, selectedMetric)).sort((a, b) => a - b);
         
-        if (disadvValues.length === 0) return { low: 0, high: 100 };
+        if (disadvValues.length === 0) return { median: 30 };
         
         const n = disadvValues.length;
         
-        // For equal tertiles, we want as close to n/3 in each group as possible
-        // Calculate the exact indices for tertile splits
-        const lowIndex = Math.floor(n / 3) - 1; // Index of last item in low group
-        const highIndex = Math.floor(2 * n / 3) - 1; // Index of last item in medium group
+        // For binary split, use median
+        const medianIndex = Math.floor(n / 2);
+        const medianThreshold = disadvValues[medianIndex] + 0.001;
         
-        // The thresholds are the values at these positions
-        // We add a small amount to ensure clean breaks
-        const lowThreshold = disadvValues[lowIndex] + 0.001;
-        const highThreshold = disadvValues[highIndex] + 0.001;
-        
-        return { low: lowThreshold, high: highThreshold };
+        return { median: medianThreshold };
     })();
 
-    // Define disadvantage categories with equal distribution
+    // Define disadvantage categories with binary split
     const getDisadvantageCategory = (disadvValue) => {
         const thresholds = filteredThresholds;
         
-        if (disadvValue < thresholds.low) return { category: 'Low', color: '#01b6e1' }; // Blue
-        if (disadvValue < thresholds.high) return { category: 'Medium', color: '#9acd32' }; // Green
+        if (disadvValue < thresholds.median) return { category: 'Low', color: '#01b6e1' }; // Blue
         return { category: 'High', color: '#ff9900' }; // Orange
     };
 
@@ -237,10 +230,9 @@
 
     // Calculate trendlines for each category
     $: categoryTrendlines = (() => {
-        const categories = ['Low', 'Medium', 'High'];
+        const categories = ['Low', 'High'];
         const categoryColors = {
             'Low': '#01b6e1',
-            'Medium': '#9acd32', 
             'High': '#ff9900'
         };
         
@@ -303,9 +295,8 @@
         const thresholds = filteredThresholds;
         const metricLabel = getMetricLabel(selectedMetric);
         return [
-            { category: `Low ${metricLabel}`, range: `<${thresholds.low.toFixed(1)}%`, color: '#01b6e1' },
-            { category: `Medium ${metricLabel}`, range: `${thresholds.low.toFixed(1)}%-${(thresholds.high - 0.001).toFixed(1)}%`, color: '#9acd32' },
-            { category: `High ${metricLabel}`, range: `≥${thresholds.high.toFixed(1)}%`, color: '#ff9900' }
+            { category: `Low Combined Disadvantage`, range: `<${thresholds.median.toFixed(1)}%`, color: '#01b6e1' },
+            { category: `High Combined Disadvantage`, range: `≥${thresholds.median.toFixed(1)}%`, color: '#ff9900' }
         ];
     })();
 
