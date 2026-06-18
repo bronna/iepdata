@@ -40,7 +40,7 @@
             </h3>
 
             <p> 
-                In any one district, if more than 11% of its students have a disability that requires special educaiton services, the state cuts off funding for those services. Oregon caps special education funding at 11% and any more than that, <strong>districts have to fund themselves.</strong>
+                In any one district, if more than 11% of its students have a disability that requires special education services, the state cuts off funding for those services. Oregon caps special education funding at 11% and any more than that, <strong>districts have to fund themselves.</strong>
             </p>
 
             <p>
@@ -67,11 +67,11 @@
                 The funding shortfall
             </h3>
             <p>
-                There are only a handful of<strong> other states</strong> that actually cap special education funding. And Oregon's cap is even on the lower end of those. The cap was set in the early 1990s, back when we understood far less about learning differences and intervention strategies, and Oregon, unlike most other states, has failed to update it.
+                There are only a handful of <strong>other states</strong> that actually cap special education funding. And Oregon's cap is even on the lower end of those. The cap was set in the early 1990s, back when we understood far less about learning differences and intervention strategies, and Oregon, unlike most other states, has failed to update it.
             </p>
 
             <p>
-               When a child has a disability that affects their learning, every month of delay makes intervention harder. And, the earlier you intervene, the less expensive, and more effective, support becomes. That's why you see so many districts continuing to identify students beyond, in many cases way beyond, the 11% cap, even though it creates financial liability for them. The state's system punishes exactly the approach that works best and costs less in the long run.
+               When a child has a disability that affects their learning, every month of delay makes intervention harder. And, the earlier you intervene, the less expensive, and more effective, support becomes. That's why you see so many districts continuing to identify students beyond, in many cases way beyond, the 11% cap, even though it creates financial liability for them. The state's cap punishes exactly the approach that works best and costs less in the long run.
             </p>
 
             <h3>
