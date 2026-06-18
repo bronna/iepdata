@@ -70,7 +70,7 @@
     <div class="header-headline-container">
         <div class="headline-container">
             <h1 class="headline">
-                How does your school district support students with disabilities? Compare and find out
+                Compare how school districts in Oregon are doing at supporting students with disabilities
             </h1>
         </div>
 
@@ -85,7 +85,7 @@
     <div class="content-container">
         <div class="intro">
             <h3 class="byline text-width">
-                Updated with data from the 2024-25 school year
+                Data from the 2024-25 school year
             </h3>
         
             <p class="text-width">
@@ -131,7 +131,7 @@
                         </section>
                         <section>
                             <ScrollyCard active={index === 2}>
-                                If your child has a disability in <strong>{$primaryDistrictData?.properties["Institution Name"]}</strong>, on average, they'll <strong>spend {Math.round($primaryDistrictData?.properties["average_separation_time"] || 0)}%</strong> of their day <strong>separated from typical peers</strong>. This varies, of course, depending on individual level of needs
+                                If your child has a disability in <strong>{$primaryDistrictData?.properties["Institution Name"]}</strong>, on average, they <strong>spend {Math.round($primaryDistrictData?.properties["average_separation_time"] || 0)}%</strong> of their day <strong>separated from nondisabled peers</strong>. This varies, of course, depending on an individual student's disabilities
                             </ScrollyCard>
                         </section>
                         <section>
@@ -141,12 +141,12 @@
                         </section>
                         <section>
                             <ScrollyCard active={index === 4}>
-                                And to the <strong>ones that touch</strong> it. Even neighboring districts can have completely different approaches to inclusion
+                                And to the <strong>districts it touches</strong>. Even neighbors can have completely different approaches to inclusion
                             </ScrollyCard>
                         </section>
                         <section>
                             <ScrollyCard active={index === 5}>
-                                This isn't even necessarily about resources or good intentions; we all want what's best for kids. It's about having examples of what's possible. Some districts have developed systems that <strong>prioritize inclusion</strong>
+                                We all want what's best for kids. This is about having examples of what's possible. Some districts have developed systems that <strong>prioritize inclusion</strong>
                             </ScrollyCard>
                         </section>
                         <section>
@@ -156,7 +156,7 @@
                         </section>
                         <section>
                             <ScrollyCard active={index === 7}>
-                                You can explore what's working, and what's not, in more districts. <strong>Dig in deeper</strong> for any district by <strong>selecting 'more'</strong> in the tooltip or table below
+                                You can explore more districts. <strong>Dig in deeper</strong> for any district by <strong>selecting 'more'</strong> in the tooltip or table below
                             </ScrollyCard>
                         </section>
                     {:else}
@@ -188,14 +188,8 @@
 
                 <div class="outro">
                     <p class="text-width">
-                        Every piece of data on this chart represents real kids spending real days in classrooms alongside their peers, or elsewhere. Your child's placement doesn't have to be limited by "how we've always done things," it can be inspired by what's working elsewhere.
+                        Use what's working elsewhere to inspire your child's team to find the right supports and placement for your child. It doesn't have to be limited by "how we've always done things," and the law under IDEA is on your side. Placement must be determined by an individual student's needs, not by district-wide structures and practices.
                     </p>
-                    <!-- <p class="text-width">
-                        Now you have examples to share with your child's team.
-                    </p>
-                    <p class="text-width">
-                        <em>Ready to explore solutions? [Download district comparison sheets][Find successful inclusion models][Connect with other parents]</em>
-                    </p> -->
                 </div>
             
                 <Divider>

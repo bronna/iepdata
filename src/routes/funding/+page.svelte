@@ -21,7 +21,7 @@
     
     <div class="header-headline-container">
         <div class="headline-container">
-            <h1 class="headline">The 11% cap: is it enough for Oregon's students with disabilities?</h1>
+            <h1 class="headline">The state funds up to 11% of students having a disability. Is that enough?</h1>
         </div>
         
         {#if windowWidth > 768}
@@ -36,15 +36,15 @@
 
         <div class="text-width">
             <h3 class="byline">
-                Updated with data from the 2024-25 school year
+                Data from the 2024-25 school year
             </h3>
 
             <p> 
-                If any district has more than 11% of its students with disabilities, the state cuts off funding for those services. Oregon caps special education funding at 11% and any more than that, <strong>districts have to fund themselves.</strong>
+                In any one district, if more than 11% of its students have a disability that requires special educaiton services, the state cuts off funding for those services. Oregon caps special education funding at 11% and any more than that, <strong>districts have to fund themselves.</strong>
             </p>
 
             <p>
-                How many districts fall under that cap?
+                So, how many districts fall under the 11% cap?
             </p>
         </div>
 
@@ -60,31 +60,31 @@
 
         <div class="text-width last-text">
             <p>
-                Almost none of them.
+                Almost none of them. And the majority fall way, way beyond 11%.
             </p>
 
             <h3>
                 The funding shortfall
             </h3>
             <p>
-                Only <strong>six other states</strong> cap special education funding. And Oregon's is on the lower end. The cap was set in the early 1990s, back when we understood far less about learning differences and intervention strategies.
+                There are only a handful of<strong> other states</strong> that actually cap special education funding. And Oregon's cap is even on the lower end of those. The cap was set in the early 1990s, back when we understood far less about learning differences and intervention strategies, and Oregon, unlike most other states, has failed to update it.
             </p>
 
             <p>
-               Every month of delay makes intervention harder, and the earlier you intervene the less expensive, and more effective, support becomes. That's why you see so many districts continuing to identify students beyond, in many cases way beyond, the 11% cap, even though it creates financial liability for them. The state's system punishes exactly the approach that works best and costs less in the long run.
+               When a child has a disability that affects their learning, every month of delay makes intervention harder. And, the earlier you intervene, the less expensive, and more effective, support becomes. That's why you see so many districts continuing to identify students beyond, in many cases way beyond, the 11% cap, even though it creates financial liability for them. The state's system punishes exactly the approach that works best and costs less in the long run.
             </p>
 
             <h3>
                 A structural mismatch
             </h3>
             <p>
-                The consistent gap between the funding cap and actual student need suggests a widespread issue. Districts across Oregon are identifying students who need special education services at rates significantly higher than what the state funds.
+                The consistent gap between the 11% funding cap and actual student need suggests a widespread issue. Districts across Oregon are identifying students who need special education services at rates significantly higher than what the state funds.
             </p>
             <p>
-                Unfortunately, legislators decided not to modify the funding cap in the 2025 session.  <a href="https://olis.oregonlegislature.gov/liz/2025R1/Measures/Overview/HB2953" target="_blank">HB 2953</a> would have removed the cap, and <a href="https://olis.oregonlegislature.gov/liz/2025R1/Measures/Overview/HB2448" target="_blank">HB 2448</a> would have increased funding to the High Cost Disabilities Account, but neither bill passed.
+                Unfortunately, legislators decided not to modify the funding cap in the 2025 legislative session, and didn't even discuss it in the 2026 session.  <a href="https://olis.oregonlegislature.gov/liz/2025R1/Measures/Overview/HB2953" target="_blank">HB 2953</a> would have removed the cap, and <a href="https://olis.oregonlegislature.gov/liz/2025R1/Measures/Overview/HB2448" target="_blank">HB 2448</a> would have increased funding to the High Cost Disabilities Account, but neither bill passed.
             </p>
             <p>
-                This is not the end of the road, however. Your state representative and senator need to hear from you about the impact of the funding cap on your students and your district. <a href="https://geo.maps.arcgis.com/apps/instant/lookup/index.html?appid=fd070b56c975456ea2a25f7e3f4289d1" target="_blank">Reach out</a> and let them know.
+                This is not the end of the road, however. Your state representative and senator need to hear from you about the impact of the funding cap on your students and your school district. <a href="https://geo.maps.arcgis.com/apps/instant/lookup/index.html?appid=fd070b56c975456ea2a25f7e3f4289d1" target="_blank">Reach out</a> to let them know your story.
             </p>
         </div>
 
