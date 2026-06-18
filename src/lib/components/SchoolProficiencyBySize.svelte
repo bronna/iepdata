@@ -152,7 +152,29 @@
                 : school.districtName === selectedDistrict;
             return periodMatch && yearMatch && districtMatch;
         });
-        const disadvValues = filteredData.map(school => getDisadvantageValue(school, selectedMetric)).sort((a, b) => a - b);
+        // Sort school objects to enable tiebreaking on economic disadvantage
+        // when combined disadvantage values are identical (for "combined" metric only)
+        const sortedSchools = [...filteredData].sort((a, b) => {
+            const aValue = getDisadvantageValue(a, selectedMetric);
+            const bValue = getDisadvantageValue(b, selectedMetric);
+
+            // Primary sort: by disadvantage value (ascending)
+            if (aValue !== bValue) {
+                return aValue - bValue;
+            }
+
+            // Tiebreaker: higher economic disadvantage → High category (descending order)
+            if (selectedMetric === 'combined') {
+                return b.econDisadv - a.econDisadv;
+            }
+
+            return 0;
+        });
+
+        // Extract sorted values for median threshold calculation
+        const disadvValues = sortedSchools.map(school =>
+            getDisadvantageValue(school, selectedMetric)
+        );
         
         if (disadvValues.length === 0) return { median: 30 };
         

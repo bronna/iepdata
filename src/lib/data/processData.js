@@ -1,5 +1,5 @@
 import * as topojson from "topojson-client"
-import OregonData from "./oregon_data_24.json"
+import OregonData from "./oregon_data_25.json"
 
 let largeDistrictCutoff = 500
 
@@ -102,7 +102,7 @@ function calculateRanks(data) {
 }
 
 export const getData = () => {
-    const objectName = "OR_SDs_merged_24"
+    const objectName = "OR_SDs_merged_25"
     const geojsonData = topojson.feature(OregonData, OregonData.objects[objectName])
     let data = geojsonData.features
 

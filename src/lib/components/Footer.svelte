@@ -21,7 +21,7 @@
         created by Brianna Wilson
       </span> 
       <span class="label" id="copyright">
-        &copy; 2025 All rights reserved
+        &copy; 2026 All rights reserved
       </span>
     </div>
   </div>

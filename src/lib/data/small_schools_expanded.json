@@ -1,6 +1,96 @@
 [
   {
     "School": "Boeckman Creek Primary School",
+    "School Year": "2024-2025",
+    "Total School Enrollment": 494.0,
+    "Per Pupil Spending": "$",
+    "Economically Disadvantaged %": "25%",
+    "Students w/Disabilities %": "15%",
+    "ELA Proficient & Above %": "52%",
+    "Math Proficient & Above %": "41%"
+  },
+  {
+    "School": "Bolton Primary School",
+    "School Year": "2024-2025",
+    "Total School Enrollment": 221.0,
+    "Per Pupil Spending": "$",
+    "Economically Disadvantaged %": "10%",
+    "Students w/Disabilities %": "17%",
+    "ELA Proficient & Above %": "70%",
+    "Math Proficient & Above %": "66%"
+  },
+  {
+    "School": "Boones Ferry Primary School",
+    "School Year": "2024-2025",
+    "Total School Enrollment": 430.0,
+    "Per Pupil Spending": "$",
+    "Economically Disadvantaged %": "26%",
+    "Students w/Disabilities %": "19%",
+    "ELA Proficient & Above %": "49%",
+    "Math Proficient & Above %": "40%"
+  },
+  {
+    "School": "Cedaroak Park Primary School",
+    "School Year": "2024-2025",
+    "Total School Enrollment": 348.0,
+    "Per Pupil Spending": "$",
+    "Economically Disadvantaged %": "15%",
+    "Students w/Disabilities %": "14%",
+    "ELA Proficient & Above %": "80%",
+    "Math Proficient & Above %": "68%"
+  },
+  {
+    "School": "Lowrie Primary School",
+    "School Year": "2024-2025",
+    "Total School Enrollment": 492.0,
+    "Per Pupil Spending": "$",
+    "Economically Disadvantaged %": "16.0%",
+    "Students w/Disabilities %": "13%",
+    "ELA Proficient & Above %": "61%",
+    "Math Proficient & Above %": "53%"
+  },
+  {
+    "School": "Stafford Primary School",
+    "School Year": "2024-2025",
+    "Total School Enrollment": 337.0,
+    "Per Pupil Spending": "$",
+    "Economically Disadvantaged %": "7%",
+    "Students w/Disabilities %": "16%",
+    "ELA Proficient & Above %": "72%",
+    "Math Proficient & Above %": "67%"
+  },
+  {
+    "School": "Sunset Primary School",
+    "School Year": "2024-2025",
+    "Total School Enrollment": 377.0,
+    "Per Pupil Spending": "$",
+    "Economically Disadvantaged %": "13%",
+    "Students w/Disabilities %": "20%",
+    "ELA Proficient & Above %": "62%",
+    "Math Proficient & Above %": "55%"
+  },
+  {
+    "School": "Trillium Creek Primary School",
+    "School Year": "2024-2025",
+    "Total School Enrollment": 487.0,
+    "Per Pupil Spending": "$",
+    "Economically Disadvantaged %": "4.7%",
+    "Students w/Disabilities %": "14%",
+    "ELA Proficient & Above %": "63%",
+    "Math Proficient & Above %": "58%"
+  },
+  {
+    "School": "Willamette Primary School",
+    "School Year": "2024-2025",
+    "Total School Enrollment": 381.0,
+    "Per Pupil Spending": "$",
+    "Economically Disadvantaged %": "11%",
+    "Students w/Disabilities %": "18%",
+    "ELA Proficient & Above %": "67%",
+    "Math Proficient & Above %": "63%"
+  },
+  {
+    "School": "Boeckman Creek Primary School",
     "School Year": "2023-2024",
     "Total School Enrollment": 470.0,
     "Per Pupil Spending": "$16935",

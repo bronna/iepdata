@@ -36,7 +36,7 @@
 
         <div class="text-width">
             <h3 class="byline">
-                Updated with data from the 2023-24 school year
+                Updated with data from the 2024-25 school year
             </h3>
 
             <p> 

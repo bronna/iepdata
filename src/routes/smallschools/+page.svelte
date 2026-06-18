@@ -2,6 +2,7 @@
     import SchoolProficiencyBySize from '$lib/components/SchoolProficiencyBySize.svelte'
     import SmallSchools from '$lib/components/SmallSchools.svelte'
     import SchoolSizeExpenditureChart from '$lib/components/SchoolSizeExpenditureChart.svelte'
+    import SchoolSizeExpenditureChartNoY from '$lib/components/SchoolSizeExpenditureChartNoY.svelte'
     import SchoolProficiencyTrends from '$lib/components/SchoolProficiencyTrends.svelte'
     import IncomePovertyProficiencyChart from '$lib/components/IncomePovertyProficiencyChart.svelte'
     import SideHeader from '$lib/components/SideHeader.svelte'
@@ -93,10 +94,24 @@
                     <Ruler />
                 </Divider>
                 <h2>Size and Spending</h2>
-                <p style="text-align:center; font-size:1rem; margin-top:-0.5rem;">* per pupil spending data not available for 23/24 school year, 22/23 data shown</p>
             </div>
             <div style="height: 470px;">
                 <SchoolSizeExpenditureChart />
+            </div>
+        </div>
+        
+        <div class="viz-container">
+            <div class="section-heading">
+                <Divider>
+                    <Ruler />
+                </Divider>
+                <h2>Per Pupil Spending Distribution</h2>
+            </div>
+            <div style="height: 320px;">
+                <SchoolSizeExpenditureChartNoY />
+            </div>
+            <div style="margin-top: 6rem; margin-left: 3.8rem; color: var(--colorText);">
+                <p class="data-source">Data: Oregon Department of Education</p>
             </div>
         </div>
         
@@ -148,7 +163,7 @@
     .source {
         font-size: 0.9rem;
         color: var(--colorDarkGray);
-        margin-top: 3rem;
+        margin-top: 8rem;
         padding-top: 1rem;
         border-top: 1px solid var(--colorLightGray);
         margin-bottom: 3rem;
@@ -159,5 +174,9 @@
             font-size: 1.2rem;
             padding: 0 1rem;
         }
+    }
+
+    .data-source {
+        font-size: 1rem;
     }
 </style>

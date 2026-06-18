@@ -1,9 +1,51 @@
 [
   {
+    "School": "Inza R Wood Middle School",
+    "School Year": "2023-2024",
+    "Total School Enrollment": 478.0,
+    "Per Pupil Spending": "$18706"
+  },
+  {
+    "School": "West Linn High School",
+    "School Year": "2023-2024",
+    "Total School Enrollment": 1866.0,
+    "Per Pupil Spending": "$16240"
+  },
+  {
+    "School": "Athey Creek Middle School",
+    "School Year": "2023-2024",
+    "Total School Enrollment": 510.0,
+    "Per Pupil Spending": "$18571"
+  },
+  {
+    "School": "Wilsonville High School",
+    "School Year": "2023-2024",
+    "Total School Enrollment": 1254.0,
+    "Per Pupil Spending": "$18610"
+  },
+  {
+    "School": "Rosemont Ridge Middle School",
+    "School Year": "2023-2024",
+    "Total School Enrollment": 736.0,
+    "Per Pupil Spending": "$15593"
+  },
+  {
+    "School": "Meridian Creek Middle School",
+    "School Year": "2023-2024",
+    "Total School Enrollment": 393.0,
+    "Per Pupil Spending": "$18484"
+  },
+  {
+    "School": "Riverside High School",
+    "School Year": "2023-2024",
+    "Total School Enrollment": 110.0,
+    "Per Pupil Spending": "$43990"
+  },
+  {
     "School": "Boeckman Creek Primary School",
     "School Year": "2023-2024",
     "Total School Enrollment": 470.0,
-    "Per Pupil Spending": "$16935",
+    "Per Pupil Spending": "$18404",
     "Economically Disadvantaged %": "22.2%",
     "Students w/Disabilities %": "16%",
     "ELA Proficient & Above %": "54%",
@@ -13,7 +55,7 @@
     "School": "Bolton Primary School",
     "School Year": "2023-2024",
     "Total School Enrollment": 236.0,
-    "Per Pupil Spending": "$21306",
+    "Per Pupil Spending": "$21574",
     "Economically Disadvantaged %": "6.7%",
     "Students w/Disabilities %": "16%",
     "ELA Proficient & Above %": "80%",
@@ -23,7 +65,7 @@
     "School": "Boones Ferry Primary School",
     "School Year": "2023-2024",
     "Total School Enrollment": 475.0,
-    "Per Pupil Spending": "$18367",
+    "Per Pupil Spending": "$19734",
     "Economically Disadvantaged %": "25.9%",
     "Students w/Disabilities %": "15%",
     "ELA Proficient & Above %": "41%",
@@ -33,7 +75,7 @@
     "School": "Cedaroak Park Primary School",
     "School Year": "2023-2024",
     "Total School Enrollment": 336.0,
-    "Per Pupil Spending": "$17304",
+    "Per Pupil Spending": "$19342",
     "Economically Disadvantaged %": "11.1%",
     "Students w/Disabilities %": "14%",
     "ELA Proficient & Above %": "66%",
@@ -43,7 +85,7 @@
     "School": "Lowrie Primary School",
     "School Year": "2023-2024",
     "Total School Enrollment": 460.0,
-    "Per Pupil Spending": "$16388",
+    "Per Pupil Spending": "$18736",
     "Economically Disadvantaged %": "17.0%",
     "Students w/Disabilities %": "11%",
     "ELA Proficient & Above %": "56%",
@@ -53,7 +95,7 @@
     "School": "Stafford Primary School",
     "School Year": "2023-2024",
     "Total School Enrollment": 346.0,
-    "Per Pupil Spending": "$16759",
+    "Per Pupil Spending": "$18410",
     "Economically Disadvantaged %": "3.2%",
     "Students w/Disabilities %": "14%",
     "ELA Proficient & Above %": "69%",
@@ -63,7 +105,7 @@
     "School": "Sunset Primary School",
     "School Year": "2023-2024",
     "Total School Enrollment": 380.0,
-    "Per Pupil Spending": "$16951",
+    "Per Pupil Spending": "$17979",
     "Economically Disadvantaged %": "9.9%",
     "Students w/Disabilities %": "20%",
     "ELA Proficient & Above %": "66%",
@@ -73,7 +115,7 @@
     "School": "Trillium Creek Primary School",
     "School Year": "2023-2024",
     "Total School Enrollment": 491.0,
-    "Per Pupil Spending": "$16018",
+    "Per Pupil Spending": "$17371",
     "Economically Disadvantaged %": "4.7%",
     "Students w/Disabilities %": "13%",
     "ELA Proficient & Above %": "64%",
@@ -83,7 +125,7 @@
     "School": "Willamette Primary School",
     "School Year": "2023-2024",
     "Total School Enrollment": 388.0,
-    "Per Pupil Spending": "$16786",
+    "Per Pupil Spending": "$19552",
     "Economically Disadvantaged %": "13.1%",
     "Students w/Disabilities %": "18%",
     "ELA Proficient & Above %": "70%",

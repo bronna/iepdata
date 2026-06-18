@@ -17,11 +17,11 @@
     let selectedMetric = 'economic'; // 'economic', 'disability', 'combined'
     
     // Target school years for this chart
-    const targetYears = ['2016-2017', '2017-2018', '2018-2019', '2021-2022', '2022-2023', '2023-2024'];
+    const targetYears = ['2016-2017', '2017-2018', '2018-2019', '2021-2022', '2022-2023', '2023-2024', '2024-2025'];
     
     // Define COVID period categories
     const preCovidYears = ['2016-2017', '2017-2018', '2018-2019'];
-    const postCovidYears = ['2021-2022', '2022-2023', '2023-2024'];
+    const postCovidYears = ['2021-2022', '2022-2023', '2023-2024', '2024-2025'];
     
     // Define the disadvantage metrics
     const disadvantageMetrics = {
@@ -48,7 +48,7 @@
         return years.sort();
     })();
     
-    // Process the imported data to match our component's needs
+    // Process the imported data
     $: allSchoolData = smallSchoolsData
         .filter(school => targetYears.includes(school["School Year"])) // Filter to target years only
         .map(school => {
@@ -127,20 +127,55 @@
             if (selectedSchoolYear === 'Post-COVID Years') return postCovidYears.includes(school.year);
             return school.year === selectedSchoolYear;
         });
-        const disadvValues = filteredData.map(school => getDisadvantageValue(school, selectedMetric)).sort((a, b) => a - b);
-        
-        if (disadvValues.length === 0) return { median: 15 };
-        if (disadvValues.length === 1) return { median: disadvValues[0] };
-        
+        // Sort school objects to enable tiebreaking on economic disadvantage
+        // when combined disadvantage values are identical (for "combined" metric only)
+        const sortedSchools = [...filteredData].sort((a, b) => {
+            const aValue = getDisadvantageValue(a, selectedMetric);
+            const bValue = getDisadvantageValue(b, selectedMetric);
+
+            // Primary sort: by disadvantage value (ascending)
+            if (aValue !== bValue) {
+                return aValue - bValue;
+            }
+
+            // Tiebreaker: higher economic disadvantage → High category (descending order)
+            if (selectedMetric === 'combined') {
+                return b.econDisadv - a.econDisadv;
+            }
+
+            return 0;
+        });
+
+        // Extract sorted values for median threshold calculation
+        const disadvValues = sortedSchools.map(school =>
+            getDisadvantageValue(school, selectedMetric)
+        );
+
+        if (disadvValues.length === 0) return { median: 15, categoryLookup: new Map() };
+        if (disadvValues.length === 1) {
+            const categoryLookup = new Map();
+            categoryLookup.set(`${sortedSchools[0].school}_${sortedSchools[0].year}`, 'Low');
+            return { median: disadvValues[0], categoryLookup };
+        }
+
         const n = disadvValues.length;
-        
-        // For median split, use 50th percentile
-        const medianPosition = Math.ceil(n / 2) - 1;
-        
-        // Use actual value at median position as threshold
+
+        // For median split, use 50th percentile position
+        const splitPosition = Math.ceil(n / 2);
+        const medianPosition = splitPosition - 1;
+
+        // Use actual value at median position as threshold for display
         const medianThreshold = disadvValues[Math.min(medianPosition, n - 1)];
-        
-        return { median: medianThreshold };
+
+        // Create category lookup based on position in sorted array
+        const categoryLookup = new Map();
+        sortedSchools.forEach((school, index) => {
+            const key = `${school.school}_${school.year}`;
+            const category = index < splitPosition ? 'Low' : 'High';
+            categoryLookup.set(key, category);
+        });
+
+        return { median: medianThreshold, categoryLookup };
     })();
 
     // Get the metric label for display
@@ -156,18 +191,22 @@
         }
     };
 
-    // Define disadvantage categories with equal distribution across 2 levels
-    const getDisadvantageCategory = (disadvValue) => {
-        const thresholds = filteredThresholds;
-        
-        if (disadvValue <= thresholds.median) return { category: 'Low', color: '#01b6e1' }; // Blue
+    // Define disadvantage categories using position-based assignment
+    const getDisadvantageCategory = (school) => {
+        const { categoryLookup } = filteredThresholds;
+
+        // Create lookup key from school name and year
+        const key = `${school.school}_${school.year}`;
+        const category = categoryLookup.get(key) || 'Low'; // fallback to 'Low'
+
+        if (category === 'Low') return { category: 'Low', color: '#01b6e1' }; // Blue
         return { category: 'High', color: '#ff9900' }; // Orange
     };
 
     // Process data
     $: coloredData = schoolData.map(item => {
         const disadvValue = getDisadvantageValue(item, selectedMetric);
-        const { category, color } = getDisadvantageCategory(disadvValue);
+        const { category, color } = getDisadvantageCategory(item);
         return {
             ...item,
             disadvValue,
@@ -275,16 +314,65 @@
         return trendlines;
     })();
 
+    // Calculate overall trendline for all data points when no categories are selected
+    $: overallTrendline = (() => {
+        if (selectedCategories.length > 0 || coloredData.length < 2) return null;
+        
+        // Calculate linear regression for all data
+        const n = coloredData.length;
+        let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+        
+        coloredData.forEach(item => {
+            sumX += item.students;
+            sumY += item.proficiency;
+            sumXY += item.students * item.proficiency;
+            sumX2 += item.students * item.students;
+        });
+        
+        const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+        const intercept = (sumY - slope * sumX) / n;
+        
+        // Generate trendline points
+        const minX = Math.min(...coloredData.map(item => item.students));
+        const maxX = Math.max(...coloredData.map(item => item.students));
+        
+        return {
+            points: [
+                { x: minX, y: intercept + slope * minX },
+                { x: maxX, y: intercept + slope * maxX }
+            ],
+            color: '#01b6e1',
+            dataCount: coloredData.length
+        };
+    })();
+
     // Format functions
     const formatNumber = num => num.toLocaleString();
 
-    // Legend data - dynamic based on filtered data and actual thresholds
+    // Legend data - dynamic based on filtered data and actual value ranges
     $: categoricalLegend = (() => {
-        const thresholds = filteredThresholds;
         const metricLabel = getMetricLabel(selectedMetric);
+
+        // Find actual min and max values in each category
+        const lowCategoryData = coloredData.filter(item => item.disadvCategory === 'Low');
+        const highCategoryData = coloredData.filter(item => item.disadvCategory === 'High');
+
+        let lowRange = '';
+        let highRange = '';
+
+        if (lowCategoryData.length > 0) {
+            const maxLowValue = Math.max(...lowCategoryData.map(item => item.disadvValue));
+            lowRange = `≤${maxLowValue.toFixed(1)}%`;
+        }
+
+        if (highCategoryData.length > 0) {
+            const minHighValue = Math.min(...highCategoryData.map(item => item.disadvValue));
+            highRange = `≥${minHighValue.toFixed(1)}%`;
+        }
+
         return [
-            { category: `Low ${metricLabel}`, range: `≤${thresholds.median.toFixed(1)}%`, color: '#01b6e1' },
-            { category: `High ${metricLabel}`, range: `>${thresholds.median.toFixed(1)}%`, color: '#ff9900' }
+            { category: `Low ${metricLabel}`, range: lowRange, color: '#01b6e1' },
+            { category: `High ${metricLabel}`, range: highRange, color: '#ff9900' }
         ];
     })();
 
@@ -316,7 +404,7 @@
 <div class="chart-container" bind:clientWidth={width}>
     <div class="controls">
         <h2 class="text-width">School Size and Proficiency by Disadvantage Level</h2>
-        <p class="subtitle">Historical data: 2016-2017, 2017-2018, 2018-2019, 2021-2022, 2022-2023, 2023-2024</p>
+        <p class="subtitle">Historical data: 2016-2017, 2017-2018, 2018-2019, 2021-2022, 2022-2023, 2023-2024, 2024-2025</p>
         
         <!-- School Year and Metric selectors -->
         <div class="selector-container">
@@ -325,7 +413,7 @@
                 <select id="school-year-select" bind:value={selectedSchoolYear} class="school-year-dropdown">
                     <option value="All Years">All Years</option>
                     <option value="Pre-COVID Years">Pre-COVID Years (2016-2019)</option>
-                    <option value="Post-COVID Years">Post-COVID Years (2021-2024)</option>
+                    <option value="Post-COVID Years">Post-COVID Years (2021-2025)</option>
                     {#each uniqueSchoolYears as year}
                         <option value={year}>{year}</option>
                     {/each}
@@ -533,6 +621,33 @@
                 </g>
             {/if}
 
+            <!-- Overall trendline when no categories selected -->
+            {#if overallTrendline}
+                <g class="overall-trendline">
+                    <line
+                        x1={xScale(overallTrendline.points[0].x)}
+                        y1={yScale(overallTrendline.points[0].y)}
+                        x2={xScale(overallTrendline.points[1].x)}
+                        y2={yScale(overallTrendline.points[1].y)}
+                        stroke={overallTrendline.color}
+                        stroke-width="3"
+                        stroke-opacity="0.8"
+                    />
+                    
+                    <!-- Overall trendline label -->
+                    <text
+                        x={xScale(overallTrendline.points[1].x) + 5}
+                        y={yScale(overallTrendline.points[1].y)}
+                        fill={overallTrendline.color}
+                        font-size="12px"
+                        font-weight="600"
+                        dominant-baseline="middle"
+                    >
+                        All Data
+                    </text>
+                </g>
+            {/if}
+
             <!-- Data points -->
             <g class="data-points">
                 {#each coloredData as item}
@@ -574,8 +689,16 @@
                         <span class="tooltip-value">{tooltipData.econDisadv.toFixed(1)}%</span>
                     </div>
                     <div class="tooltip-row">
+                        <span class="tooltip-label">Students with Disabilities:</span>
+                        <span class="tooltip-value">{tooltipData.disability.toFixed(1)}%</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Combined Disadvantage:</span>
+                        <span class="tooltip-value">{tooltipData.disadvValue.toFixed(1)}%</span>
+                    </div>
+                    <div class="tooltip-row">
                         <span class="tooltip-label">Category:</span>
-                        <span class="tooltip-value">{tooltipData.economicDisadvCategory}</span>
+                        <span class="tooltip-value">{tooltipData.disadvCategory}</span>
                     </div>
                 </div>
             </div>
@@ -785,7 +908,8 @@
         color: var(--colorText);
     }
 
-    .category-trendlines line {
+    .category-trendlines line,
+    .overall-trendline line {
         stroke-linecap: round;
     }
 

@@ -70,7 +70,7 @@
     <div class="content-container">
         <div class="intro">
             <h3 class="byline text-width">
-                Updated with data from the 2023-24 school year
+                Updated with data from the 2024-25 school year
             </h3>
         
             <p class="text-width">
