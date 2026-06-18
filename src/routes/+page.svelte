@@ -70,7 +70,7 @@
     <div class="header-headline-container">
         <div class="headline-container">
             <h1 class="headline">
-                Compare how school districts in Oregon are doing at supporting students with disabilities
+                Compare how school districts in Oregon are supporting students with disabilities
             </h1>
         </div>
 
